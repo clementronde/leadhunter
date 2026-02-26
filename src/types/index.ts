@@ -49,7 +49,12 @@ export interface Company {
   // Website info
   website: string | null
   has_website: boolean
-  
+
+  // Google Maps / Places data (présent si source === 'google_places')
+  google_rating?: number | null         // Note Google (1-5)
+  google_reviews_count?: number | null  // Nombre d'avis Google
+  google_maps_url?: string | null       // Lien vers la fiche Google Maps
+
   // Scoring (0-100)
   prospect_score: number
   priority: Priority
