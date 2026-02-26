@@ -85,7 +85,8 @@ export interface GooglePlaceEnriched {
   types: string[]
   sector: Sector
   google_maps_url: string
-  rating: number | null
+  rating: number | null         // Note moyenne (ex: 4.3)
+  reviews_count: number | null  // Nombre total d'avis Google
 }
 
 // ============================================
@@ -352,6 +353,7 @@ export async function enrichGooglePlace(
     sector: googleTypesToOurSector(details?.types || place.types),
     google_maps_url: details?.url || '',
     rating: details?.rating ?? place.rating ?? null,
+    reviews_count: details?.user_ratings_total ?? place.user_ratings_total ?? null,
   }
 }
 
@@ -438,6 +440,9 @@ export function googlePlaceToCompany(place: GooglePlaceEnriched): {
   source: 'google_places'
   website: string | null
   has_website: boolean
+  google_rating: number | null
+  google_reviews_count: number | null
+  google_maps_url: string | null
   prospect_score: number
   priority: 'hot' | 'warm' | 'cold'
   status: 'new'
@@ -453,6 +458,9 @@ export function googlePlaceToCompany(place: GooglePlaceEnriched): {
     source: 'google_places' as const,
     website: place.website,
     has_website: place.has_website,
+    google_rating: place.rating,
+    google_reviews_count: place.reviews_count,
+    google_maps_url: place.google_maps_url || null,
     // Score initial : sans site = 95 (hot), avec site = 50 (à affiner par l'audit)
     prospect_score: place.has_website ? 50 : 95,
     priority: place.has_website ? 'warm' : 'hot',
