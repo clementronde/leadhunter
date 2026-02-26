@@ -73,10 +73,10 @@ export async function analyzeWebsite(url: string): Promise<{
     // Construire l'URL de l'API
     const apiUrl = new URL('https://www.googleapis.com/pagespeedonline/v5/runPagespeed')
     apiUrl.searchParams.set('url', normalizedUrl)
-    apiUrl.searchParams.set('category', 'performance')
-    apiUrl.searchParams.set('category', 'accessibility')
-    apiUrl.searchParams.set('category', 'best-practices')
-    apiUrl.searchParams.set('category', 'seo')
+    apiUrl.searchParams.append('category', 'performance')
+    apiUrl.searchParams.append('category', 'accessibility')
+    apiUrl.searchParams.append('category', 'best-practices')
+    apiUrl.searchParams.append('category', 'seo')
     apiUrl.searchParams.set('strategy', 'mobile') // Test sur mobile (plus strict)
 
     // Ajouter la clé API si disponible

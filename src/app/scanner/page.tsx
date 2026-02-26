@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Header } from '@/components/layout'
 import {
@@ -33,6 +33,7 @@ import {
   Map,
   Database,
   Zap,
+  KeyRound,
 } from 'lucide-react'
 
 // ============================================
@@ -60,9 +61,34 @@ interface ScanResult {
 // Composant principal
 // ============================================
 
+// ============================================
+// Statut des clés API (via /api/health)
+// ============================================
+
+interface ApiKeyStatus {
+  configured: boolean
+  preview: string | null
+}
+
+interface HealthStatus {
+  keys: {
+    GOOGLE_MAPS_API_KEY: ApiKeyStatus
+    PAGESPEED_API_KEY: ApiKeyStatus
+    INSEE_API_KEY: ApiKeyStatus
+  }
+}
+
 export default function ScannerPage() {
   const router = useRouter()
   const [activeSource, setActiveSource] = useState<ScanSource>('google_maps')
+  const [health, setHealth] = useState<HealthStatus | null>(null)
+
+  useEffect(() => {
+    fetch('/api/health')
+      .then((r) => r.json())
+      .then(setHealth)
+      .catch(() => {/* silencieux si health indispo */})
+  }, [])
 
   // État du scan
   const [isScanning, setIsScanning] = useState(false)
@@ -225,6 +251,40 @@ export default function ScannerPage() {
       />
 
       <div className="p-6 space-y-6">
+
+        {/* Bandeau de statut des clés API */}
+        {health && (
+          <div className={`flex items-start gap-3 p-4 rounded-lg border text-sm ${
+            health.keys.GOOGLE_MAPS_API_KEY.configured
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+              : 'bg-red-50 border-red-200 text-red-800'
+          }`}>
+            <KeyRound className="h-4 w-4 mt-0.5 shrink-0" />
+            <div className="flex-1">
+              {health.keys.GOOGLE_MAPS_API_KEY.configured ? (
+                <p>
+                  <strong>Google Maps API</strong> configurée{' '}
+                  <span className="font-mono text-xs opacity-70">
+                    ({health.keys.GOOGLE_MAPS_API_KEY.preview})
+                  </span>
+                </p>
+              ) : (
+                <div>
+                  <p className="font-semibold">Clé API Google Maps manquante ou invalide</p>
+                  <p className="mt-1 text-xs">
+                    Créez ou vérifiez votre fichier <code className="bg-red-100 px-1 rounded">.env.local</code> à la racine du projet :
+                  </p>
+                  <pre className="mt-2 text-xs bg-red-100 p-2 rounded font-mono">
+                    GOOGLE_MAPS_API_KEY=AIzaSy...votre_clé</pre>
+                  <p className="mt-1 text-xs opacity-80">
+                    Puis redémarrez le serveur : <code className="bg-red-100 px-1 rounded">Ctrl+C</code> → <code className="bg-red-100 px-1 rounded">npm run dev</code>
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Sélecteur de source */}
         <div className="flex gap-3">
           <button

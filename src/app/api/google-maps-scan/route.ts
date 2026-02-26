@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
         // Métadonnées Google Maps supplémentaires
         google_place_id: place.place_id,
         google_maps_url: place.google_maps_url,
-        rating: place.rating,
+        google_rating: place.rating,
       })
     }
 
