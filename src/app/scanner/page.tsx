@@ -12,7 +12,9 @@ import {
   Input,
   Select,
   Badge,
+  UpgradeModal,
 } from '@/components/ui'
+import { usePlan } from '@/hooks/usePlan'
 import { Sector, SearchScan, Company } from '@/types'
 import { scannerApi } from '@/lib/api'
 import {
@@ -80,6 +82,8 @@ interface HealthStatus {
 
 export default function ScannerPage() {
   const router = useRouter()
+  const { isPro, scanCountThisMonth, canScan, canAudit } = usePlan()
+  const [upgradeModal, setUpgradeModal] = useState<'scan_limit' | 'export' | 'audit' | null>(null)
   const [activeSource, setActiveSource] = useState<ScanSource>('google_maps')
   const [health, setHealth] = useState<HealthStatus | null>(null)
 
@@ -137,13 +141,19 @@ export default function ScannerPage() {
   // Handlers
   // ============================================
 
-  const canStartScan =
+  const hasFormInput =
     activeSource === 'insee'
-      ? (location.trim() || codePostal.trim()) && !isScanning
-      : gmQuery.trim() && location.trim() && !isScanning
+      ? !!(location.trim() || codePostal.trim())
+      : !!(gmQuery.trim() && location.trim())
+
+  const canStartScan = hasFormInput && !isScanning
 
   const handleStartScan = async () => {
     if (!canStartScan) return
+    if (!canScan) {
+      setUpgradeModal('scan_limit')
+      return
+    }
 
     setIsScanning(true)
     setScanStatus('scanning')
@@ -261,7 +271,7 @@ export default function ScannerPage() {
         {health && (
           <div className={`flex items-start gap-3 p-4 rounded-lg border text-sm ${
             health.keys.GOOGLE_MAPS_API_KEY.configured
-              ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+              ? 'bg-emerald-500/10 backdrop-blur-sm border-emerald-300/40 text-emerald-800'
               : 'bg-red-50 border-red-200 text-red-800'
           }`}>
             <KeyRound className="h-4 w-4 mt-0.5 shrink-0" />
@@ -290,6 +300,29 @@ export default function ScannerPage() {
           </div>
         )}
 
+        {/* Free user scan counter */}
+        {!isPro && (
+          <div className="flex items-center gap-3 p-3 rounded-lg bg-zinc-100 border border-zinc-200 text-sm">
+            <div className="flex-1">
+              <span className="font-medium text-zinc-700">{scanCountThisMonth} / 50 scans ce mois</span>
+              <div className="mt-1.5 h-1.5 bg-zinc-300 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all ${scanCountThisMonth >= 45 ? 'bg-red-500' : 'bg-amber-500'}`}
+                  style={{ width: `${Math.min((scanCountThisMonth / 50) * 100, 100)}%` }}
+                />
+              </div>
+            </div>
+            {!canScan && (
+              <button
+                onClick={() => setUpgradeModal('scan_limit')}
+                className="text-xs font-semibold text-amber-700 bg-amber-100 px-2.5 py-1 rounded-full hover:bg-amber-200 transition-colors"
+              >
+                Passer à Pro
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Sélecteur de source */}
         <div className="flex gap-3">
           <button
@@ -297,7 +330,7 @@ export default function ScannerPage() {
             className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm transition-all border ${
               activeSource === 'google_maps'
                 ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                : 'bg-white text-zinc-600 border-zinc-200 hover:border-blue-300'
+                : 'bg-white/70 backdrop-blur-sm text-zinc-600 border-zinc-200 hover:border-blue-300'
             }`}
           >
             <Map className="h-4 w-4" />
@@ -314,7 +347,7 @@ export default function ScannerPage() {
             className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm transition-all border ${
               activeSource === 'insee'
                 ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
-                : 'bg-white text-zinc-600 border-zinc-200 hover:border-amber-300'
+                : 'bg-white/70 backdrop-blur-sm text-zinc-600 border-zinc-200 hover:border-amber-300'
             }`}
           >
             <Database className="h-4 w-4" />
@@ -372,23 +405,36 @@ export default function ScannerPage() {
                 </div>
 
                 {/* Option audit PageSpeed */}
-                <div className="flex items-start gap-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <div className={`flex items-start gap-3 p-4 rounded-lg border ${canAudit ? 'bg-blue-50 border-blue-200' : 'bg-zinc-50 border-zinc-200'}`}>
                   <input
                     type="checkbox"
                     id="audit-websites"
-                    checked={gmAuditWebsites}
-                    onChange={(e) => setGmAuditWebsites(e.target.checked)}
-                    className="mt-0.5 h-4 w-4 rounded border-blue-300 text-blue-600"
+                    checked={canAudit && gmAuditWebsites}
+                    disabled={!canAudit}
+                    onChange={(e) => {
+                      if (!canAudit) {
+                        setUpgradeModal('audit')
+                        return
+                      }
+                      setGmAuditWebsites(e.target.checked)
+                    }}
+                    className="mt-0.5 h-4 w-4 rounded border-blue-300 text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
                   />
-                  <div>
+                  <div className="flex-1">
                     <label
                       htmlFor="audit-websites"
-                      className="text-sm font-medium text-blue-900 cursor-pointer flex items-center gap-1.5"
+                      className={`text-sm font-medium cursor-pointer flex items-center gap-1.5 ${canAudit ? 'text-blue-900' : 'text-zinc-500'}`}
+                      onClick={() => { if (!canAudit) setUpgradeModal('audit') }}
                     >
                       <Zap className="h-3.5 w-3.5" />
                       Analyser les performances des sites trouvés (Core Web Vitals)
+                      {!canAudit && (
+                        <span className="ml-1 text-xs font-semibold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
+                          Pro
+                        </span>
+                      )}
                     </label>
-                    <p className="text-xs text-blue-700 mt-0.5">
+                    <p className={`text-xs mt-0.5 ${canAudit ? 'text-blue-700' : 'text-zinc-400'}`}>
                       Lance un audit PageSpeed Insights sur chaque site web détecté. Plus lent mais
                       identifie précisément les sites datés ou peu performants.
                     </p>
@@ -457,10 +503,15 @@ export default function ScannerPage() {
               </div>
             )}
 
-            <div className="flex justify-end mt-6">
+            <div className="flex items-center justify-end gap-3 mt-6">
+              {!canScan && (
+                <p className="text-sm text-amber-600 font-medium">
+                  Limite atteinte — <button onClick={() => setUpgradeModal('scan_limit')} className="underline">Passer à Pro</button>
+                </p>
+              )}
               <Button
                 onClick={handleStartScan}
-                disabled={!canStartScan}
+                disabled={!canStartScan || !canScan}
                 loading={isScanning}
                 className="min-w-[160px]"
               >
@@ -647,6 +698,15 @@ export default function ScannerPage() {
               )}
             </CardContent>
           </Card>
+        )}
+
+        {/* Upgrade Modal */}
+        {upgradeModal && (
+          <UpgradeModal
+            open={!!upgradeModal}
+            onClose={() => setUpgradeModal(null)}
+            reason={upgradeModal}
+          />
         )}
 
         {/* Historique des scans */}

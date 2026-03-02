@@ -1,13 +1,34 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
+import { useAuth } from '@/components/auth/auth-provider'
+import { LandingPage } from '@/components/landing/landing-page'
 import { Header } from '@/components/layout'
 import { StatsGrid, LeadsChart, SectorsChart, RecentLeads } from '@/components/dashboard'
 import { Card, Skeleton } from '@/components/ui'
 import { statsApi, leadsApi } from '@/lib/api'
 import { DashboardStats, Company } from '@/types'
+import { Radar, Target, Flame, Kanban } from 'lucide-react'
 
-export default function DashboardPage() {
+export default function HomePage() {
+  const { user, loading: authLoading } = useAuth()
+
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="h-8 w-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
+
+  if (!user) {
+    return <LandingPage />
+  }
+
+  return <DashboardPage />
+}
+
+function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [leads, setLeads] = useState<Company[]>([])
   const [loading, setLoading] = useState(true)
@@ -23,7 +44,6 @@ export default function DashboardPage() {
         setLeads(leadsData.data)
       } catch (error) {
         console.error('Error loading dashboard:', error)
-        // Show empty state on error
         setStats({
           total_leads: 0,
           leads_without_site: 0,
@@ -123,25 +143,25 @@ export default function DashboardPage() {
             <div className="space-y-3">
               <QuickAction
                 href="/scanner"
-                icon="🔍"
+                icon={<Radar className="h-5 w-5 text-amber-600" />}
                 title="Lancer un scan"
                 description="Scanner une nouvelle zone"
               />
               <QuickAction
                 href="/leads?has_website=false"
-                icon="🎯"
+                icon={<Target className="h-5 w-5 text-blue-600" />}
                 title="Voir les prospects sans site"
                 description={`${stats?.leads_without_site || 0} entreprises`}
               />
               <QuickAction
                 href="/leads?priority=hot"
-                icon="🔥"
+                icon={<Flame className="h-5 w-5 text-red-500" />}
                 title="Leads chauds"
                 description={`${stats?.hot_leads || 0} prospects prioritaires`}
               />
               <QuickAction
                 href="/pipeline"
-                icon="📊"
+                icon={<Kanban className="h-5 w-5 text-violet-600" />}
                 title="Pipeline"
                 description="Gerez vos opportunites"
               />
@@ -155,16 +175,18 @@ export default function DashboardPage() {
 
 function QuickAction({ href, icon, title, description }: {
   href: string
-  icon: string
+  icon: React.ReactNode
   title: string
   description: string
 }) {
   return (
     <a
       href={href}
-      className="flex items-center gap-3 p-3 rounded-lg hover:bg-zinc-50 transition-colors group"
+      className="flex items-center gap-3 p-3 rounded-lg border border-transparent hover:bg-amber-50/60 hover:border-amber-200/50 transition-colors group"
     >
-      <span className="text-2xl">{icon}</span>
+      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-100 group-hover:bg-amber-100/60 transition-colors shrink-0">
+        {icon}
+      </div>
       <div>
         <p className="font-medium text-zinc-900 group-hover:text-amber-600 transition-colors">
           {title}

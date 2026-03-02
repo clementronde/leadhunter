@@ -17,9 +17,9 @@ export function Header({ title, subtitle, action }: HeaderProps) {
   const { sidebarOpen, setShowScanModal } = useUIStore()
   
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-zinc-200 bg-white/80 backdrop-blur-sm px-6">
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-white/50 bg-white/60 backdrop-blur-xl px-6">
       <div>
-        <h1 className="text-xl font-semibold text-zinc-900">{title}</h1>
+        <h1 className="text-xl font-bold text-zinc-900">{title}</h1>
         {subtitle && (
           <p className="text-sm text-zinc-500">{subtitle}</p>
         )}

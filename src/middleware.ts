@@ -26,9 +26,11 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   const isLoginPage = request.nextUrl.pathname === '/login'
+  const isRootPage = request.nextUrl.pathname === '/'
+  const isPricingPage = request.nextUrl.pathname === '/pricing'
 
-  // Not logged in and not on login page -> redirect to login
-  if (!user && !isLoginPage) {
+  // Not logged in and not on login/landing/pricing page -> redirect to login
+  if (!user && !isLoginPage && !isRootPage && !isPricingPage) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)

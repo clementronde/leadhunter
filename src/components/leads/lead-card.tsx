@@ -42,9 +42,9 @@ export function LeadCard({ lead, onStatusChange }: LeadCardProps) {
   return (
     <Card className="overflow-hidden hover:shadow-md transition-shadow">
       {/* Score bar */}
-      <div className="h-1.5 w-full bg-zinc-100">
+      <div className="h-1.5 w-full bg-zinc-100/80">
         <div
-          className={`h-full transition-all ${getScoreBackground(lead.prospect_score)}`}
+          className="h-full transition-all bg-gradient-to-r from-amber-400 to-orange-500"
           style={{ width: `${lead.prospect_score}%` }}
         />
       </div>
@@ -100,7 +100,7 @@ export function LeadCard({ lead, onStatusChange }: LeadCardProps) {
 
         {/* Note Google Maps */}
         {hasGoogleData && (
-          <div className="flex items-center gap-4 mb-4 p-3 bg-blue-50 rounded-lg">
+          <div className="flex items-center gap-4 mb-4 p-3 bg-blue-50/70 backdrop-blur-sm rounded-lg">
             {lead.google_rating !== null && lead.google_rating !== undefined && (
               <div className="flex items-center gap-1.5">
                 <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
@@ -163,7 +163,7 @@ export function LeadCard({ lead, onStatusChange }: LeadCardProps) {
 
         {/* Scores Lighthouse (si audit disponible) */}
         {audit && (
-          <div className="grid grid-cols-4 gap-2 p-3 bg-zinc-50 rounded-lg mb-4">
+          <div className="grid grid-cols-4 gap-2 p-3 bg-zinc-50/70 backdrop-blur-sm rounded-lg mb-4">
             <div className="text-center">
               <Gauge className="h-4 w-4 mx-auto text-zinc-400 mb-1" />
               <p className={`text-sm font-semibold ${getLighthouseColor(audit.performance_score)}`}>

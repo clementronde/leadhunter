@@ -25,7 +25,11 @@ export default function LoginPage() {
     if (mode === 'login') {
       const { error } = await signIn(email, password)
       if (error) {
-        setError(error)
+        const isInvalidCredentials = error.toLowerCase().includes('invalid') || error.toLowerCase().includes('credentials')
+        setError(isInvalidCredentials
+          ? "Email ou mot de passe incorrect. Pas encore de compte ? Cliquez sur l'onglet « Créer un compte »."
+          : error
+        )
       } else {
         router.push('/')
       }
@@ -64,6 +68,32 @@ export default function LoginPage() {
 
         {/* Card */}
         <div className="bg-white rounded-2xl shadow-sm border border-zinc-200 p-8">
+          {/* Mode tabs */}
+          <div className="flex rounded-lg bg-zinc-100 p-1 mb-6">
+            <button
+              type="button"
+              onClick={() => { setMode('login'); setError(null); setMessage(null) }}
+              className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
+                mode === 'login'
+                  ? 'bg-white text-zinc-900 shadow-sm'
+                  : 'text-zinc-500 hover:text-zinc-700'
+              }`}
+            >
+              Se connecter
+            </button>
+            <button
+              type="button"
+              onClick={() => { setMode('register'); setError(null); setMessage(null) }}
+              className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
+                mode === 'register'
+                  ? 'bg-white text-zinc-900 shadow-sm'
+                  : 'text-zinc-500 hover:text-zinc-700'
+              }`}
+            >
+              Créer un compte
+            </button>
+          </div>
+
           {/* Google OAuth */}
           <button
             onClick={handleGoogleSignIn}
@@ -139,15 +169,6 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <p className="text-center text-sm text-zinc-500 mt-6">
-            {mode === 'login' ? "Pas encore de compte ?" : 'Deja un compte ?'}{' '}
-            <button
-              onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setError(null); setMessage(null) }}
-              className="text-amber-600 hover:text-amber-700 font-medium"
-            >
-              {mode === 'login' ? "S'inscrire" : 'Se connecter'}
-            </button>
-          </p>
         </div>
       </div>
     </div>

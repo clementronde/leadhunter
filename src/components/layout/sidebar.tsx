@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { useUIStore } from '@/lib/store'
 import { useAuth } from '@/components/auth/auth-provider'
@@ -33,12 +34,12 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        'fixed left-0 top-0 z-40 h-screen bg-zinc-950 transition-all duration-300 ease-in-out',
+        'fixed left-0 top-0 z-40 h-screen bg-zinc-950/90 backdrop-blur-xl border-r border-zinc-800/40 transition-all duration-300 ease-in-out',
         sidebarOpen ? 'w-64' : 'w-20'
       )}
     >
       {/* Logo */}
-      <div className="flex h-16 items-center justify-between px-4 border-b border-zinc-800">
+      <div className="flex h-16 items-center justify-between px-4 border-b border-zinc-800/40">
         <Link href="/" className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-orange-600">
             <Target className="h-6 w-6 text-white" />
@@ -52,7 +53,7 @@ export function Sidebar() {
 
         <button
           onClick={toggleSidebar}
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors"
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:bg-white/5 hover:text-white transition-colors"
         >
           {sidebarOpen ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
         </button>
@@ -69,13 +70,20 @@ export function Sidebar() {
               key={item.name}
               href={item.href}
               className={cn(
-                'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
+                'relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
                 isActive
-                  ? 'bg-amber-500/10 text-amber-500'
-                  : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-white'
+                  ? 'bg-amber-500/15 backdrop-blur-sm text-amber-500'
+                  : 'text-zinc-400 hover:bg-white/5 hover:text-white'
               )}
               title={!sidebarOpen ? item.name : undefined}
             >
+              {isActive && (
+                <motion.div
+                  layoutId="sidebar-active"
+                  className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-amber-500 rounded-full"
+                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                />
+              )}
               <item.icon className={cn('h-5 w-5 flex-shrink-0', isActive && 'text-amber-500')} />
               {sidebarOpen && <span>{item.name}</span>}
             </Link>
@@ -84,7 +92,7 @@ export function Sidebar() {
       </nav>
 
       {/* Footer with user info */}
-      <div className="absolute bottom-0 left-0 right-0 border-t border-zinc-800 p-4">
+      <div className="absolute bottom-0 left-0 right-0 border-t border-zinc-800/40 p-4">
         <div className={cn(
           'flex items-center gap-3',
           !sidebarOpen && 'justify-center'

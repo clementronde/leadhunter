@@ -4,10 +4,11 @@ import { useEffect, useState, useCallback, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Header } from '@/components/layout'
 import { LeadsTable, LeadsFilters, LeadCard } from '@/components/leads'
-import { Card, Button, Skeleton } from '@/components/ui'
+import { Card, Button, Skeleton, UpgradeModal } from '@/components/ui'
 import { leadsApi } from '@/lib/api'
 import { exportLeadsToXLSX } from '@/lib/export'
 import { Company, LeadFilters, LeadStatus } from '@/types'
+import { usePlan } from '@/hooks/usePlan'
 import {
   LayoutGrid,
   List,
@@ -19,6 +20,8 @@ import {
 
 function LeadsContent() {
   const searchParams = useSearchParams()
+  const { canExport } = usePlan()
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
 
   const [leads, setLeads] = useState<Company[]>([])
   const [loading, setLoading] = useState(true)
@@ -87,6 +90,10 @@ function LeadsContent() {
   }
 
   const handleExportXLSX = async () => {
+    if (!canExport) {
+      setShowUpgradeModal(true)
+      return
+    }
     if (leads.length === 0) return
     setExporting(true)
     try {
@@ -100,6 +107,12 @@ function LeadsContent() {
 
   return (
     <div className="p-6 space-y-6">
+      <UpgradeModal
+        open={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        reason="export"
+      />
+
       {/* Filters */}
       <Card className="p-4">
         <LeadsFilters filters={filters} onChange={setFilters} onReset={() => setFilters({})} />
