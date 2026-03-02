@@ -8,7 +8,6 @@ import { Card, Button, Skeleton } from '@/components/ui'
 import { leadsApi } from '@/lib/api'
 import { exportLeadsToXLSX } from '@/lib/export'
 import { Company, LeadFilters, LeadStatus } from '@/types'
-import { mockLeads } from '@/lib/mock-data'
 import {
   LayoutGrid,
   List,
@@ -32,7 +31,6 @@ function LeadsContent() {
     totalPages: 0,
   })
 
-  // Initialize filters from URL params
   const [filters, setFilters] = useState<LeadFilters>(() => {
     const initial: LeadFilters = {}
     const status = searchParams.get('status')
@@ -62,24 +60,8 @@ function LeadsContent() {
         })
       } catch (error) {
         console.error('Error loading leads:', error)
-        // Fallback to mock data with filtering
-        let filtered = [...mockLeads]
-        if (filters.search) {
-          const s = filters.search.toLowerCase()
-          filtered = filtered.filter((l) => l.name.toLowerCase().includes(s))
-        }
-        if (filters.status) filtered = filtered.filter((l) => l.status === filters.status)
-        if (filters.priority) filtered = filtered.filter((l) => l.priority === filters.priority)
-        if (filters.has_website !== undefined)
-          filtered = filtered.filter((l) => l.has_website === filters.has_website)
-
-        setLeads(filtered)
-        setPagination({
-          page: 1,
-          perPage: 20,
-          total: filtered.length,
-          totalPages: Math.ceil(filtered.length / 20),
-        })
+        setLeads([])
+        setPagination({ page: 1, perPage: 20, total: 0, totalPages: 0 })
       } finally {
         setLoading(false)
       }
@@ -123,7 +105,7 @@ function LeadsContent() {
         <LeadsFilters filters={filters} onChange={setFilters} onReset={() => setFilters({})} />
       </Card>
 
-      {/* Toolbar : résultats + export + vue */}
+      {/* Toolbar */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <p className="text-sm text-zinc-500">
           {loading ? (
@@ -131,13 +113,12 @@ function LeadsContent() {
           ) : (
             <>
               <span className="font-semibold text-zinc-900">{leads.length}</span> sur{' '}
-              <span className="font-semibold text-zinc-900">{pagination.total}</span> résultats
+              <span className="font-semibold text-zinc-900">{pagination.total}</span> resultats
             </>
           )}
         </p>
 
         <div className="flex items-center gap-2">
-          {/* Bouton Export XLSX */}
           <Button
             variant="outline"
             size="sm"
@@ -153,7 +134,6 @@ function LeadsContent() {
             {exporting ? 'Export...' : `Exporter XLSX (${leads.length})`}
           </Button>
 
-          {/* Toggle vue table / cartes */}
           <div className="flex items-center gap-0.5 bg-zinc-100 p-1 rounded-lg">
             <button
               onClick={() => setViewMode('table')}
@@ -210,6 +190,15 @@ function LeadsContent() {
             ))}
           </div>
         )
+      ) : leads.length === 0 ? (
+        <Card className="p-12">
+          <div className="text-center">
+            <p className="text-zinc-400 text-lg mb-2">Aucun lead trouve</p>
+            <p className="text-zinc-500 text-sm">
+              Lancez un scan depuis le <a href="/scanner" className="text-amber-600 hover:underline">Scanner</a> pour trouver des prospects.
+            </p>
+          </div>
+        </Card>
       ) : viewMode === 'table' ? (
         <Card>
           <LeadsTable leads={leads} onStatusChange={handleStatusChange} />
@@ -237,7 +226,7 @@ function LeadsContent() {
               disabled={pagination.page === 1}
             >
               <ChevronLeft className="h-4 w-4" />
-              Précédent
+              Precedent
             </Button>
 
             <div className="flex items-center gap-1">
@@ -280,7 +269,7 @@ export default function LeadsPage() {
     <div className="min-h-screen">
       <Header
         title="Leads"
-        subtitle="Gérez vos prospects et exportez vos données"
+        subtitle="Gerez vos prospects et exportez vos donnees"
         action={{
           label: 'Ajouter',
           onClick: () => console.log('Add lead'),

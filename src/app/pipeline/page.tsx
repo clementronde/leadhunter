@@ -6,7 +6,6 @@ import { Header } from '@/components/layout'
 import { Card, Badge, Button, Skeleton } from '@/components/ui'
 import { leadsApi } from '@/lib/api'
 import { Company, LeadStatus } from '@/types'
-import { mockLeads } from '@/lib/mock-data'
 import {
   statusLabels,
   statusColors,
@@ -47,7 +46,7 @@ export default function PipelinePage() {
         setLeads(response.data)
       } catch (error) {
         console.error('Error loading leads:', error)
-        setLeads(mockLeads)
+        setLeads([])
       } finally {
         setLoading(false)
       }

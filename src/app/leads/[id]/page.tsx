@@ -7,7 +7,6 @@ import { Header } from '@/components/layout'
 import { Card, CardHeader, CardTitle, CardContent, Badge, Button, Input, Skeleton } from '@/components/ui'
 import { leadsApi } from '@/lib/api'
 import { Company, LeadStatus, Note } from '@/types'
-import { mockLeads } from '@/lib/mock-data'
 import {
   priorityLabels,
   priorityColors,
@@ -57,9 +56,7 @@ export default function LeadDetailPage() {
         setLead(data)
       } catch (error) {
         console.error('Error loading lead:', error)
-        // Fallback to mock
-        const mockLead = mockLeads.find(l => l.id === params.id)
-        setLead(mockLead || null)
+        setLead(null)
       } finally {
         setLoading(false)
       }

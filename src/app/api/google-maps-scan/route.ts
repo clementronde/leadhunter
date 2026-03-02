@@ -1,31 +1,43 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
 import { searchAndEnrichGooglePlaces, googlePlaceToCompany } from '@/lib/google-maps'
 import { analyzeWebsite, calculateProspectScoreFromAudit } from '@/lib/pagespeed'
 import { getPriorityFromScore } from '@/lib/utils'
 
-export const maxDuration = 60 // Timeout 60s pour Vercel
+export const maxDuration = 60
 
-/**
- * POST /api/google-maps-scan
- * Lance un scan Google Maps pour trouver des entreprises d'une ville/zone
- *
- * Body attendu :
- * {
- *   query: string,        // Type d'entreprise (ex: "restaurants", "coiffeurs")
- *   location: string,     // Ville ou zone (ex: "Boulogne-Billancourt", "Paris 15")
- *   maxResults?: number,  // Nombre max de résultats (défaut: 20, max: 60)
- *   auditWebsites?: boolean // Lancer un audit PageSpeed sur les sites trouvés (défaut: false)
- * }
- */
+function createSupabaseFromRequest(request: NextRequest) {
+  const response = NextResponse.next({ request })
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options)
+          )
+        },
+      },
+    }
+  )
+}
+
 export async function POST(request: NextRequest) {
   try {
+    const supabase = createSupabaseFromRequest(request)
+
+    // Get authenticated user
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Non authentifie' }, { status: 401 })
+    }
+
     const body = await request.json()
-    const {
-      query,
-      location,
-      maxResults = 20,
-      auditWebsites = false,
-    } = body
+    const { query, location, maxResults = 20, auditWebsites = false } = body
 
     if (!query || !query.trim()) {
       return NextResponse.json(
@@ -41,24 +53,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Vérifier la clé API
     if (!process.env.GOOGLE_MAPS_API_KEY) {
       return NextResponse.json(
-        {
-          error: 'GOOGLE_MAPS_API_KEY non configurée',
-          details: 'Ajoutez votre clé API Google Maps dans .env.local',
-        },
+        { error: 'GOOGLE_MAPS_API_KEY non configuree', details: 'Ajoutez votre cle API Google Maps dans .env.local' },
         { status: 500 }
       )
     }
 
-    const limitedMax = Math.min(maxResults, 60) // Google Places limite à 60 résultats max
+    const limitedMax = Math.min(maxResults, 60)
 
-    console.log(
-      `🗺️ Démarrage scan Google Maps: "${query}" à "${location}" (max ${limitedMax})`
-    )
+    console.log(`🗺️ Demarrage scan Google Maps: "${query}" a "${location}" (max ${limitedMax}) [user: ${user.id}]`)
 
-    // 1. Rechercher et enrichir les lieux via Google Places API
+    // 1. Search Google Places
     const { places, total, withWebsite, withoutWebsite } =
       await searchAndEnrichGooglePlaces({
         query: query.trim(),
@@ -66,11 +72,9 @@ export async function POST(request: NextRequest) {
         maxResults: limitedMax,
       })
 
-    console.log(
-      `📊 ${total} lieux trouvés: ${withWebsite} avec site, ${withoutWebsite} sans site`
-    )
+    console.log(`📊 ${total} lieux trouves: ${withWebsite} avec site, ${withoutWebsite} sans site`)
 
-    // 2. Convertir en format Company et optionnellement auditer les sites
+    // 2. Convert to Company and optionally audit
     const companies = []
     let needingRefonte = 0
     let auditedCount = 0
@@ -78,7 +82,6 @@ export async function POST(request: NextRequest) {
     for (const place of places) {
       const company = googlePlaceToCompany(place)
 
-      // 3. Audit PageSpeed si demandé et si le site existe
       if (auditWebsites && place.website) {
         try {
           console.log(`🔍 Audit ${place.website}...`)
@@ -89,7 +92,6 @@ export async function POST(request: NextRequest) {
             company.prospect_score = prospectScore
             company.priority = getPriorityFromScore(prospectScore)
 
-            // Détecter les sites "datés ou peu performants"
             const isUnderperforming =
               (auditResult.data.performance_score !== null &&
                 auditResult.data.performance_score !== undefined &&
@@ -98,33 +100,100 @@ export async function POST(request: NextRequest) {
               !auditResult.data.is_mobile_friendly ||
               auditResult.data.is_outdated
 
-            if (isUnderperforming) {
-              needingRefonte++
-            }
-
+            if (isUnderperforming) needingRefonte++
             auditedCount++
           }
         } catch (auditErr) {
-          console.warn(`Audit échoué pour ${place.website}:`, auditErr)
-          // On continue même si l'audit échoue
+          console.warn(`Audit echoue pour ${place.website}:`, auditErr)
         }
 
-        // Pause entre les audits pour ne pas surcharger
         await new Promise((resolve) => setTimeout(resolve, 500))
       }
 
       companies.push({
         ...company,
-        // Métadonnées Google Maps supplémentaires
         google_place_id: place.place_id,
         google_maps_url: place.google_maps_url,
-        rating: place.rating,
+        google_rating: place.rating,
       })
     }
 
-    console.log(
-      `✅ Scan Google Maps terminé: ${companies.length} entreprises, ${withoutWebsite} sans site, ${needingRefonte} à refaire`
-    )
+    // 3. Save companies to Supabase with user_id
+    let savedCount = 0
+    for (const company of companies) {
+      try {
+        const { data: existing } = await supabase
+          .from('companies')
+          .select('id')
+          .eq('name', company.name)
+          .eq('city', company.city)
+          .eq('user_id', user.id)
+          .maybeSingle()
+
+        if (existing) {
+          await supabase
+            .from('companies')
+            .update({
+              phone: company.phone,
+              website: company.website,
+              has_website: company.has_website,
+              google_rating: company.google_rating,
+              google_reviews_count: company.google_reviews_count,
+              google_maps_url: company.google_maps_url || (company.google_place_id ? `https://www.google.com/maps/place/?q=place_id:${company.google_place_id}` : null),
+              prospect_score: company.prospect_score,
+              priority: company.priority,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', existing.id)
+          savedCount++
+        } else {
+          const { error: insertError } = await supabase
+            .from('companies')
+            .insert({
+              user_id: user.id,
+              name: company.name,
+              address: company.address,
+              city: company.city,
+              postal_code: company.postal_code,
+              phone: company.phone,
+              coordinates: company.coordinates,
+              sector: company.sector,
+              source: company.source,
+              website: company.website,
+              has_website: company.has_website,
+              google_rating: company.google_rating,
+              google_reviews_count: company.google_reviews_count,
+              google_maps_url: company.google_maps_url,
+              prospect_score: company.prospect_score,
+              priority: company.priority,
+              status: 'new',
+            })
+
+          if (insertError) {
+            console.warn(`Erreur insertion ${company.name}:`, insertError.message)
+          } else {
+            savedCount++
+          }
+        }
+      } catch (saveErr) {
+        console.warn(`Erreur sauvegarde ${company.name}:`, saveErr)
+      }
+    }
+
+    // 4. Save scan record
+    await supabase.from('search_scans').insert({
+      user_id: user.id,
+      query: `${query} - ${location}`,
+      location: { lat: 0, lng: 0, radius: 0 },
+      status: 'completed',
+      progress: 100,
+      companies_found: companies.length,
+      companies_without_site: withoutWebsite,
+      companies_needing_refonte: needingRefonte,
+      completed_at: new Date().toISOString(),
+    })
+
+    console.log(`💾 ${savedCount}/${companies.length} entreprises sauvegardees [user: ${user.id}]`)
 
     return NextResponse.json({
       success: true,
@@ -135,6 +204,7 @@ export async function POST(request: NextRequest) {
         with_site: withWebsite,
         needing_refonte: needingRefonte,
         audited: auditedCount,
+        saved: savedCount,
         companies,
       },
     })
@@ -144,41 +214,26 @@ export async function POST(request: NextRequest) {
     if (error instanceof Error) {
       if (error.message.includes('GOOGLE_MAPS_API_KEY')) {
         return NextResponse.json(
-          {
-            error: 'Clé API Google Maps manquante',
-            details: error.message,
-          },
+          { error: 'Cle API Google Maps manquante', details: error.message },
           { status: 500 }
         )
       }
-
       if (error.message.includes('REQUEST_DENIED') || error.message.includes('invalide')) {
         return NextResponse.json(
-          {
-            error: 'Clé API Google Maps invalide ou non autorisée',
-            details:
-              'Vérifiez que votre clé API a bien accès à "Places API" dans Google Cloud Console',
-          },
+          { error: 'Cle API Google Maps invalide ou non autorisee', details: 'Verifiez que votre cle API a bien acces a "Places API" dans Google Cloud Console' },
           { status: 403 }
         )
       }
-
       if (error.message.includes('OVER_QUERY_LIMIT')) {
         return NextResponse.json(
-          {
-            error: 'Quota Google Places API dépassé',
-            details: 'Vérifiez votre facturation Google Cloud ou attendez la remise à zéro du quota',
-          },
+          { error: 'Quota Google Places API depasse', details: 'Verifiez votre facturation Google Cloud ou attendez la remise a zero du quota' },
           { status: 429 }
         )
       }
     }
 
     return NextResponse.json(
-      {
-        error: 'Erreur lors du scan Google Maps',
-        details: error instanceof Error ? error.message : 'Erreur inconnue',
-      },
+      { error: 'Erreur lors du scan Google Maps', details: error instanceof Error ? error.message : 'Erreur inconnue' },
       { status: 500 }
     )
   }
