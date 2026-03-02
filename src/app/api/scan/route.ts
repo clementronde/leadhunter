@@ -1,16 +1,41 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
 import { searchEtablissements, etablissementToCompany } from '@/lib/insee'
 import { checkWebsiteExists, findWebsiteForCompany, analyzeWebsite, calculateProspectScoreFromAudit } from '@/lib/pagespeed'
 import { getPriorityFromScore } from '@/lib/utils'
 
-export const maxDuration = 60 // Timeout de 60 secondes pour Vercel
+export const maxDuration = 60
 
-/**
- * POST /api/scan
- * Lance un scan pour trouver des entreprises
- */
+function createSupabaseFromRequest(request: NextRequest) {
+  const response = NextResponse.next({ request })
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options)
+          )
+        },
+      },
+    }
+  )
+}
+
 export async function POST(request: NextRequest) {
   try {
+    const supabase = createSupabaseFromRequest(request)
+
+    // Get authenticated user
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Non authentifie' }, { status: 401 })
+    }
+
     const body = await request.json()
     const { codePostal, commune, activite, nombreResultats = 50 } = body
 
@@ -21,9 +46,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 1. Rechercher les entreprises via INSEE
-    console.log(`🔍 Recherche INSEE: ${commune || codePostal}, activité: ${activite || 'toutes'}`)
-    
+    console.log(`🔍 Recherche INSEE: ${commune || codePostal}, activite: ${activite || 'toutes'} [user: ${user.id}]`)
+
     const { total, etablissements } = await searchEtablissements({
       codePostal,
       commune,
@@ -31,9 +55,8 @@ export async function POST(request: NextRequest) {
       nombreResultats
     })
 
-    console.log(`📊 ${total} établissements trouvés, traitement de ${etablissements.length}`)
+    console.log(`📊 ${total} etablissements trouves, traitement de ${etablissements.length}`)
 
-    // 2. Convertir et enrichir chaque établissement
     const companies = []
     let withoutSite = 0
     let needingRefonte = 0
@@ -41,39 +64,71 @@ export async function POST(request: NextRequest) {
     for (const etab of etablissements) {
       const company = etablissementToCompany(etab)
 
-      // 3. Chercher si l'entreprise a un site web
       const website = await findWebsiteForCompany(company.name, company.city)
 
       if (website) {
         company.website = website
         company.has_website = true
 
-        // 4. Auditer le site (optionnel, peut être fait en batch plus tard)
-        // Pour le scan initial, on fait juste une vérification rapide
         const checkResult = await checkWebsiteExists(website)
-        
+
         if (checkResult.exists) {
-          // Score par défaut pour les sites existants (sera affiné avec l'audit complet)
           company.prospect_score = checkResult.isHttps ? 50 : 65
           company.priority = getPriorityFromScore(company.prospect_score)
-          
-          // Compter comme "besoin refonte" si pas HTTPS
+
           if (!checkResult.isHttps) {
             needingRefonte++
           }
         }
       } else {
-        // Pas de site = prospect idéal
         withoutSite++
       }
 
       companies.push(company)
-
-      // Pause pour ne pas surcharger les APIs
       await new Promise(resolve => setTimeout(resolve, 100))
     }
 
-    console.log(`✅ Scan terminé: ${companies.length} entreprises, ${withoutSite} sans site, ${needingRefonte} à refaire`)
+    // Save companies with user_id
+    let savedCount = 0
+    for (const company of companies) {
+      try {
+        const { error: insertError } = await supabase
+          .from('companies')
+          .insert({
+            user_id: user.id,
+            name: company.name,
+            address: company.address,
+            city: company.city,
+            postal_code: company.postal_code,
+            sector: company.sector,
+            source: company.source,
+            website: company.website,
+            has_website: company.has_website,
+            prospect_score: company.prospect_score,
+            priority: company.priority,
+            status: 'new',
+          })
+
+        if (!insertError) savedCount++
+      } catch (saveErr) {
+        console.warn(`Erreur sauvegarde ${company.name}:`, saveErr)
+      }
+    }
+
+    // Save scan record
+    await supabase.from('search_scans').insert({
+      user_id: user.id,
+      query: `${activite || 'Entreprises'} - ${commune || codePostal}`,
+      location: { lat: 0, lng: 0, radius: 0 },
+      status: 'completed',
+      progress: 100,
+      companies_found: companies.length,
+      companies_without_site: withoutSite,
+      companies_needing_refonte: needingRefonte,
+      completed_at: new Date().toISOString(),
+    })
+
+    console.log(`✅ Scan termine: ${companies.length} entreprises, ${withoutSite} sans site, ${needingRefonte} a refaire [user: ${user.id}]`)
 
     return NextResponse.json({
       success: true,
@@ -88,14 +143,10 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Scan error:', error)
-    
-    // Vérifier si c'est une erreur de credentials INSEE
+
     if (error instanceof Error && error.message.includes('INSEE credentials')) {
       return NextResponse.json(
-        { 
-          error: 'API INSEE non configurée',
-          details: 'Ajoutez INSEE_CLIENT_ID et INSEE_CLIENT_SECRET dans .env.local'
-        },
+        { error: 'API INSEE non configuree', details: 'Ajoutez INSEE_CLIENT_ID et INSEE_CLIENT_SECRET dans .env.local' },
         { status: 500 }
       )
     }

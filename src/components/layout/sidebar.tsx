@@ -4,16 +4,17 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { useUIStore } from '@/lib/store'
-import { 
-  LayoutDashboard, 
-  Users, 
-  Radar, 
-  Kanban, 
-  Settings, 
+import { useAuth } from '@/components/auth/auth-provider'
+import {
+  LayoutDashboard,
+  Users,
+  Radar,
+  Kanban,
+  Settings,
   ChevronLeft,
   ChevronRight,
   Target,
-  Building2
+  LogOut,
 } from 'lucide-react'
 
 const navigation = [
@@ -21,13 +22,14 @@ const navigation = [
   { name: 'Leads', href: '/leads', icon: Users },
   { name: 'Scanner', href: '/scanner', icon: Radar },
   { name: 'Pipeline', href: '/pipeline', icon: Kanban },
-  { name: 'Paramètres', href: '/settings', icon: Settings },
+  { name: 'Parametres', href: '/settings', icon: Settings },
 ]
 
 export function Sidebar() {
   const pathname = usePathname()
   const { sidebarOpen, toggleSidebar } = useUIStore()
-  
+  const { user, signOut } = useAuth()
+
   return (
     <aside
       className={cn(
@@ -47,7 +49,7 @@ export function Sidebar() {
             </span>
           )}
         </Link>
-        
+
         <button
           onClick={toggleSidebar}
           className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors"
@@ -55,13 +57,13 @@ export function Sidebar() {
           {sidebarOpen ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
         </button>
       </div>
-      
+
       {/* Navigation */}
       <nav className="flex flex-col gap-1 p-3 mt-4">
         {navigation.map((item) => {
-          const isActive = pathname === item.href || 
+          const isActive = pathname === item.href ||
             (item.href !== '/' && pathname.startsWith(item.href))
-          
+
           return (
             <Link
               key={item.name}
@@ -80,21 +82,38 @@ export function Sidebar() {
           )
         })}
       </nav>
-      
-      {/* Footer */}
+
+      {/* Footer with user info */}
       <div className="absolute bottom-0 left-0 right-0 border-t border-zinc-800 p-4">
         <div className={cn(
           'flex items-center gap-3',
           !sidebarOpen && 'justify-center'
         )}>
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-zinc-800">
-            <Building2 className="h-4 w-4 text-zinc-400" />
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-500/20 text-amber-500 text-xs font-bold flex-shrink-0">
+            {user?.email?.charAt(0).toUpperCase() || '?'}
           </div>
           {sidebarOpen && (
-            <div className="flex flex-col">
-              <span className="text-sm font-medium text-white">Artichaud Studio</span>
-              <span className="text-xs text-zinc-500">Mode développement</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-white truncate">
+                {user?.email || 'Utilisateur'}
+              </p>
+              <button
+                onClick={signOut}
+                className="flex items-center gap-1 text-xs text-zinc-500 hover:text-red-400 transition-colors"
+              >
+                <LogOut className="h-3 w-3" />
+                Deconnexion
+              </button>
             </div>
+          )}
+          {!sidebarOpen && (
+            <button
+              onClick={signOut}
+              className="absolute -right-0 bottom-14 flex h-8 w-8 items-center justify-center"
+              title="Deconnexion"
+            >
+              <LogOut className="h-4 w-4 text-zinc-500 hover:text-red-400 transition-colors" />
+            </button>
           )}
         </div>
       </div>

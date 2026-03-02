@@ -13,8 +13,8 @@ import {
   Select,
   Badge,
 } from '@/components/ui'
-import { mockScans } from '@/lib/mock-data'
 import { Sector, SearchScan, Company } from '@/types'
+import { scannerApi } from '@/lib/api'
 import {
   Radar,
   MapPin,
@@ -95,7 +95,12 @@ export default function ScannerPage() {
   const [scanStatus, setScanStatus] = useState<'idle' | 'scanning' | 'completed' | 'error'>('idle')
   const [scanResult, setScanResult] = useState<ScanResult | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [scans, setScans] = useState<SearchScan[]>(mockScans)
+  const [scans, setScans] = useState<SearchScan[]>([])
+
+  // Load scan history from Supabase on mount
+  useEffect(() => {
+    scannerApi.getAll().then(setScans).catch(console.error)
+  }, [])
 
   // Champs communs
   const [location, setLocation] = useState('')

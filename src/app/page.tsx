@@ -6,7 +6,6 @@ import { StatsGrid, LeadsChart, SectorsChart, RecentLeads } from '@/components/d
 import { Card, Skeleton } from '@/components/ui'
 import { statsApi, leadsApi } from '@/lib/api'
 import { DashboardStats, Company } from '@/types'
-import { mockDashboardStats, mockLeads } from '@/lib/mock-data'
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
@@ -16,7 +15,6 @@ export default function DashboardPage() {
   useEffect(() => {
     async function loadData() {
       try {
-        // Load stats and leads in parallel
         const [statsData, leadsData] = await Promise.all([
           statsApi.getStats(),
           leadsApi.getAll({}, 1, 10)
@@ -25,24 +23,34 @@ export default function DashboardPage() {
         setLeads(leadsData.data)
       } catch (error) {
         console.error('Error loading dashboard:', error)
-        // Fallback to mock data
-        setStats(mockDashboardStats)
-        setLeads(mockLeads)
+        // Show empty state on error
+        setStats({
+          total_leads: 0,
+          leads_without_site: 0,
+          leads_needing_refonte: 0,
+          hot_leads: 0,
+          warm_leads: 0,
+          cold_leads: 0,
+          by_status: { new: 0, contacted: 0, meeting: 0, proposal: 0, won: 0, lost: 0 },
+          trend: [],
+          top_sectors: [],
+        })
+        setLeads([])
       } finally {
         setLoading(false)
       }
     }
-    
+
     loadData()
   }, [])
 
   return (
     <div className="min-h-screen">
-      <Header 
-        title="Dashboard" 
+      <Header
+        title="Dashboard"
         subtitle="Vue d'ensemble de votre prospection"
       />
-      
+
       <div className="p-6 space-y-6">
         {/* Stats Grid */}
         {loading ? (
@@ -63,7 +71,7 @@ export default function DashboardPage() {
             hotLeads={stats.hot_leads}
           />
         )}
-        
+
         {/* Charts Row */}
         <div className="grid gap-6 lg:grid-cols-2">
           {loading ? (
@@ -84,7 +92,7 @@ export default function DashboardPage() {
             </>
           )}
         </div>
-        
+
         {/* Recent Leads */}
         <div className="grid gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2">
@@ -108,7 +116,7 @@ export default function DashboardPage() {
               <RecentLeads leads={leads} />
             )}
           </div>
-          
+
           {/* Quick Actions */}
           <Card className="p-6">
             <h3 className="font-semibold text-lg mb-4">Actions rapides</h3>
@@ -135,7 +143,7 @@ export default function DashboardPage() {
                 href="/pipeline"
                 icon="📊"
                 title="Pipeline"
-                description="Gérer vos opportunités"
+                description="Gerez vos opportunites"
               />
             </div>
           </Card>
