@@ -1,7 +1,8 @@
 'use client'
 
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { motion } from 'framer-motion'
+import { motion, useInView, animate } from 'framer-motion'
 import {
   Target,
   MapPin,
@@ -15,9 +16,55 @@ import {
   Star,
 } from 'lucide-react'
 
+/* ─── Animation helpers ──────────────────────────────────────────────────── */
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 24 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' } },
+}
+
+const stagger = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.1 } },
+}
+
+function AnimatedCounter({
+  target,
+  decimals = 0,
+  suffix = '',
+}: {
+  target: number
+  decimals?: number
+  suffix?: string
+}) {
+  const ref = useRef<HTMLSpanElement>(null)
+  const inView = useInView(ref, { once: true })
+  const [value, setValue] = useState(0)
+
+  useEffect(() => {
+    if (!inView) return
+    const ctrl = animate(0, target, {
+      duration: 1.6,
+      ease: [0.16, 1, 0.3, 1],
+      onUpdate: (v) =>
+        setValue(decimals ? Math.round(v * 10) / 10 : Math.round(v)),
+    })
+    return ctrl.stop
+  }, [inView, target, decimals])
+
+  return (
+    <span ref={ref}>
+      {decimals ? value.toFixed(decimals) : value.toLocaleString('fr-FR')}
+      {suffix}
+    </span>
+  )
+}
+
+/* ─── LandingPage ────────────────────────────────────────────────────────── */
+
 export function LandingPage() {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen overflow-x-hidden">
       <Navbar />
       <Hero />
       <StatsBar />
@@ -35,7 +82,12 @@ export function LandingPage() {
 
 function Navbar() {
   return (
-    <header className="sticky top-0 z-50 bg-white/85 backdrop-blur-xl border-b border-zinc-200">
+    <motion.header
+      initial={{ opacity: 0, y: -12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: 'easeOut' }}
+      className="sticky top-0 z-50 bg-white/85 backdrop-blur-xl border-b border-zinc-200"
+    >
       <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
         <div className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-orange-600">
@@ -64,7 +116,7 @@ function Navbar() {
           </Link>
         </div>
       </div>
-    </header>
+    </motion.header>
   )
 }
 
@@ -72,63 +124,102 @@ function Navbar() {
 
 function Hero() {
   return (
-    <section className="max-w-6xl mx-auto px-4 sm:px-6 pt-20 pb-16 text-center">
-      <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 backdrop-blur border border-amber-200/60 text-amber-700 text-sm font-medium mb-6">
-        <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" />
-        500+ professionnels font confiance à LeadHunter
+    <section className="relative max-w-6xl mx-auto px-4 sm:px-6 pt-20 pb-16 text-center">
+      {/* Animated background blobs */}
+      <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
+        <motion.div
+          className="absolute top-0 left-1/4 w-72 h-72 rounded-full bg-amber-400/20 blur-3xl"
+          animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.8, 0.5] }}
+          transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+        />
+        <motion.div
+          className="absolute top-10 right-1/4 w-56 h-56 rounded-full bg-orange-400/15 blur-3xl"
+          animate={{ scale: [1, 1.25, 1], opacity: [0.4, 0.7, 0.4] }}
+          transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut', delay: 1.5 }}
+        />
       </div>
 
-      <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-zinc-900 leading-tight mb-6">
-        Trouvez vos prochains clients{' '}
-        <span className="bg-gradient-to-r from-amber-500 to-orange-600 bg-clip-text text-transparent">
-          avant vos concurrents
-        </span>
-      </h1>
-
-      <p className="text-lg sm:text-xl text-zinc-500 max-w-2xl mx-auto mb-10">
-        Scannez n'importe quelle zone, détectez les entreprises sans site web ou avec un site
-        obsolète, et générez des leads qualifiés avec un scoring automatique Chaud / Tiède / Froid.
-      </p>
-
-      <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-        <Link
-          href="/login"
-          className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold text-base hover:opacity-90 transition-opacity shadow-lg shadow-amber-200"
+      <motion.div variants={stagger} initial="hidden" animate="visible">
+        <motion.div
+          variants={fadeUp}
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 backdrop-blur border border-amber-200/60 text-amber-700 text-sm font-medium mb-6"
         >
-          Commencer gratuitement
-          <ArrowRight className="h-4 w-4" />
-        </Link>
-        <a
-          href="#how-it-works"
-          className="flex items-center gap-2 px-6 py-3 rounded-xl border border-zinc-200 bg-white text-zinc-700 font-medium text-base hover:bg-zinc-50 transition-colors"
+          <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" />
+          500+ professionnels font confiance à LeadHunter
+        </motion.div>
+
+        <motion.h1
+          variants={fadeUp}
+          className="text-4xl sm:text-5xl lg:text-6xl font-bold text-zinc-900 leading-tight mb-6"
         >
-          Voir comment ça marche
-        </a>
-      </div>
+          Trouvez vos prochains clients{' '}
+          <span className="bg-gradient-to-r from-amber-500 to-orange-600 bg-clip-text text-transparent">
+            avant vos concurrents
+          </span>
+        </motion.h1>
+
+        <motion.p
+          variants={fadeUp}
+          className="text-lg sm:text-xl text-zinc-500 max-w-2xl mx-auto mb-10"
+        >
+          Scannez n'importe quelle zone, détectez les entreprises sans site web ou avec un site
+          obsolète, et générez des leads qualifiés avec un scoring automatique Chaud&nbsp;/&nbsp;Tiède&nbsp;/&nbsp;Froid.
+        </motion.p>
+
+        <motion.div
+          variants={fadeUp}
+          className="flex flex-col sm:flex-row items-center justify-center gap-4"
+        >
+          <Link
+            href="/login"
+            className="group flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold text-base hover:opacity-90 transition-opacity shadow-lg shadow-amber-200"
+          >
+            Commencer gratuitement
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+          </Link>
+          <a
+            href="#how-it-works"
+            className="flex items-center gap-2 px-6 py-3 rounded-xl border border-zinc-200 bg-white text-zinc-700 font-medium text-base hover:bg-zinc-50 transition-colors"
+          >
+            Voir comment ça marche
+          </a>
+        </motion.div>
+      </motion.div>
     </section>
   )
 }
 
 /* ─── Stats Bar ───────────────────────────────────────────────────────────── */
 
+const STATS = [
+  { target: 50000, suffix: '+', label: 'entreprises scannées' },
+  { target: 12000, suffix: '+', label: 'leads générés' },
+  { target: 4.8, decimals: 1, suffix: '/5', label: 'satisfaction client' },
+]
+
 function StatsBar() {
-  const stats = [
-    { value: '50 000+', label: 'entreprises scannées' },
-    { value: '12 000+', label: 'leads générés' },
-    { value: '4.8/5', label: 'satisfaction client' },
-  ]
+  const ref = useRef<HTMLElement>(null)
+  const inView = useInView(ref, { once: true, margin: '-50px' })
 
   return (
-    <section className="border-y border-zinc-200 bg-white">
+    <motion.section
+      ref={ref}
+      initial={{ opacity: 0, y: 16 }}
+      animate={inView ? { opacity: 1, y: 0 } : {}}
+      transition={{ duration: 0.5 }}
+      className="border-y border-zinc-200 bg-white"
+    >
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 grid grid-cols-3 gap-4 text-center">
-        {stats.map((s) => (
+        {STATS.map((s) => (
           <div key={s.label}>
-            <p className="text-2xl sm:text-3xl font-bold text-zinc-900">{s.value}</p>
+            <p className="text-2xl sm:text-3xl font-bold text-zinc-900">
+              <AnimatedCounter target={s.target} decimals={s.decimals} suffix={s.suffix} />
+            </p>
             <p className="text-sm text-zinc-500 mt-1">{s.label}</p>
           </div>
         ))}
       </div>
-    </section>
+    </motion.section>
   )
 }
 
@@ -168,24 +259,38 @@ const FEATURES = [
 ]
 
 function Features() {
-  return (
-    <section id="features" className="max-w-6xl mx-auto px-4 sm:px-6 py-20">
-      <div className="text-center mb-12">
-        <h2 className="text-3xl sm:text-4xl font-bold text-zinc-900 mb-4">
-          Tout ce qu'il faut pour une prospection automatique efficace
-        </h2>
-        <p className="text-zinc-500 text-lg max-w-xl mx-auto">
-          De la détection au closing, LeadHunter couvre l'intégralité de votre cycle de prospection.
-        </p>
-      </div>
+  const ref = useRef<HTMLElement>(null)
+  const inView = useInView(ref, { once: true, margin: '-80px' })
 
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+  return (
+    <section id="features" ref={ref} className="max-w-6xl mx-auto px-4 sm:px-6 py-20">
+      <motion.div
+        variants={stagger}
+        initial="hidden"
+        animate={inView ? 'visible' : 'hidden'}
+        className="text-center mb-12"
+      >
+        <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl font-bold text-zinc-900 mb-4">
+          Tout ce qu'il faut pour une prospection automatique efficace
+        </motion.h2>
+        <motion.p variants={fadeUp} className="text-zinc-500 text-lg max-w-xl mx-auto">
+          De la détection au closing, LeadHunter couvre l'intégralité de votre cycle de prospection.
+        </motion.p>
+      </motion.div>
+
+      <motion.div
+        variants={stagger}
+        initial="hidden"
+        animate={inView ? 'visible' : 'hidden'}
+        className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+      >
         {FEATURES.map(({ icon: Icon, title, description }) => (
           <motion.div
             key={title}
-            className="bg-white rounded-2xl border border-zinc-200 p-6 hover:bg-zinc-50 transition-colors"
-            whileHover={{ y: -3 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+            variants={fadeUp}
+            whileHover={{ y: -5, boxShadow: '0 16px 40px -12px rgba(0,0,0,0.10)' }}
+            transition={{ type: 'spring', stiffness: 300, damping: 22 }}
+            className="bg-white rounded-2xl border border-zinc-200 p-6 hover:bg-zinc-50/60 transition-colors"
           >
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 mb-4">
               <Icon className="h-5 w-5 text-white" />
@@ -194,7 +299,7 @@ function Features() {
             <p className="text-sm text-zinc-500 leading-relaxed">{description}</p>
           </motion.div>
         ))}
-      </div>
+      </motion.div>
     </section>
   )
 }
@@ -220,30 +325,55 @@ const STEPS = [
 ]
 
 function HowItWorks() {
-  return (
-    <section id="how-it-works" className="relative bg-zinc-950 py-20 overflow-hidden">
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-amber-500/5 blur-3xl pointer-events-none" />
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 relative">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
-            Comment ça marche ?
-          </h2>
-          <p className="text-zinc-400 text-lg max-w-xl mx-auto">
-            Trois étapes pour transformer une zone géographique en pipeline de prospects qualifiés.
-          </p>
-        </div>
+  const ref = useRef<HTMLElement>(null)
+  const inView = useInView(ref, { once: true, margin: '-80px' })
 
-        <div className="grid gap-8 sm:grid-cols-3">
+  return (
+    <section id="how-it-works" ref={ref} className="relative bg-zinc-950 py-20 overflow-hidden">
+      {/* Static glow */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-amber-500/5 blur-3xl pointer-events-none" />
+      {/* Pulsing orb */}
+      <motion.div
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[280px] h-[280px] rounded-full bg-amber-500/8 blur-2xl pointer-events-none"
+        animate={{ scale: [1, 1.35, 1], opacity: [0.25, 0.55, 0.25] }}
+        transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+      />
+
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 relative">
+        <motion.div
+          variants={stagger}
+          initial="hidden"
+          animate={inView ? 'visible' : 'hidden'}
+          className="text-center mb-12"
+        >
+          <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl font-bold text-white mb-4">
+            Comment ça marche ?
+          </motion.h2>
+          <motion.p variants={fadeUp} className="text-zinc-400 text-lg max-w-xl mx-auto">
+            Trois étapes pour transformer une zone géographique en pipeline de prospects qualifiés.
+          </motion.p>
+        </motion.div>
+
+        <motion.div
+          variants={stagger}
+          initial="hidden"
+          animate={inView ? 'visible' : 'hidden'}
+          className="grid gap-8 sm:grid-cols-3"
+        >
           {STEPS.map((step) => (
-            <div key={step.number} className="text-center">
-              <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white font-bold text-lg mb-4">
+            <motion.div key={step.number} variants={fadeUp} className="text-center">
+              <motion.div
+                whileHover={{ scale: 1.1, rotate: [-3, 3, 0] }}
+                transition={{ duration: 0.35 }}
+                className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white font-bold text-lg mb-4"
+              >
                 {step.number}
-              </div>
+              </motion.div>
               <h3 className="font-semibold text-white text-lg mb-2">{step.title}</h3>
               <p className="text-zinc-400 text-sm leading-relaxed">{step.description}</p>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   )
@@ -288,19 +418,37 @@ const PLANS = [
 ]
 
 function Pricing() {
-  return (
-    <section id="pricing" className="max-w-6xl mx-auto px-4 sm:px-6 py-20">
-      <div className="text-center mb-12">
-        <h2 className="text-3xl sm:text-4xl font-bold text-zinc-900 mb-4">
-          Des tarifs simples et transparents
-        </h2>
-        <p className="text-zinc-500 text-lg">Commencez gratuitement, passez en Pro quand vous êtes prêt.</p>
-      </div>
+  const ref = useRef<HTMLElement>(null)
+  const inView = useInView(ref, { once: true, margin: '-80px' })
 
-      <div className="grid gap-6 sm:grid-cols-2 max-w-2xl mx-auto">
+  return (
+    <section id="pricing" ref={ref} className="max-w-6xl mx-auto px-4 sm:px-6 py-20">
+      <motion.div
+        variants={stagger}
+        initial="hidden"
+        animate={inView ? 'visible' : 'hidden'}
+        className="text-center mb-12"
+      >
+        <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl font-bold text-zinc-900 mb-4">
+          Des tarifs simples et transparents
+        </motion.h2>
+        <motion.p variants={fadeUp} className="text-zinc-500 text-lg">
+          Commencez gratuitement, passez en Pro quand vous êtes prêt.
+        </motion.p>
+      </motion.div>
+
+      <motion.div
+        variants={stagger}
+        initial="hidden"
+        animate={inView ? 'visible' : 'hidden'}
+        className="grid gap-6 sm:grid-cols-2 max-w-2xl mx-auto"
+      >
         {PLANS.map((plan) => (
-          <div
+          <motion.div
             key={plan.name}
+            variants={fadeUp}
+            whileHover={{ y: -5 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 22 }}
             className={`relative rounded-2xl border p-8 flex flex-col ${
               plan.popular
                 ? 'bg-gradient-to-br from-amber-500/10 to-orange-500/10 border-amber-400/50 shadow-xl shadow-amber-100/50'
@@ -324,11 +472,17 @@ function Pricing() {
             </div>
 
             <ul className="space-y-3 mb-8 flex-1">
-              {plan.features.map((f) => (
-                <li key={f} className="flex items-center gap-2 text-sm text-zinc-600">
+              {plan.features.map((f, i) => (
+                <motion.li
+                  key={f}
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={inView ? { opacity: 1, x: 0 } : {}}
+                  transition={{ delay: 0.35 + i * 0.07, duration: 0.3 }}
+                  className="flex items-center gap-2 text-sm text-zinc-600"
+                >
                   <Check className="h-4 w-4 text-amber-500 shrink-0" />
                   {f}
-                </li>
+                </motion.li>
               ))}
             </ul>
 
@@ -342,9 +496,9 @@ function Pricing() {
             >
               {plan.cta}
             </Link>
-          </div>
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
     </section>
   )
 }
@@ -373,21 +527,47 @@ const TESTIMONIALS = [
 ]
 
 function Testimonials() {
-  return (
-    <section className="bg-zinc-100 py-20">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl sm:text-4xl font-bold text-zinc-900 mb-4">
-            Ils ont boosté leur prospection
-          </h2>
-        </div>
+  const ref = useRef<HTMLElement>(null)
+  const inView = useInView(ref, { once: true, margin: '-80px' })
 
-        <div className="grid gap-6 sm:grid-cols-3">
+  return (
+    <section ref={ref} className="bg-zinc-100 py-20">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6">
+        <motion.div
+          variants={stagger}
+          initial="hidden"
+          animate={inView ? 'visible' : 'hidden'}
+          className="text-center mb-12"
+        >
+          <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl font-bold text-zinc-900 mb-4">
+            Ils ont boosté leur prospection
+          </motion.h2>
+        </motion.div>
+
+        <motion.div
+          variants={stagger}
+          initial="hidden"
+          animate={inView ? 'visible' : 'hidden'}
+          className="grid gap-6 sm:grid-cols-3"
+        >
           {TESTIMONIALS.map((t) => (
-            <div key={t.name} className="bg-white rounded-2xl border border-zinc-200 p-6">
+            <motion.div
+              key={t.name}
+              variants={fadeUp}
+              whileHover={{ y: -5, boxShadow: '0 16px 40px -12px rgba(0,0,0,0.10)' }}
+              transition={{ type: 'spring', stiffness: 300, damping: 22 }}
+              className="bg-white rounded-2xl border border-zinc-200 p-6"
+            >
               <div className="flex items-center gap-1 mb-4">
                 {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
+                  <motion.span
+                    key={i}
+                    initial={{ opacity: 0, scale: 0 }}
+                    animate={inView ? { opacity: 1, scale: 1 } : {}}
+                    transition={{ delay: 0.3 + i * 0.08, type: 'spring', stiffness: 400, damping: 15 }}
+                  >
+                    <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                  </motion.span>
                 ))}
               </div>
               <p className="text-zinc-600 text-sm leading-relaxed mb-6">"{t.quote}"</p>
@@ -400,9 +580,9 @@ function Testimonials() {
                   <p className="text-xs text-zinc-500">{t.role}</p>
                 </div>
               </div>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   )
@@ -411,23 +591,34 @@ function Testimonials() {
 /* ─── Final CTA ───────────────────────────────────────────────────────────── */
 
 function FinalCTA() {
+  const ref = useRef<HTMLElement>(null)
+  const inView = useInView(ref, { once: true, margin: '-80px' })
+
   return (
-    <section className="max-w-6xl mx-auto px-4 sm:px-6 py-20 text-center">
-      <h2 className="text-3xl sm:text-4xl font-bold text-zinc-900 mb-4">
+    <motion.section
+      ref={ref}
+      variants={stagger}
+      initial="hidden"
+      animate={inView ? 'visible' : 'hidden'}
+      className="max-w-6xl mx-auto px-4 sm:px-6 py-20 text-center"
+    >
+      <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl font-bold text-zinc-900 mb-4">
         Prêt à booster votre prospection ?
-      </h2>
-      <p className="text-zinc-500 text-lg mb-8">
+      </motion.h2>
+      <motion.p variants={fadeUp} className="text-zinc-500 text-lg mb-8">
         Rejoignez 500+ professionnels qui génèrent des leads qualifiés chaque jour.
-      </p>
-      <Link
-        href="/login"
-        className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold text-base hover:opacity-90 transition-opacity shadow-lg shadow-amber-200"
-      >
-        Créer mon compte gratuitement
-        <ArrowRight className="h-4 w-4" />
-      </Link>
-      <p className="text-xs text-zinc-400 mt-3">Sans carte bancaire · Gratuit pour toujours</p>
-    </section>
+      </motion.p>
+      <motion.div variants={fadeUp}>
+        <Link
+          href="/login"
+          className="group inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold text-base hover:opacity-90 transition-opacity shadow-lg shadow-amber-200"
+        >
+          Créer mon compte gratuitement
+          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+        </Link>
+        <p className="text-xs text-zinc-400 mt-3">Sans carte bancaire · Gratuit pour toujours</p>
+      </motion.div>
+    </motion.section>
   )
 }
 

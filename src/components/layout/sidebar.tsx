@@ -1,11 +1,12 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { useUIStore } from '@/lib/store'
 import { useAuth } from '@/components/auth/auth-provider'
+import { usePlan } from '@/hooks/usePlan'
 import {
   LayoutDashboard,
   Users,
@@ -16,6 +17,7 @@ import {
   ChevronRight,
   Target,
   LogOut,
+  Zap,
 } from 'lucide-react'
 
 const navigation = [
@@ -28,8 +30,10 @@ const navigation = [
 
 export function Sidebar() {
   const pathname = usePathname()
+  const router = useRouter()
   const { sidebarOpen, toggleSidebar } = useUIStore()
   const { user, signOut } = useAuth()
+  const { isPro } = usePlan()
 
   return (
     <aside
@@ -92,19 +96,60 @@ export function Sidebar() {
       </nav>
 
       {/* Footer with user info */}
-      <div className="absolute bottom-0 left-0 right-0 border-t border-zinc-800/40 p-4">
+      <div className="absolute bottom-0 left-0 right-0 border-t border-zinc-800/40 p-4 space-y-3">
+        {/* Upgrade CTA for free users (sidebar open only) */}
+        {!isPro && sidebarOpen && (
+          <button
+            onClick={() => router.push('/upgrade')}
+            className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-semibold bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:opacity-90 transition-opacity"
+          >
+            <Zap className="h-3.5 w-3.5" />
+            Passer à Pro
+          </button>
+        )}
+
         <div className={cn(
           'flex items-center gap-3',
           !sidebarOpen && 'justify-center'
         )}>
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-500/20 text-amber-500 text-xs font-bold flex-shrink-0">
-            {user?.email?.charAt(0).toUpperCase() || '?'}
+          {/* Avatar with plan badge */}
+          <div className="relative flex-shrink-0">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-500/20 text-amber-500 text-xs font-bold">
+              {user?.email?.charAt(0).toUpperCase() || '?'}
+            </div>
+            {/* Plan badge on avatar when sidebar is closed */}
+            {!sidebarOpen && (
+              <span
+                className={cn(
+                  'absolute -bottom-1 -right-1 text-[9px] font-bold px-1 rounded-full border border-zinc-950',
+                  isPro
+                    ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white'
+                    : 'bg-zinc-700 text-zinc-300'
+                )}
+              >
+                {isPro ? 'PRO' : 'FREE'}
+              </span>
+            )}
           </div>
+
           {sidebarOpen && (
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">
-                {user?.email || 'Utilisateur'}
-              </p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-medium text-white truncate">
+                  {user?.email || 'Utilisateur'}
+                </p>
+                {/* Plan badge next to email */}
+                <span
+                  className={cn(
+                    'shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full',
+                    isPro
+                      ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white'
+                      : 'bg-zinc-700 text-zinc-400'
+                  )}
+                >
+                  {isPro ? 'PRO' : 'FREE'}
+                </span>
+              </div>
               <button
                 onClick={signOut}
                 className="flex items-center gap-1 text-xs text-zinc-500 hover:text-red-400 transition-colors"

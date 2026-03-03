@@ -1,8 +1,10 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Header } from '@/components/layout'
 import { Card, CardHeader, CardTitle, CardContent, Button, Input, Badge } from '@/components/ui'
+import { usePlan } from '@/hooks/usePlan'
 import {
   Settings,
   Database,
@@ -15,14 +17,33 @@ import {
   ExternalLink,
   CheckCircle,
   XCircle,
-  AlertTriangle
+  AlertTriangle,
+  Crown,
+  Zap,
+  Loader2,
 } from 'lucide-react'
 
 export default function SettingsPage() {
+  const router = useRouter()
+  const { isPro } = usePlan()
+  const [portalLoading, setPortalLoading] = useState(false)
   const [supabaseUrl, setSupabaseUrl] = useState('')
   const [supabaseKey, setSupabaseKey] = useState('')
   const [testingConnection, setTestingConnection] = useState(false)
   const [connectionStatus, setConnectionStatus] = useState<'idle' | 'success' | 'error'>('idle')
+
+  const handleBillingPortal = async () => {
+    setPortalLoading(true)
+    try {
+      const res = await fetch('/api/billing-portal', { method: 'POST' })
+      const data = await res.json()
+      if (data.url) window.location.href = data.url
+    } catch (err) {
+      console.error('Portal error:', err)
+    } finally {
+      setPortalLoading(false)
+    }
+  }
 
   const handleTestConnection = async () => {
     setTestingConnection(true)
@@ -53,6 +74,59 @@ export default function SettingsPage() {
       />
       
       <div className="p-6 max-w-4xl space-y-6">
+        {/* Subscription */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Crown className="h-5 w-5 text-amber-500" />
+              Mon abonnement
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between p-4 bg-zinc-50 rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className={`flex h-10 w-10 items-center justify-center rounded-full ${isPro ? 'bg-amber-100' : 'bg-zinc-200'}`}>
+                  {isPro ? (
+                    <Crown className="h-5 w-5 text-amber-600" />
+                  ) : (
+                    <Settings className="h-5 w-5 text-zinc-500" />
+                  )}
+                </div>
+                <div>
+                  <p className="font-semibold text-zinc-900">
+                    Plan {isPro ? 'Pro' : 'Gratuit'}
+                  </p>
+                  <p className="text-sm text-zinc-500">
+                    {isPro
+                      ? 'Accès illimité à toutes les fonctionnalités'
+                      : '50 scans / mois · Fonctionnalités limitées'}
+                  </p>
+                </div>
+              </div>
+              <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${isPro ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white' : 'bg-zinc-200 text-zinc-600'}`}>
+                {isPro ? 'PRO' : 'FREE'}
+              </span>
+            </div>
+
+            <div className="mt-4 flex gap-3">
+              {isPro ? (
+                <Button variant="outline" onClick={handleBillingPortal} disabled={portalLoading}>
+                  {portalLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
+                  Gérer mon abonnement
+                </Button>
+              ) : (
+                <button
+                  onClick={() => router.push('/upgrade')}
+                  className="flex items-center gap-2 py-2 px-4 rounded-lg font-semibold text-sm bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:opacity-90 transition-opacity"
+                >
+                  <Zap className="h-4 w-4" />
+                  Passer à Pro — 29€/mois
+                </button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Database connection */}
         <Card>
           <CardHeader>

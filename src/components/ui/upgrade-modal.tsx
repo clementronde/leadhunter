@@ -1,13 +1,12 @@
 'use client'
 
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { X, Check, Zap, Lock } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { X, Check, Zap, Lock, Loader2 } from 'lucide-react'
 
 interface UpgradeModalProps {
   open: boolean
   onClose: () => void
-  reason: 'scan_limit' | 'export' | 'audit'
+  reason: 'scan_limit' | 'export' | 'audit' | 'pipeline'
 }
 
 const REASONS = {
@@ -17,11 +16,15 @@ const REASONS = {
   },
   export: {
     title: 'Export réservé aux abonnés Pro',
-    description: 'L\'export XLSX est disponible uniquement dans le plan Pro.',
+    description: "L'export XLSX est disponible uniquement dans le plan Pro.",
   },
   audit: {
     title: 'Audit réservé aux abonnés Pro',
-    description: 'L\'audit Core Web Vitals est disponible uniquement dans le plan Pro.',
+    description: "L'audit Core Web Vitals est disponible uniquement dans le plan Pro.",
+  },
+  pipeline: {
+    title: 'Fonctionnalité Pro',
+    description: 'Cette fonctionnalité est disponible uniquement dans le plan Pro.',
   },
 }
 
@@ -34,7 +37,7 @@ const PRO_FEATURES = [
 ]
 
 export function UpgradeModal({ open, onClose, reason }: UpgradeModalProps) {
-  const router = useRouter()
+  const [loading, setLoading] = useState(false)
   const content = REASONS[reason]
 
   useEffect(() => {
@@ -46,6 +49,28 @@ export function UpgradeModal({ open, onClose, reason }: UpgradeModalProps) {
   }, [open, onClose])
 
   if (!open) return null
+
+  const handleCheckout = async () => {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ returnPath: '/upgrade' }),
+      })
+      const text = await res.text()
+      const data = text ? JSON.parse(text) : {}
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        console.error('Checkout error:', res.status, data.error ?? 'No URL returned')
+        setLoading(false)
+      }
+    } catch (err) {
+      console.error('Checkout error:', err)
+      setLoading(false)
+    }
+  }
 
   return (
     <div
@@ -96,11 +121,16 @@ export function UpgradeModal({ open, onClose, reason }: UpgradeModalProps) {
         </p>
 
         <button
-          onClick={() => router.push('/pricing')}
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:opacity-90 transition-opacity"
+          onClick={handleCheckout}
+          disabled={loading}
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:opacity-90 transition-opacity disabled:opacity-60"
         >
-          <Zap className="h-4 w-4" />
-          Passer à Pro
+          {loading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Zap className="h-4 w-4" />
+          )}
+          {loading ? 'Redirection...' : 'Passer à Pro'}
         </button>
 
         <button

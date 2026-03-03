@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Header } from '@/components/layout'
 import { LeadsTable, LeadsFilters, LeadCard } from '@/components/leads'
-import { Card, Button, Skeleton, UpgradeModal } from '@/components/ui'
+import { Card, Button, Skeleton, UpgradeModal, ProGate } from '@/components/ui'
 import { leadsApi } from '@/lib/api'
 import { exportLeadsToXLSX } from '@/lib/export'
 import { Company, LeadFilters, LeadStatus } from '@/types'
@@ -132,20 +132,27 @@ function LeadsContent() {
         </p>
 
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExportXLSX}
-            disabled={exporting || loading || leads.length === 0}
-            className="flex items-center gap-2"
+          <ProGate
+            isPro={canExport}
+            reason="export"
+            variant="badge"
+            onUpgrade={() => setShowUpgradeModal(true)}
           >
-            {exporting ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Download className="h-4 w-4" />
-            )}
-            {exporting ? 'Export...' : `Exporter XLSX (${leads.length})`}
-          </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportXLSX}
+              disabled={exporting || loading || leads.length === 0}
+              className="flex items-center gap-2"
+            >
+              {exporting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
+              {exporting ? 'Export...' : `Exporter XLSX (${leads.length})`}
+            </Button>
+          </ProGate>
 
           <div className="flex items-center gap-0.5 bg-zinc-100 p-1 rounded-lg">
             <button
