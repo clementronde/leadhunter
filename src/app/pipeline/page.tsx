@@ -194,7 +194,7 @@ export default function PipelinePage() {
                                 <Globe className="h-4 w-4 text-zinc-400 hover:text-blue-500 transition-colors" />
                               </a>
                             ) : (
-                              <Globe2 className="h-4 w-4 text-amber-500" title="Pas de site web" />
+                              <span title="Pas de site web"><Globe2 className="h-4 w-4 text-amber-500" /></span>
                             )}
                             {lead.phone && (
                               <a href={`tel:${lead.phone}`} title={lead.phone}>
