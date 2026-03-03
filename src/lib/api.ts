@@ -145,7 +145,7 @@ export const statsApi = {
   async getStats(): Promise<DashboardStats> {
     const { data: companies, error } = await supabase
       .from('companies')
-      .select('status, priority, has_website, sector, prospect_score, created_at')
+      .select('status, priority, has_website, sector, prospect_score, created_at, updated_at')
 
     if (error) throw error
 
@@ -182,13 +182,14 @@ export const statsApi = {
       .slice(0, 5)
 
     // Tendance sur les 30 derniers jours (groupés par jour)
-    const trend: { date: string; count: number }[] = []
+    const trend: { date: string; new_leads: number; contacted: number }[] = []
     for (let i = 29; i >= 0; i--) {
       const d = new Date()
       d.setDate(d.getDate() - i)
       const dateStr = d.toISOString().split('T')[0]
-      const count = all.filter(c => c.created_at && c.created_at.startsWith(dateStr)).length
-      trend.push({ date: dateStr, count })
+      const new_leads = all.filter(c => c.created_at && c.created_at.startsWith(dateStr)).length
+      const contacted = all.filter(c => c.status === 'contacted' && c.updated_at && c.updated_at.startsWith(dateStr)).length
+      trend.push({ date: dateStr, new_leads, contacted })
     }
 
     return {
