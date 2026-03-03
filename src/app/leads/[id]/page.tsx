@@ -4,10 +4,9 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Header } from '@/components/layout'
-import { Card, CardHeader, CardTitle, CardContent, Badge, Button, Input, Skeleton, UpgradeModal } from '@/components/ui'
+import { Card, CardHeader, CardTitle, CardContent, Badge, Button, Input, Skeleton } from '@/components/ui'
 import { OutreachPanel } from '@/components/leads'
 import { leadsApi } from '@/lib/api'
-import { usePlan } from '@/hooks/usePlan'
 import { Company, LeadStatus, Note } from '@/types'
 import {
   priorityLabels,
@@ -46,12 +45,12 @@ import {
 export default function LeadDetailPage() {
   const params = useParams()
   const router = useRouter()
-  const { isPro } = usePlan()
   const [lead, setLead] = useState<Company | null>(null)
   const [loading, setLoading] = useState(true)
   const [newNote, setNewNote] = useState('')
   const [submittingNote, setSubmittingNote] = useState(false)
-  const [showOutreachUpgrade, setShowOutreachUpgrade] = useState(false)
+  const [auditing, setAuditing] = useState(false)
+  const [auditError, setAuditError] = useState<string | null>(null)
 
   useEffect(() => {
     async function loadLead() {
@@ -78,6 +77,28 @@ export default function LeadDetailPage() {
       setLead(updated)
     } catch (error) {
       console.error('Error updating status:', error)
+    }
+  }
+
+  const handleLaunchAudit = async () => {
+    if (!lead?.website) return
+    setAuditing(true)
+    setAuditError(null)
+    try {
+      const res = await fetch('/api/audit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: lead.website, companyId: lead.id }),
+      })
+      const data = await res.json()
+      if (!res.ok || !data.success) throw new Error(data.error || 'Erreur lors de l\'audit')
+      // Recharger le lead avec les nouvelles données d'audit
+      const updated = await leadsApi.getById(lead.id)
+      if (updated) setLead(updated)
+    } catch (err) {
+      setAuditError(err instanceof Error ? err.message : 'Erreur inconnue')
+    } finally {
+      setAuditing(false)
     }
   }
 
@@ -346,7 +367,12 @@ export default function LeadDetailPage() {
                 <p className="text-sm text-zinc-500 mb-4">
                   Ce site n'a pas encore été analysé.
                 </p>
-                <Button>Lancer un audit</Button>
+                {auditError && (
+                  <p className="text-sm text-red-600 mb-3">{auditError}</p>
+                )}
+                <Button onClick={handleLaunchAudit} loading={auditing} disabled={auditing}>
+                  {auditing ? 'Analyse en cours...' : 'Lancer un audit'}
+                </Button>
               </Card>
             ) : (
               <Card className="p-8 text-center bg-amber-50 border-amber-200">
@@ -362,50 +388,21 @@ export default function LeadDetailPage() {
           {/* Right column: Notes & Timeline */}
           <div className="space-y-6">
             {/* Outreach panel */}
-            {isPro ? (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Contacter</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <OutreachPanel
-                    lead={lead}
-                    onStatusChange={handleStatusChange}
-                    onNoteAdded={async (input) => {
-                      const note = await leadsApi.addNote(input)
-                      setLead(prev => prev ? { ...prev, notes: [note, ...prev.notes] } : null)
-                    }}
-                  />
-                </CardContent>
-              </Card>
-            ) : (
-              <Card>
-                <CardContent className="pt-6">
-                  <button
-                    onClick={() => setShowOutreachUpgrade(true)}
-                    className="w-full flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-dashed border-amber-200 bg-amber-50/40 hover:bg-amber-50 transition-colors text-center"
-                  >
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100">
-                      <Mail className="h-5 w-5 text-amber-600" />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-zinc-900">Contacter ce prospect</p>
-                      <p className="text-sm text-zinc-500 mt-0.5">Templates email, suivi CRM — fonctionnalité Pro</p>
-                    </div>
-                    <span className="text-xs font-bold bg-amber-500 text-white px-3 py-1 rounded-full">
-                      Passer à Pro
-                    </span>
-                  </button>
-                  {showOutreachUpgrade && (
-                    <UpgradeModal
-                      open={showOutreachUpgrade}
-                      onClose={() => setShowOutreachUpgrade(false)}
-                      reason="contact"
-                    />
-                  )}
-                </CardContent>
-              </Card>
-            )}
+            <Card>
+              <CardHeader>
+                <CardTitle>Contacter</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <OutreachPanel
+                  lead={lead}
+                  onStatusChange={handleStatusChange}
+                  onNoteAdded={async (input) => {
+                    const note = await leadsApi.addNote(input)
+                    setLead(prev => prev ? { ...prev, notes: [note, ...prev.notes] } : null)
+                  }}
+                />
+              </CardContent>
+            </Card>
 
             {/* Add note */}
             <Card>

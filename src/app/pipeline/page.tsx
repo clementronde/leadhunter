@@ -15,12 +15,12 @@ import {
   sectorLabels
 } from '@/lib/utils'
 import {
-  Plus,
   GripVertical,
   Globe,
   Globe2,
   Phone,
-  MoreHorizontal
+  Mail,
+  ExternalLink,
 } from 'lucide-react'
 
 const PIPELINE_STAGES: LeadStatus[] = ['new', 'contacted', 'meeting', 'proposal', 'won', 'lost']
@@ -145,9 +145,13 @@ export default function PipelinePage() {
                         {stageLeads.length}
                       </span>
                     </div>
-                    <button className="p-1 rounded hover:bg-zinc-100">
-                      <MoreHorizontal className="h-4 w-4 text-zinc-400" />
-                    </button>
+                    <Link
+                      href={`/leads?status=${status}`}
+                      className="p-1 rounded hover:bg-zinc-100 text-zinc-400 hover:text-amber-600 transition-colors"
+                      title="Voir tous les leads de cette étape"
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </Link>
                   </div>
                 </div>
                 
@@ -185,13 +189,22 @@ export default function PipelinePage() {
                         {/* Footer */}
                         <div className="flex items-center justify-between pt-2 border-t border-zinc-100">
                           <div className="flex items-center gap-2">
-                            {lead.has_website ? (
-                              <Globe className="h-4 w-4 text-zinc-400" />
+                            {lead.website ? (
+                              <a href={lead.website} target="_blank" rel="noopener noreferrer" title="Voir le site">
+                                <Globe className="h-4 w-4 text-zinc-400 hover:text-blue-500 transition-colors" />
+                              </a>
                             ) : (
-                              <Globe2 className="h-4 w-4 text-amber-500" />
+                              <Globe2 className="h-4 w-4 text-amber-500" title="Pas de site web" />
                             )}
                             {lead.phone && (
-                              <Phone className="h-4 w-4 text-zinc-400" />
+                              <a href={`tel:${lead.phone}`} title={lead.phone}>
+                                <Phone className="h-4 w-4 text-zinc-400 hover:text-emerald-600 transition-colors" />
+                              </a>
+                            )}
+                            {lead.email && (
+                              <a href={`mailto:${lead.email}`} title={lead.email}>
+                                <Mail className="h-4 w-4 text-zinc-400 hover:text-blue-600 transition-colors" />
+                              </a>
                             )}
                           </div>
                           

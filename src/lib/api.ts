@@ -181,6 +181,16 @@ export const statsApi = {
       .sort((a, b) => b.count - a.count)
       .slice(0, 5)
 
+    // Tendance sur les 30 derniers jours (groupés par jour)
+    const trend: { date: string; count: number }[] = []
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date()
+      d.setDate(d.getDate() - i)
+      const dateStr = d.toISOString().split('T')[0]
+      const count = all.filter(c => c.created_at && c.created_at.startsWith(dateStr)).length
+      trend.push({ date: dateStr, count })
+    }
+
     return {
       total_leads: total,
       leads_without_site: withoutSite,
@@ -189,7 +199,7 @@ export const statsApi = {
       warm_leads: byPriority.warm,
       cold_leads: byPriority.cold,
       by_status: byStatus,
-      trend: [],
+      trend,
       top_sectors: topSectors
     }
   }

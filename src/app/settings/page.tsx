@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Header } from '@/components/layout'
 import { Card, CardHeader, CardTitle, CardContent, Button } from '@/components/ui'
 import { usePlan } from '@/hooks/usePlan'
+import { supabase } from '@/lib/supabase'
 import {
   Settings,
   Database,
@@ -18,6 +19,7 @@ import {
   Crown,
   Zap,
   Loader2,
+  AlertTriangle,
 } from 'lucide-react'
 
 interface ApiKeyStatus {
@@ -38,6 +40,10 @@ export default function SettingsPage() {
   const { isPro } = usePlan()
   const [portalLoading, setPortalLoading] = useState(false)
   const [health, setHealth] = useState<HealthData | null>(null)
+  const [exporting, setExporting] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   // Check if Supabase env vars are present (NEXT_PUBLIC_ are available client-side)
   const supabaseConfigured =
@@ -54,6 +60,58 @@ export default function SettingsPage() {
       .then(setHealth)
       .catch(() => {})
   }, [])
+
+  const handleExportCSV = async () => {
+    setExporting(true)
+    try {
+      const { data } = await supabase
+        .from('companies')
+        .select('name, city, postal_code, phone, email, website, has_website, sector, status, priority, prospect_score, created_at')
+        .order('prospect_score', { ascending: false })
+
+      if (!data || data.length === 0) {
+        alert('Aucun lead à exporter.')
+        return
+      }
+
+      const headers = ['Nom', 'Ville', 'Code postal', 'Téléphone', 'Email', 'Site web', 'A un site', 'Secteur', 'Statut', 'Priorité', 'Score', 'Ajouté le']
+      const rows = data.map(c => [
+        c.name, c.city, c.postal_code, c.phone || '', c.email || '',
+        c.website || '', c.has_website ? 'Oui' : 'Non',
+        c.sector || '', c.status, c.priority, c.prospect_score,
+        new Date(c.created_at).toLocaleDateString('fr-FR')
+      ])
+
+      const csvContent = [headers, ...rows]
+        .map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))
+        .join('\n')
+
+      const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `leads-${new Date().toISOString().split('T')[0]}.csv`
+      a.click()
+      URL.revokeObjectURL(url)
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  const handleDeleteAll = async () => {
+    setDeleting(true)
+    setDeleteError(null)
+    try {
+      const { error } = await supabase.from('companies').delete().neq('id', '00000000-0000-0000-0000-000000000000')
+      if (error) throw error
+      setShowDeleteConfirm(false)
+      router.push('/')
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : 'Erreur lors de la suppression')
+    } finally {
+      setDeleting(false)
+    }
+  }
 
   const handleBillingPortal = async () => {
     setPortalLoading(true)
@@ -265,17 +323,49 @@ export default function SettingsPage() {
               Gestion des données
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <div className="flex flex-wrap gap-3">
-              <Button variant="outline">
-                <Download className="h-4 w-4" />
-                Exporter les leads (CSV)
+              <Button variant="outline" onClick={handleExportCSV} disabled={exporting}>
+                {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                {exporting ? 'Export...' : 'Exporter les leads (CSV)'}
               </Button>
-              <Button variant="destructive">
+              <Button variant="destructive" onClick={() => setShowDeleteConfirm(true)}>
                 <Trash2 className="h-4 w-4" />
                 Supprimer toutes les données
               </Button>
             </div>
+
+            {/* Confirmation modale */}
+            {showDeleteConfirm && (
+              <div className="p-4 bg-red-50 border border-red-200 rounded-xl space-y-3">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="font-semibold text-red-800">Supprimer toutes les données ?</p>
+                    <p className="text-sm text-red-700 mt-1">
+                      Cette action supprimera définitivement tous vos leads et ne peut pas être annulée.
+                    </p>
+                  </div>
+                </div>
+                {deleteError && <p className="text-sm text-red-600">{deleteError}</p>}
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleDeleteAll}
+                    disabled={deleting}
+                    className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white text-sm font-semibold rounded-lg hover:bg-red-700 transition-colors disabled:opacity-60"
+                  >
+                    {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                    {deleting ? 'Suppression...' : 'Oui, tout supprimer'}
+                  </button>
+                  <button
+                    onClick={() => setShowDeleteConfirm(false)}
+                    className="px-4 py-2 bg-white text-zinc-700 text-sm font-medium rounded-lg border border-zinc-200 hover:bg-zinc-50 transition-colors"
+                  >
+                    Annuler
+                  </button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
