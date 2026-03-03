@@ -4,9 +4,10 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Header } from '@/components/layout'
-import { Card, CardHeader, CardTitle, CardContent, Badge, Button, Input, Skeleton } from '@/components/ui'
+import { Card, CardHeader, CardTitle, CardContent, Badge, Button, Input, Skeleton, UpgradeModal } from '@/components/ui'
 import { OutreachPanel } from '@/components/leads'
 import { leadsApi } from '@/lib/api'
+import { usePlan } from '@/hooks/usePlan'
 import { Company, LeadStatus, Note } from '@/types'
 import {
   priorityLabels,
@@ -45,10 +46,12 @@ import {
 export default function LeadDetailPage() {
   const params = useParams()
   const router = useRouter()
+  const { isPro } = usePlan()
   const [lead, setLead] = useState<Company | null>(null)
   const [loading, setLoading] = useState(true)
   const [newNote, setNewNote] = useState('')
   const [submittingNote, setSubmittingNote] = useState(false)
+  const [showOutreachUpgrade, setShowOutreachUpgrade] = useState(false)
 
   useEffect(() => {
     async function loadLead() {
@@ -359,21 +362,50 @@ export default function LeadDetailPage() {
           {/* Right column: Notes & Timeline */}
           <div className="space-y-6">
             {/* Outreach panel */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Contacter</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <OutreachPanel
-                  lead={lead}
-                  onStatusChange={handleStatusChange}
-                  onNoteAdded={async (input) => {
-                    const note = await leadsApi.addNote(input)
-                    setLead(prev => prev ? { ...prev, notes: [note, ...prev.notes] } : null)
-                  }}
-                />
-              </CardContent>
-            </Card>
+            {isPro ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Contacter</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <OutreachPanel
+                    lead={lead}
+                    onStatusChange={handleStatusChange}
+                    onNoteAdded={async (input) => {
+                      const note = await leadsApi.addNote(input)
+                      setLead(prev => prev ? { ...prev, notes: [note, ...prev.notes] } : null)
+                    }}
+                  />
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardContent className="pt-6">
+                  <button
+                    onClick={() => setShowOutreachUpgrade(true)}
+                    className="w-full flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-dashed border-amber-200 bg-amber-50/40 hover:bg-amber-50 transition-colors text-center"
+                  >
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100">
+                      <Mail className="h-5 w-5 text-amber-600" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-zinc-900">Contacter ce prospect</p>
+                      <p className="text-sm text-zinc-500 mt-0.5">Templates email, suivi CRM — fonctionnalité Pro</p>
+                    </div>
+                    <span className="text-xs font-bold bg-amber-500 text-white px-3 py-1 rounded-full">
+                      Passer à Pro
+                    </span>
+                  </button>
+                  {showOutreachUpgrade && (
+                    <UpgradeModal
+                      open={showOutreachUpgrade}
+                      onClose={() => setShowOutreachUpgrade(false)}
+                      reason="contact"
+                    />
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
             {/* Add note */}
             <Card>

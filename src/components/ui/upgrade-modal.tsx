@@ -6,7 +6,7 @@ import { X, Check, Zap, Lock, Loader2 } from 'lucide-react'
 interface UpgradeModalProps {
   open: boolean
   onClose: () => void
-  reason: 'scan_limit' | 'export' | 'audit' | 'pipeline'
+  reason: 'scan_limit' | 'export' | 'audit' | 'pipeline' | 'contact'
 }
 
 const REASONS = {
@@ -25,6 +25,10 @@ const REASONS = {
   pipeline: {
     title: 'Fonctionnalité Pro',
     description: 'Cette fonctionnalité est disponible uniquement dans le plan Pro.',
+  },
+  contact: {
+    title: 'Prospection email — Fonctionnalité Pro',
+    description: 'Accédez aux templates email, au lien mailto pré-rempli et au suivi CRM directement depuis chaque fiche prospect.',
   },
 }
 

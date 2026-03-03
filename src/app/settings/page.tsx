@@ -1,36 +1,59 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Header } from '@/components/layout'
-import { Card, CardHeader, CardTitle, CardContent, Button, Input, Badge } from '@/components/ui'
+import { Card, CardHeader, CardTitle, CardContent, Button } from '@/components/ui'
 import { usePlan } from '@/hooks/usePlan'
 import {
   Settings,
   Database,
   Key,
-  Globe,
   Bell,
   Download,
-  Upload,
   Trash2,
   ExternalLink,
   CheckCircle,
   XCircle,
-  AlertTriangle,
   Crown,
   Zap,
   Loader2,
 } from 'lucide-react'
 
+interface ApiKeyStatus {
+  configured: boolean
+  preview: string | null
+}
+
+interface HealthData {
+  keys: {
+    GOOGLE_MAPS_API_KEY: ApiKeyStatus
+    PAGESPEED_API_KEY: ApiKeyStatus
+    INSEE_API_KEY: ApiKeyStatus
+  }
+}
+
 export default function SettingsPage() {
   const router = useRouter()
   const { isPro } = usePlan()
   const [portalLoading, setPortalLoading] = useState(false)
-  const [supabaseUrl, setSupabaseUrl] = useState('')
-  const [supabaseKey, setSupabaseKey] = useState('')
-  const [testingConnection, setTestingConnection] = useState(false)
-  const [connectionStatus, setConnectionStatus] = useState<'idle' | 'success' | 'error'>('idle')
+  const [health, setHealth] = useState<HealthData | null>(null)
+
+  // Check if Supabase env vars are present (NEXT_PUBLIC_ are available client-side)
+  const supabaseConfigured =
+    !!process.env.NEXT_PUBLIC_SUPABASE_URL &&
+    !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  const supabasePreview = process.env.NEXT_PUBLIC_SUPABASE_URL
+    ? process.env.NEXT_PUBLIC_SUPABASE_URL.replace('https://', '').split('.')[0]
+    : null
+
+  useEffect(() => {
+    fetch('/api/health')
+      .then((r) => r.json())
+      .then(setHealth)
+      .catch(() => {})
+  }, [])
 
   const handleBillingPortal = async () => {
     setPortalLoading(true)
@@ -45,35 +68,15 @@ export default function SettingsPage() {
     }
   }
 
-  const handleTestConnection = async () => {
-    setTestingConnection(true)
-    setConnectionStatus('idle')
-    
-    // Simulate connection test
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    
-    if (supabaseUrl && supabaseKey) {
-      setConnectionStatus('success')
-    } else {
-      setConnectionStatus('error')
-    }
-    
-    setTestingConnection(false)
-  }
-
-  const handleExportData = () => {
-    // In a real app, this would export leads as CSV/JSON
-    alert('Export des données en cours...')
-  }
-
   return (
     <div className="min-h-screen">
-      <Header 
-        title="Paramètres" 
+      <Header
+        title="Paramètres"
         subtitle="Configurez votre application"
       />
-      
+
       <div className="p-6 max-w-4xl space-y-6">
+
         {/* Subscription */}
         <Card>
           <CardHeader>
@@ -93,13 +96,11 @@ export default function SettingsPage() {
                   )}
                 </div>
                 <div>
-                  <p className="font-semibold text-zinc-900">
-                    Plan {isPro ? 'Pro' : 'Gratuit'}
-                  </p>
+                  <p className="font-semibold text-zinc-900">Plan {isPro ? 'Pro' : 'Gratuit'}</p>
                   <p className="text-sm text-zinc-500">
                     {isPro
                       ? 'Accès illimité à toutes les fonctionnalités'
-                      : '50 scans / mois · Fonctionnalités limitées'}
+                      : '3 scans / mois · Fonctionnalités limitées'}
                   </p>
                 </div>
               </div>
@@ -108,7 +109,7 @@ export default function SettingsPage() {
               </span>
             </div>
 
-            <div className="mt-4 flex gap-3">
+            <div className="mt-4">
               {isPro ? (
                 <Button variant="outline" onClick={handleBillingPortal} disabled={portalLoading}>
                   {portalLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
@@ -136,80 +137,44 @@ export default function SettingsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-              <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div className={`flex items-center gap-3 p-4 rounded-lg border ${
+              supabaseConfigured
+                ? 'bg-emerald-50 border-emerald-200'
+                : 'bg-red-50 border-red-200'
+            }`}>
+              {supabaseConfigured ? (
+                <CheckCircle className="h-5 w-5 text-emerald-600 flex-shrink-0" />
+              ) : (
+                <XCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
+              )}
               <div>
-                <p className="font-medium text-amber-800">Mode démonstration actif</p>
-                <p className="text-sm text-amber-700 mt-1">
-                  L'application fonctionne actuellement avec des données fictives. 
-                  Connectez une base Supabase pour persister vos données.
+                <p className={`font-medium ${supabaseConfigured ? 'text-emerald-800' : 'text-red-800'}`}>
+                  {supabaseConfigured ? 'Connecté à Supabase' : 'Supabase non configuré'}
+                </p>
+                <p className={`text-sm mt-0.5 ${supabaseConfigured ? 'text-emerald-700' : 'text-red-700'}`}>
+                  {supabaseConfigured
+                    ? `Projet : ${supabasePreview}.supabase.co`
+                    : 'Ajoutez NEXT_PUBLIC_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_ANON_KEY dans .env.local'}
                 </p>
               </div>
             </div>
-            
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-zinc-700">URL du projet Supabase</label>
-                <Input
-                  placeholder="https://xxxxx.supabase.co"
-                  value={supabaseUrl}
-                  onChange={(e) => setSupabaseUrl(e.target.value)}
-                  icon={<Globe className="h-4 w-4" />}
-                />
+
+            {!supabaseConfigured && (
+              <div className="pt-2 border-t border-zinc-200">
+                <p className="text-sm text-zinc-500 mb-3"><strong>Instructions :</strong></p>
+                <ol className="text-sm text-zinc-600 space-y-2 list-decimal list-inside">
+                  <li>
+                    Créez un projet gratuit sur{' '}
+                    <a href="https://supabase.com" target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:underline">
+                      supabase.com <ExternalLink className="h-3 w-3 inline" />
+                    </a>
+                  </li>
+                  <li>Copiez l'URL et la clé anon depuis Settings → API</li>
+                  <li>Ajoutez-les dans votre <code className="bg-zinc-100 px-1 rounded">.env.local</code></li>
+                  <li>Exécutez le schéma SQL (<code className="bg-zinc-100 px-1 rounded">supabase-schema.sql</code>)</li>
+                </ol>
               </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-zinc-700">Clé API (anon/public)</label>
-                <Input
-                  type="password"
-                  placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                  value={supabaseKey}
-                  onChange={(e) => setSupabaseKey(e.target.value)}
-                  icon={<Key className="h-4 w-4" />}
-                />
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-4">
-              <Button
-                onClick={handleTestConnection}
-                loading={testingConnection}
-                variant="outline"
-              >
-                Tester la connexion
-              </Button>
-              
-              {connectionStatus === 'success' && (
-                <div className="flex items-center gap-2 text-emerald-600">
-                  <CheckCircle className="h-5 w-5" />
-                  <span className="text-sm font-medium">Connexion réussie</span>
-                </div>
-              )}
-              
-              {connectionStatus === 'error' && (
-                <div className="flex items-center gap-2 text-red-600">
-                  <XCircle className="h-5 w-5" />
-                  <span className="text-sm font-medium">Échec de la connexion</span>
-                </div>
-              )}
-            </div>
-            
-            <div className="pt-4 border-t border-zinc-200">
-              <p className="text-sm text-zinc-500 mb-3">
-                <strong>Instructions:</strong>
-              </p>
-              <ol className="text-sm text-zinc-600 space-y-2 list-decimal list-inside">
-                <li>
-                  Créez un projet gratuit sur{' '}
-                  <a href="https://supabase.com" target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:underline">
-                    supabase.com <ExternalLink className="h-3 w-3 inline" />
-                  </a>
-                </li>
-                <li>Copiez l'URL et la clé anon depuis Settings → API</li>
-                <li>Exécutez le schéma SQL (fichier <code className="bg-zinc-100 px-1 rounded">supabase-schema.sql</code>)</li>
-                <li>Ajoutez les variables d'environnement à votre <code className="bg-zinc-100 px-1 rounded">.env.local</code></li>
-              </ol>
-            </div>
+            )}
           </CardContent>
         </Card>
 
@@ -221,31 +186,37 @@ export default function SettingsPage() {
               Clés API externes
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-zinc-500">
-              Ces APIs sont optionnelles mais recommandées pour des résultats optimaux.
-            </p>
-            
-            <div className="space-y-4">
-              <ApiKeyRow
-                name="Google Places API"
-                description="Recherche d'entreprises locales"
-                status="not_configured"
-                docsUrl="https://developers.google.com/maps/documentation/places/web-service"
-              />
-              <ApiKeyRow
-                name="PageSpeed Insights API"
-                description="Audit de performance des sites"
-                status="free"
-                docsUrl="https://developers.google.com/speed/docs/insights/v5/get-started"
-              />
-              <ApiKeyRow
-                name="API Sirene (INSEE)"
-                description="Base officielle des entreprises françaises"
-                status="free"
-                docsUrl="https://api.insee.fr/catalogue/site/themes/wso2/subthemes/insee/pages/item-info.jag?name=Sirene&version=V3&provider=insee"
-              />
-            </div>
+          <CardContent className="space-y-3">
+            {health ? (
+              <>
+                <ApiKeyRow
+                  name="Google Places API"
+                  description="Recherche d'entreprises locales"
+                  status={health.keys.GOOGLE_MAPS_API_KEY}
+                  docsUrl="https://developers.google.com/maps/documentation/places/web-service"
+                  envVar="GOOGLE_MAPS_API_KEY"
+                />
+                <ApiKeyRow
+                  name="PageSpeed Insights API"
+                  description="Audit de performance des sites (gratuit)"
+                  status={health.keys.PAGESPEED_API_KEY}
+                  docsUrl="https://developers.google.com/speed/docs/insights/v5/get-started"
+                  envVar="PAGESPEED_API_KEY"
+                />
+                <ApiKeyRow
+                  name="API Sirene INSEE"
+                  description="Base officielle des entreprises françaises (gratuit)"
+                  status={health.keys.INSEE_API_KEY}
+                  docsUrl="https://api.insee.fr/catalogue/"
+                  envVar="INSEE_CONSUMER_KEY"
+                />
+              </>
+            ) : (
+              <div className="flex items-center gap-2 text-zinc-400 text-sm py-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Vérification des clés...
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -266,7 +237,7 @@ export default function SettingsPage() {
                 </div>
                 <input type="checkbox" defaultChecked className="h-5 w-5 rounded border-zinc-300 text-amber-600 focus:ring-amber-500" />
               </label>
-              
+
               <label className="flex items-center justify-between">
                 <div>
                   <p className="font-medium text-zinc-900">Scan terminé</p>
@@ -274,7 +245,7 @@ export default function SettingsPage() {
                 </div>
                 <input type="checkbox" defaultChecked className="h-5 w-5 rounded border-zinc-300 text-amber-600 focus:ring-amber-500" />
               </label>
-              
+
               <label className="flex items-center justify-between">
                 <div>
                   <p className="font-medium text-zinc-900">Rappels de suivi</p>
@@ -296,16 +267,10 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-3">
-              <Button variant="outline" onClick={handleExportData}>
+              <Button variant="outline">
                 <Download className="h-4 w-4" />
                 Exporter les leads (CSV)
               </Button>
-              
-              <Button variant="outline">
-                <Upload className="h-4 w-4" />
-                Importer des leads
-              </Button>
-              
               <Button variant="destructive">
                 <Trash2 className="h-4 w-4" />
                 Supprimer toutes les données
@@ -320,53 +285,57 @@ export default function SettingsPage() {
             <div className="text-center">
               <h3 className="text-lg font-semibold text-zinc-900">LeadHunter</h3>
               <p className="text-sm text-zinc-500 mt-1">Version 1.0.0</p>
-              <p className="text-sm text-zinc-500 mt-4">
-                Développé pour Artichaud Studio
-              </p>
             </div>
           </CardContent>
         </Card>
+
       </div>
     </div>
   )
 }
 
-function ApiKeyRow({ 
-  name, 
-  description, 
-  status, 
-  docsUrl 
-}: { 
+function ApiKeyRow({
+  name,
+  description,
+  status,
+  docsUrl,
+  envVar,
+}: {
   name: string
   description: string
-  status: 'configured' | 'not_configured' | 'free'
+  status: ApiKeyStatus
   docsUrl: string
+  envVar: string
 }) {
   return (
-    <div className="flex items-center justify-between p-4 bg-zinc-50 rounded-lg">
-      <div>
-        <p className="font-medium text-zinc-900">{name}</p>
-        <p className="text-sm text-zinc-500">{description}</p>
-      </div>
+    <div className={`flex items-center justify-between p-4 rounded-lg border ${
+      status.configured ? 'bg-emerald-50 border-emerald-200' : 'bg-zinc-50 border-zinc-200'
+    }`}>
       <div className="flex items-center gap-3">
-        {status === 'configured' && (
-          <Badge variant="success">Configuré</Badge>
+        {status.configured ? (
+          <CheckCircle className="h-5 w-5 text-emerald-500 flex-shrink-0" />
+        ) : (
+          <XCircle className="h-5 w-5 text-zinc-300 flex-shrink-0" />
         )}
-        {status === 'not_configured' && (
-          <Badge variant="secondary">Non configuré</Badge>
-        )}
-        {status === 'free' && (
-          <Badge variant="info">Gratuit</Badge>
-        )}
-        <a
-          href={docsUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-amber-600 hover:text-amber-700"
-        >
-          <ExternalLink className="h-4 w-4" />
-        </a>
+        <div>
+          <p className="font-medium text-zinc-900">{name}</p>
+          <p className="text-sm text-zinc-500">
+            {status.configured
+              ? <span className="font-mono text-xs text-emerald-700">{status.preview}</span>
+              : <span>{description} — ajoutez <code className="bg-zinc-100 px-1 rounded text-xs">{envVar}</code> dans .env.local</span>
+            }
+          </p>
+        </div>
       </div>
+      <a
+        href={docsUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-zinc-400 hover:text-amber-600 transition-colors ml-3"
+        title="Documentation"
+      >
+        <ExternalLink className="h-4 w-4" />
+      </a>
     </div>
   )
 }

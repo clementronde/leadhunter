@@ -2,9 +2,10 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Badge, Button } from '@/components/ui'
+import { Badge, Button, UpgradeModal } from '@/components/ui'
 import { OutreachPanel } from './outreach-panel'
 import { leadsApi } from '@/lib/api'
+import { usePlan } from '@/hooks/usePlan'
 import { Company, LeadStatus, CreateNoteInput } from '@/types'
 import {
   priorityLabels,
@@ -51,7 +52,9 @@ function RatingDisplay({ rating, count }: { rating?: number | null; count?: numb
 }
 
 export function LeadsTable({ leads, onStatusChange, sortBy, onSort }: LeadsTableProps) {
+  const { isPro } = usePlan()
   const [contactingLead, setContactingLead] = useState<Company | null>(null)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
 
   const columns = [
     { key: 'name', label: 'Établissement', sortable: true },
@@ -224,13 +227,25 @@ export function LeadsTable({ leads, onStatusChange, sortBy, onSort }: LeadsTable
 
               {/* Contact */}
               <td className="px-4 py-4">
-                <button
-                  onClick={() => setContactingLead(lead)}
-                  className="flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors"
-                >
-                  <Mail className="h-3.5 w-3.5" />
-                  Contacter
-                </button>
+                {isPro ? (
+                  <button
+                    onClick={() => setContactingLead(lead)}
+                    className="flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors"
+                  >
+                    <Mail className="h-3.5 w-3.5" />
+                    Contacter
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setShowUpgradeModal(true)}
+                    className="flex items-center gap-1.5 text-xs font-medium text-zinc-400 hover:text-amber-600 transition-colors"
+                    title="Fonctionnalité Pro"
+                  >
+                    <Mail className="h-3.5 w-3.5" />
+                    <span>Contacter</span>
+                    <span className="bg-amber-100 text-amber-700 text-[9px] font-bold px-1 py-0.5 rounded-full leading-none">Pro</span>
+                  </button>
+                )}
               </td>
 
               {/* Actions */}
@@ -245,6 +260,15 @@ export function LeadsTable({ leads, onStatusChange, sortBy, onSort }: LeadsTable
           ))}
         </tbody>
       </table>
+
+      {/* Upgrade modal */}
+      {showUpgradeModal && (
+        <UpgradeModal
+          open={showUpgradeModal}
+          onClose={() => setShowUpgradeModal(false)}
+          reason="contact"
+        />
+      )}
 
       {/* Contact mini-modal */}
       {contactingLead && (
