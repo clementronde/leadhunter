@@ -14,7 +14,7 @@ import {
   Badge,
   UpgradeModal,
 } from '@/components/ui'
-import { usePlan } from '@/hooks/usePlan'
+import { usePlan, FREE_SCAN_LIMIT, FREE_RESULTS_LIMIT } from '@/hooks/usePlan'
 import { Sector, SearchScan, Company } from '@/types'
 import { scannerApi } from '@/lib/api'
 import {
@@ -36,6 +36,7 @@ import {
   Database,
   Zap,
   KeyRound,
+  Lock,
 } from 'lucide-react'
 
 // ============================================
@@ -130,12 +131,14 @@ export default function ScannerPage() {
     { value: '200', label: '200 entreprises' },
   ]
 
-  const gmMaxOptions = [
-    { value: '10', label: '10 lieux' },
-    { value: '20', label: '20 lieux' },
-    { value: '40', label: '40 lieux' },
-    { value: '60', label: '60 lieux (max)' },
-  ]
+  const gmMaxOptions = isPro
+    ? [
+        { value: '10', label: '10 lieux' },
+        { value: '20', label: '20 lieux' },
+        { value: '40', label: '40 lieux' },
+        { value: '60', label: '60 lieux (max)' },
+      ]
+    : [{ value: String(FREE_RESULTS_LIMIT), label: `${FREE_RESULTS_LIMIT} lieux (plan gratuit)` }]
 
   // ============================================
   // Handlers
@@ -213,6 +216,13 @@ export default function ScannerPage() {
       const data = await response.json()
 
       if (!response.ok) {
+        if (data.code === 'SCAN_LIMIT_REACHED') {
+          setUpgradeModal('scan_limit')
+          setIsScanning(false)
+          setScanStatus('idle')
+          setScans((prev) => prev.filter((s) => s.id !== newScan.id))
+          return
+        }
         throw new Error(data.error || 'Erreur lors du scan')
       }
 
@@ -302,13 +312,23 @@ export default function ScannerPage() {
 
         {/* Free user scan counter */}
         {!isPro && (
-          <div className="flex items-center gap-3 p-3 rounded-lg bg-zinc-100 border border-zinc-200 text-sm">
+          <div className={`flex items-center gap-3 p-3 rounded-lg border text-sm ${
+            !canScan
+              ? 'bg-red-50 border-red-200'
+              : scanCountThisMonth >= FREE_SCAN_LIMIT - 1
+              ? 'bg-amber-50 border-amber-200'
+              : 'bg-zinc-100 border-zinc-200'
+          }`}>
             <div className="flex-1">
-              <span className="font-medium text-zinc-700">{scanCountThisMonth} / 50 scans ce mois</span>
+              <span className={`font-medium ${!canScan ? 'text-red-700' : scanCountThisMonth >= FREE_SCAN_LIMIT - 1 ? 'text-amber-700' : 'text-zinc-700'}`}>
+                {scanCountThisMonth} / {FREE_SCAN_LIMIT} scans ce mois
+              </span>
               <div className="mt-1.5 h-1.5 bg-zinc-300 rounded-full overflow-hidden">
                 <div
-                  className={`h-full rounded-full transition-all ${scanCountThisMonth >= 45 ? 'bg-red-500' : 'bg-amber-500'}`}
-                  style={{ width: `${Math.min((scanCountThisMonth / 50) * 100, 100)}%` }}
+                  className={`h-full rounded-full transition-all ${
+                    !canScan ? 'bg-red-500' : scanCountThisMonth >= FREE_SCAN_LIMIT - 1 ? 'bg-amber-500' : 'bg-emerald-500'
+                  }`}
+                  style={{ width: `${Math.min((scanCountThisMonth / FREE_SCAN_LIMIT) * 100, 100)}%` }}
                 />
               </div>
             </div>
@@ -511,12 +531,12 @@ export default function ScannerPage() {
               )}
               <Button
                 onClick={handleStartScan}
-                disabled={!canStartScan || !canScan}
+                disabled={!canStartScan || (!canScan && !isScanning)}
                 loading={isScanning}
                 className="min-w-[160px]"
               >
-                <Play className="h-4 w-4" />
-                {isScanning ? 'Scan en cours...' : 'Lancer le scan'}
+                {!canScan ? <Lock className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                {isScanning ? 'Scan en cours...' : !canScan ? 'Limite atteinte' : 'Lancer le scan'}
               </Button>
             </div>
           </CardContent>

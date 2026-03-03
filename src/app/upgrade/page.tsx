@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Header } from '@/components/layout'
 import { Card, CardContent, Button, Badge } from '@/components/ui'
-import { usePlan } from '@/hooks/usePlan'
+import { usePlan, FREE_SCAN_LIMIT } from '@/hooks/usePlan'
 import { useAuth } from '@/components/auth/auth-provider'
 import {
   Zap,
@@ -82,7 +82,7 @@ function UpgradeContent() {
     }
   }
 
-  const scanPct = Math.min((scanCountThisMonth / 50) * 100, 100)
+  const scanPct = Math.min((scanCountThisMonth / FREE_SCAN_LIMIT) * 100, 100)
 
   return (
     <div className="p-6 max-w-3xl space-y-6">
@@ -124,7 +124,7 @@ function UpgradeContent() {
               <div className="flex items-center justify-between text-sm mb-1.5">
                 <span className="text-zinc-600">Scans ce mois</span>
                 <span className={`font-semibold ${!canScan ? 'text-red-600' : 'text-zinc-900'}`}>
-                  {scanCountThisMonth} / 50
+                  {scanCountThisMonth} / {FREE_SCAN_LIMIT}
                 </span>
               </div>
               <div className="h-2 bg-zinc-200 rounded-full overflow-hidden">
@@ -143,7 +143,7 @@ function UpgradeContent() {
             <ul className="space-y-1.5 text-sm text-zinc-600">
               <li className="flex items-center gap-2">
                 <Check className="h-3.5 w-3.5 text-zinc-400" />
-                50 scans / mois
+                3 scans / mois
               </li>
               <li className="flex items-center gap-2 line-through text-zinc-400">
                 <Check className="h-3.5 w-3.5 text-zinc-300" />

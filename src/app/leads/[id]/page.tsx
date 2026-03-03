@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Header } from '@/components/layout'
 import { Card, CardHeader, CardTitle, CardContent, Badge, Button, Input, Skeleton } from '@/components/ui'
+import { OutreachPanel } from '@/components/leads'
 import { leadsApi } from '@/lib/api'
 import { Company, LeadStatus, Note } from '@/types'
 import {
@@ -357,6 +358,23 @@ export default function LeadDetailPage() {
           
           {/* Right column: Notes & Timeline */}
           <div className="space-y-6">
+            {/* Outreach panel */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Contacter</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <OutreachPanel
+                  lead={lead}
+                  onStatusChange={handleStatusChange}
+                  onNoteAdded={async (input) => {
+                    const note = await leadsApi.addNote(input)
+                    setLead(prev => prev ? { ...prev, notes: [note, ...prev.notes] } : null)
+                  }}
+                />
+              </CardContent>
+            </Card>
+
             {/* Add note */}
             <Card>
               <CardHeader>

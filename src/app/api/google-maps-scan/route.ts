@@ -36,8 +36,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Non authentifie' }, { status: 401 })
     }
 
+    const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).single()
+    const isProUser = profile?.plan === 'pro'
+    if (!isProUser) {
+      const startOfMonth = new Date(); startOfMonth.setDate(1); startOfMonth.setHours(0, 0, 0, 0)
+      const { count } = await supabase.from('search_scans')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id).gte('started_at', startOfMonth.toISOString())
+      if ((count ?? 0) >= 3)
+        return NextResponse.json({ error: 'Limite atteinte', code: 'SCAN_LIMIT_REACHED' }, { status: 403 })
+    }
+
     const body = await request.json()
-    const { query, location, maxResults = 20, auditWebsites = false } = body
+    const { query, location, maxResults: requestedMax = 20, auditWebsites = false } = body
 
     if (!query || !query.trim()) {
       return NextResponse.json(
@@ -60,16 +71,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const limitedMax = Math.min(maxResults, 60)
+    const maxResults = isProUser ? Math.min(requestedMax, 60) : Math.min(requestedMax, 10)
 
-    console.log(`🗺️ Demarrage scan Google Maps: "${query}" a "${location}" (max ${limitedMax}) [user: ${user.id}]`)
+    console.log(`🗺️ Demarrage scan Google Maps: "${query}" a "${location}" (max ${maxResults}) [user: ${user.id}]`)
 
     // 1. Search Google Places
     const { places, total, withWebsite, withoutWebsite } =
       await searchAndEnrichGooglePlaces({
         query: query.trim(),
         location: location.trim(),
-        maxResults: limitedMax,
+        maxResults: maxResults,
       })
 
     console.log(`📊 ${total} lieux trouves: ${withWebsite} avec site, ${withoutWebsite} sans site`)

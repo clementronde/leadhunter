@@ -20,12 +20,23 @@ import {
   Zap,
 } from 'lucide-react'
 
-const navigation = [
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { name: 'Leads', href: '/leads', icon: Users },
-  { name: 'Scanner', href: '/scanner', icon: Radar },
-  { name: 'Pipeline', href: '/pipeline', icon: Kanban },
-  { name: 'Parametres', href: '/settings', icon: Settings },
+const navigationGroups = [
+  {
+    label: null,
+    items: [{ name: 'Dashboard', href: '/', icon: LayoutDashboard }],
+  },
+  {
+    label: 'Prospection',
+    items: [
+      { name: 'Leads', href: '/leads', icon: Users },
+      { name: 'Scanner', href: '/scanner', icon: Radar },
+      { name: 'Pipeline', href: '/pipeline', icon: Kanban },
+    ],
+  },
+  {
+    label: null,
+    items: [{ name: 'Parametres', href: '/settings', icon: Settings }],
+  },
 ]
 
 export function Sidebar() {
@@ -65,34 +76,43 @@ export function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex flex-col gap-1 p-3 mt-4">
-        {navigation.map((item) => {
-          const isActive = pathname === item.href ||
-            (item.href !== '/' && pathname.startsWith(item.href))
+        {navigationGroups.map((group, gi) => (
+          <div key={gi} className={gi > 0 ? 'mt-2' : ''}>
+            {group.label && sidebarOpen && (
+              <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-zinc-500">
+                {group.label}
+              </p>
+            )}
+            {group.items.map((item) => {
+              const isActive = pathname === item.href ||
+                (item.href !== '/' && pathname.startsWith(item.href))
 
-          return (
-            <Link
-              key={item.name}
-              href={item.href}
-              className={cn(
-                'relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
-                isActive
-                  ? 'bg-amber-500/15 backdrop-blur-sm text-amber-500'
-                  : 'text-zinc-400 hover:bg-white/5 hover:text-white'
-              )}
-              title={!sidebarOpen ? item.name : undefined}
-            >
-              {isActive && (
-                <motion.div
-                  layoutId="sidebar-active"
-                  className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-amber-500 rounded-full"
-                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                />
-              )}
-              <item.icon className={cn('h-5 w-5 flex-shrink-0', isActive && 'text-amber-500')} />
-              {sidebarOpen && <span>{item.name}</span>}
-            </Link>
-          )
-        })}
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={cn(
+                    'relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
+                    isActive
+                      ? 'bg-amber-500/15 backdrop-blur-sm text-amber-500'
+                      : 'text-zinc-400 hover:bg-white/5 hover:text-white'
+                  )}
+                  title={!sidebarOpen ? item.name : undefined}
+                >
+                  {isActive && (
+                    <motion.div
+                      layoutId="sidebar-active"
+                      className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-amber-500 rounded-full"
+                      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                    />
+                  )}
+                  <item.icon className={cn('h-5 w-5 flex-shrink-0', isActive && 'text-amber-500')} />
+                  {sidebarOpen && <span>{item.name}</span>}
+                </Link>
+              )
+            })}
+          </div>
+        ))}
       </nav>
 
       {/* Footer with user info */}

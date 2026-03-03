@@ -213,10 +213,33 @@ function LeadsContent() {
       ) : leads.length === 0 ? (
         <Card className="p-12">
           <div className="text-center">
-            <p className="text-zinc-400 text-lg mb-2">Aucun lead trouve</p>
-            <p className="text-zinc-500 text-sm">
-              Lancez un scan depuis le <a href="/scanner" className="text-amber-600 hover:underline">Scanner</a> pour trouver des prospects.
-            </p>
+            {Object.keys(filters).length > 0 ? (
+              <>
+                <p className="text-zinc-400 text-lg mb-2">Aucun résultat</p>
+                <p className="text-zinc-500 text-sm mb-4">
+                  Aucun lead ne correspond à vos filtres actifs.
+                </p>
+                <button
+                  onClick={() => setFilters({})}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-zinc-100 text-zinc-700 text-sm font-medium hover:bg-zinc-200 transition-colors"
+                >
+                  Réinitialiser les filtres
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="text-zinc-400 text-lg mb-2">Aucun lead</p>
+                <p className="text-zinc-500 text-sm mb-4">
+                  Vous n'avez pas encore de prospects. Lancez un scan pour en trouver.
+                </p>
+                <a
+                  href="/scanner"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-500 text-white text-sm font-medium hover:bg-amber-600 transition-colors"
+                >
+                  Lancer un scan
+                </a>
+              </>
+            )}
           </div>
         </Card>
       ) : viewMode === 'table' ? (

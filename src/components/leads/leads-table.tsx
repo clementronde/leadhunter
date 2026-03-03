@@ -1,8 +1,11 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { Badge, Button } from '@/components/ui'
-import { Company, LeadStatus } from '@/types'
+import { OutreachPanel } from './outreach-panel'
+import { leadsApi } from '@/lib/api'
+import { Company, LeadStatus, CreateNoteInput } from '@/types'
 import {
   priorityLabels,
   priorityColors,
@@ -18,6 +21,8 @@ import {
   ArrowUpDown,
   Star,
   ExternalLink,
+  Mail,
+  X,
 } from 'lucide-react'
 
 interface LeadsTableProps {
@@ -46,6 +51,8 @@ function RatingDisplay({ rating, count }: { rating?: number | null; count?: numb
 }
 
 export function LeadsTable({ leads, onStatusChange, sortBy, onSort }: LeadsTableProps) {
+  const [contactingLead, setContactingLead] = useState<Company | null>(null)
+
   const columns = [
     { key: 'name', label: 'Établissement', sortable: true },
     { key: 'city', label: 'Adresse', sortable: true },
@@ -55,6 +62,7 @@ export function LeadsTable({ leads, onStatusChange, sortBy, onSort }: LeadsTable
     { key: 'prospect_score', label: 'Score', sortable: true },
     { key: 'priority', label: 'Priorité', sortable: true },
     { key: 'status', label: 'Statut', sortable: true },
+    { key: 'contact', label: 'Contact', sortable: false },
     { key: 'actions', label: '', sortable: false },
   ]
 
@@ -214,6 +222,17 @@ export function LeadsTable({ leads, onStatusChange, sortBy, onSort }: LeadsTable
                 </select>
               </td>
 
+              {/* Contact */}
+              <td className="px-4 py-4">
+                <button
+                  onClick={() => setContactingLead(lead)}
+                  className="flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors"
+                >
+                  <Mail className="h-3.5 w-3.5" />
+                  Contacter
+                </button>
+              </td>
+
               {/* Actions */}
               <td className="px-4 py-4">
                 <Link href={`/leads/${lead.id}`}>
@@ -226,6 +245,42 @@ export function LeadsTable({ leads, onStatusChange, sortBy, onSort }: LeadsTable
           ))}
         </tbody>
       </table>
+
+      {/* Contact mini-modal */}
+      {contactingLead && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
+          onClick={() => setContactingLead(null)}
+        >
+          <div className="absolute inset-0 bg-zinc-900/50 backdrop-blur-sm" />
+          <div
+            className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-zinc-900">Contacter {contactingLead.name}</h3>
+              <button
+                onClick={() => setContactingLead(null)}
+                className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <OutreachPanel
+              compact
+              lead={contactingLead}
+              onStatusChange={(s) => {
+                onStatusChange?.(contactingLead.id, s)
+                setContactingLead(null)
+              }}
+              onNoteAdded={async (input: CreateNoteInput) => {
+                await leadsApi.addNote(input)
+                setContactingLead(null)
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       {leads.length === 0 && (
         <div className="text-center py-12 text-zinc-500">

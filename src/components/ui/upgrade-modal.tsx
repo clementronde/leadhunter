@@ -12,7 +12,7 @@ interface UpgradeModalProps {
 const REASONS = {
   scan_limit: {
     title: 'Limite de scans atteinte',
-    description: 'Vous avez utilisé vos 50 scans gratuits ce mois-ci. Passez à Pro pour des scans illimités.',
+    description: 'Vous avez utilisé vos 3 scans gratuits ce mois-ci. Passez à Pro pour des scans illimités.',
   },
   export: {
     title: 'Export réservé aux abonnés Pro',

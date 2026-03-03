@@ -36,8 +36,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Non authentifie' }, { status: 401 })
     }
 
+    const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).single()
+    const isProUser = profile?.plan === 'pro'
+    if (!isProUser) {
+      const startOfMonth = new Date(); startOfMonth.setDate(1); startOfMonth.setHours(0, 0, 0, 0)
+      const { count } = await supabase.from('search_scans')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id).gte('started_at', startOfMonth.toISOString())
+      if ((count ?? 0) >= 3)
+        return NextResponse.json({ error: 'Limite atteinte', code: 'SCAN_LIMIT_REACHED' }, { status: 403 })
+    }
+
     const body = await request.json()
-    const { codePostal, commune, activite, nombreResultats = 50 } = body
+    const { codePostal, commune, activite, nombreResultats: requestedNombre = 50 } = body
+    const nombreResultats = isProUser ? requestedNombre : Math.min(requestedNombre, 10)
 
     if (!codePostal && !commune) {
       return NextResponse.json(

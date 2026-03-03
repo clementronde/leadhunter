@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '@/components/auth/auth-provider'
 import { supabase } from '@/lib/supabase'
 
+export const FREE_SCAN_LIMIT = 3
+export const FREE_RESULTS_LIMIT = 10
+
 export function usePlan() {
   const { user, isPro } = useAuth()
   const [scanCountThisMonth, setScanCountThisMonth] = useState(0)
@@ -27,8 +30,10 @@ export function usePlan() {
   return {
     isPro,
     scanCountThisMonth,
-    canScan: isPro || scanCountThisMonth < 50,
+    canScan: isPro || scanCountThisMonth < FREE_SCAN_LIMIT,
     canExport: isPro,
     canAudit: isPro,
+    FREE_SCAN_LIMIT,
+    FREE_RESULTS_LIMIT,
   }
 }
