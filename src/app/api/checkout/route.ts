@@ -11,6 +11,11 @@ export async function POST(request: Request) {
   } catch {
     // no body or invalid JSON — use default
   }
+
+  // Derive app URL from request origin as fallback (works on Vercel without NEXT_PUBLIC_APP_URL)
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') ||
+    new URL(request.url).origin
+
   const cookieStore = await cookies()
 
   const supabase = createServerClient(
@@ -45,8 +50,8 @@ export async function POST(request: Request) {
           quantity: 1,
         },
       ],
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}${returnPath}?success=true`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}${returnPath}`,
+      success_url: `${appUrl}${returnPath}?success=true`,
+      cancel_url: `${appUrl}${returnPath}`,
       client_reference_id: user.id,
       customer_email: user.email,
     })

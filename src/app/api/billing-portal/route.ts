@@ -3,7 +3,7 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { stripe } from '@/lib/stripe'
 
-export async function POST() {
+export async function POST(request: Request) {
   const cookieStore = await cookies()
 
   const supabase = createServerClient(
@@ -40,10 +40,18 @@ export async function POST() {
     return NextResponse.json({ error: 'No Stripe customer found' }, { status: 400 })
   }
 
-  const session = await stripe.billingPortal.sessions.create({
-    customer: profile.stripe_customer_id,
-    return_url: `${process.env.NEXT_PUBLIC_APP_URL}/upgrade`,
-  })
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') ||
+    new URL(request.url).origin
 
-  return NextResponse.json({ url: session.url })
+  try {
+    const session = await stripe.billingPortal.sessions.create({
+      customer: profile.stripe_customer_id,
+      return_url: `${appUrl}/upgrade`,
+    })
+    return NextResponse.json({ url: session.url })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Stripe error'
+    console.error('[billing-portal]', message)
+    return NextResponse.json({ error: message }, { status: 500 })
+  }
 }
