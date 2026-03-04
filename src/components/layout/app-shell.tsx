@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/components/auth/auth-provider'
 import { usePathname } from 'next/navigation'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { Sidebar } from './sidebar'
 import { useUIStore } from '@/lib/store'
 
@@ -12,7 +12,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const sidebarOpen = useUIStore((s) => s.sidebarOpen)
   const isLoginPage = pathname === '/login'
 
-  // Show sidebar only if user is logged in and not on login page
   const showSidebar = !!user && !isLoginPage
 
   if (loading) {
@@ -26,17 +25,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   if (!showSidebar) {
     return (
       <main className="min-h-screen">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={pathname}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.2, ease: 'easeOut' }}
-          >
-            {children}
-          </motion.div>
-        </AnimatePresence>
+        <motion.div
+          key={pathname}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.18, ease: 'easeOut' }}
+        >
+          {children}
+        </motion.div>
       </main>
     )
   }
@@ -45,17 +41,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <>
       <Sidebar />
       <main className={`${sidebarOpen ? 'ml-64' : 'ml-20'} min-h-screen transition-all duration-300`}>
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={pathname}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.2, ease: 'easeOut' }}
-          >
-            {children}
-          </motion.div>
-        </AnimatePresence>
+        <motion.div
+          key={pathname}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.18, ease: 'easeOut' }}
+        >
+          {children}
+        </motion.div>
       </main>
     </>
   )
