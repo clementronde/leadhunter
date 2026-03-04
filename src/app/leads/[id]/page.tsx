@@ -136,9 +136,10 @@ export default function LeadDetailPage() {
           : null
       )
 
-      // Recharger depuis la DB en arrière-plan pour avoir les données fraîches
+      // Recharger depuis la DB en arrière-plan — seulement si l'audit est bien présent
+      // (évite d'écraser l'état local si la propagation Supabase est légèrement différée)
       leadsApi.getById(lead.id).then((updated) => {
-        if (updated) setLead(updated)
+        if (updated?.audit) setLead(updated)
       }).catch(() => {/* garder les données de la réponse */})
 
     } catch (err) {
