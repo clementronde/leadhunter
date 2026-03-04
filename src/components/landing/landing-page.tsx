@@ -7,6 +7,7 @@ import {
   Target, MapPin, Zap, Globe, ArrowRight, Check, Phone,
   ExternalLink, Shield, Smartphone, AlertTriangle, X,
   Building2, Database, Download, KanbanSquare,
+  LayoutDashboard, Users, Radar, Globe2, Wrench, Flame,
 } from 'lucide-react'
 
 /* ─── Variants ─────────────────────────────────────────────────────────────── */
@@ -265,119 +266,211 @@ function Hero() {
 
 /* ─── Dashboard Mockup (Hero) ─────────────────────────────────────────────── */
 
-const CHART_BARS = [40, 65, 45, 80, 55, 90, 95]
 const DASH_RECENT = [
-  { name: 'Boulangerie Martin', tag: 'Chaud', score: 95 },
-  { name: 'Plomberie Moreau', tag: 'Chaud', score: 91 },
-  { name: 'Coiffure Élise', tag: 'Tiède', score: 62 },
+  { name: 'Boulangerie Martin', city: 'Lyon', priority: 'Chaud', score: 95, noSite: true },
+  { name: 'Plomberie Moreau', city: 'Marseille', priority: 'Chaud', score: 91, noSite: true },
+  { name: 'Coiffure Élise', city: 'Bordeaux', priority: 'Tiède', score: 62, noSite: false },
+  { name: 'Auto École Dupont', city: 'Nantes', priority: 'Froid', score: 28, noSite: false },
+]
+
+const MOCK_NAV = [
+  { icon: LayoutDashboard, label: 'Dashboard', active: true },
+  { icon: Users, label: 'Leads', active: false },
+  { icon: Radar, label: 'Scanner', active: false },
+  { icon: KanbanSquare, label: 'Pipeline', active: false },
 ]
 
 function DashboardMockup() {
-  const [counts, setCounts] = useState({ leads: 0, hot: 0, scans: 0, rate: 0 })
-  const [chartVisible, setChartVisible] = useState(0)
+  const [counts, setCounts] = useState({ leads: 0, noSite: 0, refonte: 0, hot: 0 })
   const [recentVisible, setRecentVisible] = useState(0)
 
   useEffect(() => {
-    function animate() {
-      setCounts({ leads: 0, hot: 0, scans: 0, rate: 0 })
-      setChartVisible(0)
+    function run() {
+      setCounts({ leads: 0, noSite: 0, refonte: 0, hot: 0 })
       setRecentVisible(0)
-
       let step = 0
-      const total = 40
+      const total = 45
       const t = setInterval(() => {
         step++
-        const p = Math.min(step / total, 1)
-        const e = 1 - (1 - p) ** 3
+        const e = 1 - (1 - Math.min(step / total, 1)) ** 3
         setCounts({
           leads: Math.round(247 * e),
+          noSite: Math.round(89 * e),
+          refonte: Math.round(54 * e),
           hot: Math.round(38 * e),
-          scans: Math.round(12 * e),
-          rate: Math.round(8 * e),
         })
         if (step >= total) {
           clearInterval(t)
-          let bi = 0
-          const bt = setInterval(() => {
-            bi++; setChartVisible(bi)
-            if (bi >= CHART_BARS.length) {
-              clearInterval(bt)
-              let ri = 0
-              const rt = setInterval(() => {
-                ri++; setRecentVisible(ri)
-                if (ri >= DASH_RECENT.length) {
-                  clearInterval(rt)
-                  setTimeout(animate, 5000)
-                }
-              }, 400)
+          let ri = 0
+          const rt = setInterval(() => {
+            ri++; setRecentVisible(ri)
+            if (ri >= DASH_RECENT.length) {
+              clearInterval(rt)
+              setTimeout(run, 6000)
             }
-          }, 100)
+          }, 350)
         }
-      }, 35)
+      }, 30)
     }
-    animate()
+    run()
   }, [])
 
   return (
     <div className="rounded-2xl border border-white/[0.08] bg-zinc-900/60 backdrop-blur-sm overflow-hidden shadow-2xl shadow-black/60">
-      {/* Window bar */}
-      <div className="flex items-center gap-1.5 px-4 py-3 border-b border-white/[0.06] bg-zinc-950/50">
+      {/* Window chrome */}
+      <div className="flex items-center gap-1.5 px-4 py-2.5 border-b border-white/[0.06] bg-zinc-950/60">
         <div className="w-3 h-3 rounded-full bg-red-500/70" />
         <div className="w-3 h-3 rounded-full bg-amber-500/70" />
         <div className="w-3 h-3 rounded-full bg-emerald-500/70" />
-        <span className="ml-3 text-xs text-zinc-500">LeadHunter — Dashboard</span>
+        <span className="ml-3 text-[10px] text-zinc-500 font-mono">leadhunter.app — Dashboard</span>
       </div>
 
-      <div className="p-5">
-        {/* Stats grid */}
-        <div className="grid grid-cols-4 gap-2.5 mb-5">
-          {[
-            { label: 'Leads trouvés', value: counts.leads, suffix: '', color: 'text-white' },
-            { label: 'Leads chauds', value: counts.hot, suffix: ' 🔥', color: 'text-red-400' },
-            { label: 'Scans / mois', value: counts.scans, suffix: '', color: 'text-amber-400' },
-            { label: 'Taux closing', value: counts.rate, suffix: '%', color: 'text-emerald-400' },
-          ].map(({ label, value, suffix, color }) => (
-            <div key={label} className="bg-zinc-800/50 border border-white/[0.06] rounded-xl p-3">
-              <p className="text-[9px] text-zinc-500 mb-1.5 leading-tight">{label}</p>
-              <p className={`text-xl font-bold font-mono leading-none ${color}`}>{value}{suffix}</p>
+      <div className="flex" style={{ height: '360px' }}>
+        {/* Sidebar */}
+        <div className="w-[138px] shrink-0 border-r border-white/[0.06] bg-zinc-950/50 flex flex-col">
+          <div className="flex items-center gap-2 px-3 py-3 border-b border-white/[0.06]">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 shrink-0">
+              <Target className="h-4 w-4 text-white" />
             </div>
-          ))}
-        </div>
+            <span className="text-sm font-bold text-white">Lead<span className="text-amber-500">Hunter</span></span>
+          </div>
 
-        {/* Mini bar chart */}
-        <div className="mb-4">
-          <p className="text-[9px] text-zinc-500 mb-2 uppercase tracking-wide">Activité — 7 derniers jours</p>
-          <div className="flex items-end gap-1 h-14">
-            {CHART_BARS.map((h, i) => (
-              <motion.div
-                key={i}
-                className="flex-1 rounded-t-sm bg-gradient-to-t from-amber-500/60 to-amber-400/20"
-                style={{ height: '0%' }}
-                animate={{ height: i < chartVisible ? `${h}%` : '0%' }}
-                transition={{ duration: 0.3, ease: 'easeOut' }}
-              />
+          <nav className="flex flex-col gap-0.5 p-2 mt-1">
+            {MOCK_NAV.map(({ icon: Icon, label, active }) => (
+              <div
+                key={label}
+                className={`relative flex items-center gap-2.5 px-2.5 py-2 rounded-lg ${
+                  active ? 'bg-amber-500/15 text-amber-500' : 'text-zinc-500'
+                }`}
+              >
+                {active && (
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-amber-500 rounded-full" />
+                )}
+                <Icon className="h-3.5 w-3.5 shrink-0" />
+                <span className="text-[11px] font-medium">{label}</span>
+              </div>
             ))}
+          </nav>
+
+          <div className="flex-1" />
+
+          <div className="border-t border-white/[0.06] p-2">
+            <div className="flex items-center gap-2 p-2 rounded-lg bg-zinc-800/60">
+              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-amber-500/20 shrink-0">
+                <span className="text-[10px] font-bold text-amber-400">C</span>
+              </div>
+              <div className="min-w-0">
+                <p className="text-[9px] font-medium text-white truncate leading-none">clement@...</p>
+                <span className="text-[8px] font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-orange-600">PRO</span>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Recent leads — fixed height prevents layout shift */}
-        <div>
-          <p className="text-[9px] text-zinc-500 uppercase tracking-wide mb-2">Derniers leads détectés</p>
-          <div className="space-y-1.5 min-h-[126px]">
-            {DASH_RECENT.slice(0, recentVisible).map((lead, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.25 }}
-                className="flex items-center gap-2 p-2 rounded-lg bg-zinc-800/40 border border-white/[0.04]"
-              >
-                <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${lead.tag === 'Chaud' ? 'bg-red-400' : 'bg-amber-400'}`} />
-                <p className="text-xs font-medium text-white flex-1 truncate">{lead.name}</p>
-                <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${lead.tag === 'Chaud' ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-400'}`}>{lead.tag}</span>
-                <span className="text-[10px] font-bold text-zinc-500">{lead.score}</span>
-              </motion.div>
+        {/* Main content */}
+        <div className="flex-1 overflow-hidden flex flex-col p-3 gap-2.5 min-w-0">
+          {/* Header */}
+          <div>
+            <p className="text-sm font-bold text-white leading-none">Dashboard</p>
+            <p className="text-[9px] text-zinc-500 mt-0.5">Vue d'ensemble de votre prospection</p>
+          </div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-4 gap-2">
+            {[
+              { label: 'Total Leads', value: counts.leads, icon: Users, iconColor: 'text-zinc-300', bg: 'bg-zinc-700/50', trend: '+12%' },
+              { label: 'Sans site web', value: counts.noSite, icon: Globe, iconColor: 'text-blue-400', bg: 'bg-blue-500/15', trend: null },
+              { label: 'Besoin refonte', value: counts.refonte, icon: Wrench, iconColor: 'text-amber-400', bg: 'bg-amber-500/15', trend: null },
+              { label: 'Leads chauds', value: counts.hot, icon: Flame, iconColor: 'text-red-400', bg: 'bg-red-500/15', trend: '+25%' },
+            ].map(({ label, value, icon: Icon, iconColor, bg, trend }) => (
+              <div key={label} className="bg-zinc-800/50 border border-white/[0.06] rounded-xl p-2.5">
+                <div className="flex items-start justify-between mb-1.5">
+                  <p className="text-[8px] text-zinc-500 leading-tight">{label}</p>
+                  <div className={`flex h-5 w-5 items-center justify-center rounded-lg ${bg}`}>
+                    <Icon className={`h-3 w-3 ${iconColor}`} />
+                  </div>
+                </div>
+                <p className="text-[18px] font-bold text-white leading-none">{value}</p>
+                {trend && <p className="text-[8px] text-emerald-400 mt-1">{trend} cette sem.</p>}
+              </div>
             ))}
+          </div>
+
+          {/* Chart + Leads row */}
+          <div className="grid grid-cols-5 gap-2 flex-1 min-h-0">
+            {/* Area chart */}
+            <div className="col-span-3 bg-zinc-800/40 border border-white/[0.06] rounded-xl p-2.5 flex flex-col">
+              <p className="text-[9px] font-semibold text-white mb-1">Évolution des leads</p>
+              <div className="flex-1 relative">
+                <svg className="absolute inset-0 w-full h-full" viewBox="0 0 200 70" preserveAspectRatio="none">
+                  <defs>
+                    <linearGradient id="gAmber" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="rgb(245,158,11)" stopOpacity="0.4" />
+                      <stop offset="100%" stopColor="rgb(245,158,11)" stopOpacity="0" />
+                    </linearGradient>
+                    <linearGradient id="gGreen" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="rgb(16,185,129)" stopOpacity="0.3" />
+                      <stop offset="100%" stopColor="rgb(16,185,129)" stopOpacity="0" />
+                    </linearGradient>
+                  </defs>
+                  {[20, 40, 60].map(y => (
+                    <line key={y} x1="0" y1={y} x2="200" y2={y} stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+                  ))}
+                  <path d="M0,60 C25,52 45,30 70,35 S105,18 130,20 S165,8 200,5 L200,70 L0,70 Z" fill="url(#gAmber)" />
+                  <path d="M0,60 C25,52 45,30 70,35 S105,18 130,20 S165,8 200,5" fill="none" stroke="rgb(245,158,11)" strokeWidth="1.5" strokeLinecap="round" />
+                  <path d="M0,65 C30,62 55,52 80,56 S115,44 150,42 S180,38 200,34 L200,70 L0,70 Z" fill="url(#gGreen)" />
+                  <path d="M0,65 C30,62 55,52 80,56 S115,44 150,42 S180,38 200,34" fill="none" stroke="rgb(16,185,129)" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+              </div>
+              <div className="flex gap-3 mt-1.5">
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-0.5 bg-amber-500 rounded" />
+                  <span className="text-[8px] text-zinc-500">Nouveaux leads</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-0.5 bg-emerald-500 rounded" />
+                  <span className="text-[8px] text-zinc-500">Contactés</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Recent leads */}
+            <div className="col-span-2 bg-zinc-800/40 border border-white/[0.06] rounded-xl p-2.5 flex flex-col">
+              <p className="text-[9px] font-semibold text-white mb-1.5">Leads prioritaires</p>
+              <div className="space-y-1.5 flex-1">
+                {DASH_RECENT.slice(0, recentVisible).map((lead, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, x: -6 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="flex items-center gap-2 p-1.5 rounded-lg bg-zinc-800/60 border border-white/[0.04]"
+                  >
+                    <div className={`flex h-5 w-5 items-center justify-center rounded-md shrink-0 ${lead.noSite ? 'bg-amber-500/20' : 'bg-zinc-700/60'}`}>
+                      {lead.noSite
+                        ? <Globe2 className="h-3 w-3 text-amber-400" />
+                        : <Globe className="h-3 w-3 text-zinc-400" />
+                      }
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[9px] font-medium text-white truncate leading-none">{lead.name}</p>
+                      <p className="text-[8px] text-zinc-500 leading-none mt-0.5">{lead.city}</p>
+                    </div>
+                    <div className="flex flex-col items-end gap-0.5 shrink-0">
+                      <span className={`text-[7px] px-1 py-0.5 rounded font-bold leading-none ${
+                        lead.priority === 'Chaud' ? 'bg-red-500/20 text-red-400' :
+                        lead.priority === 'Tiède' ? 'bg-amber-500/20 text-amber-400' :
+                        'bg-blue-500/20 text-blue-400'
+                      }`}>{lead.priority}</span>
+                      <span className="text-[9px] font-bold text-zinc-400">{lead.score}</span>
+                    </div>
+                  </motion.div>
+                ))}
+                {Array.from({ length: Math.max(0, DASH_RECENT.length - recentVisible) }).map((_, i) => (
+                  <div key={`ph-${i}`} className="h-8 rounded-lg bg-zinc-800/30 border border-white/[0.03] animate-pulse" />
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </div>
