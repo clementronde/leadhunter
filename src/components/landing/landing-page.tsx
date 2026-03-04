@@ -78,30 +78,30 @@ function Navbar() {
 
 function HeroParticles() {
   const [particles, setParticles] = useState<
-    { id: number; left: string; delay: number; duration: number; size: number; opacity: number }[]
+    { id: number; left: string; delay: number; duration: number; size: string; opacity: number }[]
   >([])
 
   useEffect(() => {
     setParticles(
-      Array.from({ length: 24 }, (_, i) => ({
+      Array.from({ length: 28 }, (_, i) => ({
         id: i,
-        left: `${4 + Math.random() * 92}%`,
-        delay: Math.random() * 6,
-        duration: 5 + Math.random() * 5,
-        size: 2 + Math.random() * 2.5,
-        opacity: 0.4 + Math.random() * 0.45,
+        left: `${3 + Math.random() * 94}%`,
+        delay: Math.random() * 5,
+        duration: 4 + Math.random() * 5,
+        size: `${4 + Math.random() * 5}px`,
+        opacity: 0.55 + Math.random() * 0.45,
       }))
     )
   }, [])
 
   return (
-    <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+    <div className="pointer-events-none absolute inset-0 overflow-hidden">
       {particles.map((p) => (
         <motion.div
           key={p.id}
           className="absolute rounded-full bg-amber-400"
-          style={{ left: p.left, bottom: 0, width: p.size, height: p.size }}
-          animate={{ y: [0, -680], opacity: [0, p.opacity, p.opacity, 0] }}
+          style={{ left: p.left, bottom: '-10px', width: p.size, height: p.size }}
+          animate={{ y: [0, -700], opacity: [0, p.opacity, p.opacity, 0] }}
           transition={{
             duration: p.duration,
             delay: p.delay,
@@ -120,31 +120,46 @@ function Hero() {
 
       {/* Dot grid background */}
       <div
-        className="pointer-events-none absolute inset-0 -z-20"
+        className="pointer-events-none absolute inset-0"
         style={{
-          backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.09) 1px, transparent 1px)',
+          backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.10) 1px, transparent 1px)',
           backgroundSize: '34px 34px',
-          maskImage: 'radial-gradient(ellipse at 50% 20%, black 0%, transparent 70%)',
-          WebkitMaskImage: 'radial-gradient(ellipse at 50% 20%, black 0%, transparent 70%)',
+          maskImage: 'radial-gradient(ellipse 80% 60% at 50% 10%, black 0%, transparent 100%)',
+          WebkitMaskImage: 'radial-gradient(ellipse 80% 60% at 50% 10%, black 0%, transparent 100%)',
         }}
       />
 
-      {/* Animated orbs */}
-      <div className="pointer-events-none absolute inset-0 -z-10">
+      {/* Static amber glow — always visible, no z-index tricks */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background: 'radial-gradient(ellipse 90% 55% at 50% -5%, rgba(251,146,60,0.45) 0%, rgba(245,158,11,0.20) 40%, transparent 70%)',
+        }}
+      />
+
+      {/* Pulsing glow overlay */}
+      <motion.div
+        animate={{ opacity: [0.6, 1, 0.6] }}
+        transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background: 'radial-gradient(ellipse 60% 40% at 50% 0%, rgba(251,146,60,0.30) 0%, transparent 65%)',
+        }}
+      />
+
+      {/* Side orbs */}
+      <div className="pointer-events-none absolute inset-0">
         <motion.div
-          animate={{ scale: [1, 1.18, 1], opacity: [0.22, 0.35, 0.22] }}
-          transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute top-[-60px] left-1/2 -translate-x-1/2 w-[720px] h-[480px] rounded-full bg-amber-500 blur-[130px]"
+          animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0.5, 0.3] }}
+          transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+          className="absolute top-12 left-[10%] w-[300px] h-[300px] rounded-full blur-[80px]"
+          style={{ background: 'rgba(234, 88, 12, 0.5)' }}
         />
         <motion.div
-          animate={{ scale: [1, 1.25, 1], x: [0, 40, 0], opacity: [0.15, 0.25, 0.15] }}
-          transition={{ duration: 13, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
-          className="absolute top-16 left-[18%] w-[280px] h-[280px] rounded-full bg-orange-600 blur-[100px]"
-        />
-        <motion.div
-          animate={{ scale: [1, 1.2, 1], x: [0, -30, 0], opacity: [0.12, 0.22, 0.12] }}
-          transition={{ duration: 11, repeat: Infinity, ease: 'easeInOut', delay: 4 }}
-          className="absolute top-24 right-[16%] w-[220px] h-[220px] rounded-full bg-amber-400 blur-[90px]"
+          animate={{ scale: [1, 1.25, 1], opacity: [0.25, 0.45, 0.25] }}
+          transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut', delay: 3 }}
+          className="absolute top-8 right-[8%] w-[260px] h-[260px] rounded-full blur-[70px]"
+          style={{ background: 'rgba(245, 158, 11, 0.45)' }}
         />
       </div>
 
@@ -155,7 +170,7 @@ function Hero() {
         variants={stagger}
         initial="hidden"
         animate="visible"
-        className="text-center max-w-4xl mx-auto"
+        className="relative z-10 text-center max-w-4xl mx-auto"
       >
         {/* Badge with shimmer */}
         <motion.div variants={fadeUp} className="inline-flex mb-8">
@@ -234,13 +249,13 @@ function Hero() {
         initial={{ opacity: 0, y: 60, scale: 0.97 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ delay: 0.5, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-        className="mt-16 w-full max-w-3xl mx-auto"
+        className="relative z-10 mt-16 w-full max-w-3xl mx-auto"
       >
         {/* Glow behind card */}
         <motion.div
-          animate={{ opacity: [0.3, 0.55, 0.3] }}
+          animate={{ opacity: [0.4, 0.7, 0.4] }}
           transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute inset-x-12 -bottom-4 h-16 bg-amber-500/20 blur-2xl rounded-full pointer-events-none"
+          className="absolute inset-x-12 -bottom-4 h-16 bg-amber-500/30 blur-2xl rounded-full pointer-events-none"
         />
         <DashboardMockup />
       </motion.div>
