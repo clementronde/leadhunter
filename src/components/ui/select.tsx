@@ -13,8 +13,8 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
       <div className="relative">
         <select
           className={cn(
-            'flex h-10 w-full appearance-none rounded-lg border border-zinc-200 bg-white px-3 py-2 pr-10 text-sm',
-            'focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:ring-offset-1',
+            'flex h-10 w-full appearance-none rounded-lg border border-white/[0.08] bg-zinc-800/60 px-3 py-2 pr-10 text-sm text-zinc-200',
+            'focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-1 focus:ring-offset-zinc-950',
             'disabled:cursor-not-allowed disabled:opacity-50',
             className
           )}
@@ -22,12 +22,12 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           {...props}
         >
           {placeholder && (
-            <option value="" disabled>
+            <option value="" disabled className="bg-zinc-900 text-zinc-400">
               {placeholder}
             </option>
           )}
           {options.map((option) => (
-            <option key={option.value} value={option.value}>
+            <option key={option.value} value={option.value} className="bg-zinc-900 text-zinc-200">
               {option.label}
             </option>
           ))}

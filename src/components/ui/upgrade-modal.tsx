@@ -86,32 +86,32 @@ export function UpgradeModal({ open, onClose, reason }: UpgradeModalProps) {
 
       {/* Modal */}
       <div
-        className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl p-6"
+        className="relative w-full max-w-md bg-zinc-900/95 backdrop-blur-xl border border-white/[0.08] rounded-2xl shadow-2xl shadow-black/60 p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <button
           onClick={onClose}
-          className="absolute right-4 top-4 p-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 transition-colors"
+          className="absolute right-4 top-4 p-1.5 rounded-lg text-zinc-500 hover:text-white hover:bg-white/5 transition-colors"
         >
           <X className="h-4 w-4" />
         </button>
 
         {/* Icon */}
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-100 mb-4">
-          <Lock className="h-6 w-6 text-amber-600" />
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/20 mb-4">
+          <Lock className="h-6 w-6 text-amber-400" />
         </div>
 
-        <h2 className="text-xl font-bold text-zinc-900 mb-2">{content.title}</h2>
+        <h2 className="text-xl font-bold text-white mb-2">{content.title}</h2>
         <p className="text-sm text-zinc-500 mb-6">{content.description}</p>
 
         {/* Features */}
-        <div className="bg-amber-50 rounded-xl p-4 mb-6">
-          <p className="text-xs font-semibold text-amber-800 uppercase tracking-wide mb-3">
+        <div className="bg-amber-500/[0.08] border border-amber-500/20 rounded-xl p-4 mb-6">
+          <p className="text-xs font-semibold text-amber-400 uppercase tracking-wide mb-3">
             Plan Pro inclut
           </p>
           <ul className="space-y-2">
             {PRO_FEATURES.map((f) => (
-              <li key={f} className="flex items-center gap-2 text-sm text-zinc-700">
+              <li key={f} className="flex items-center gap-2 text-sm text-zinc-300">
                 <Check className="h-3.5 w-3.5 text-amber-500 shrink-0" />
                 {f}
               </li>
@@ -121,7 +121,7 @@ export function UpgradeModal({ open, onClose, reason }: UpgradeModalProps) {
 
         {/* Price */}
         <p className="text-center text-sm text-zinc-500 mb-4">
-          À partir de <span className="font-bold text-zinc-900">29€/mois</span> · Sans engagement
+          À partir de <span className="font-bold text-white">29€/mois</span> · Sans engagement
         </p>
 
         <button
@@ -139,7 +139,7 @@ export function UpgradeModal({ open, onClose, reason }: UpgradeModalProps) {
 
         <button
           onClick={onClose}
-          className="w-full mt-2 py-2 text-sm text-zinc-500 hover:text-zinc-700 transition-colors"
+          className="w-full mt-2 py-2 text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
         >
           Continuer avec le plan gratuit
         </button>

@@ -15,7 +15,7 @@ export default function HomePage() {
 
   if (authLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen bg-[#09090b]">
         <div className="h-8 w-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
       </div>
     )
@@ -150,31 +150,31 @@ function DashboardPage() {
 
           {/* Quick Actions */}
           <Card className="p-6">
-            <h3 className="font-semibold text-lg mb-4">Actions rapides</h3>
-            <div className="space-y-3">
+            <h3 className="font-semibold text-lg text-white mb-4">Actions rapides</h3>
+            <div className="space-y-2">
               <QuickAction
                 href="/scanner"
-                icon={<Radar className="h-5 w-5 text-amber-600" />}
+                icon={<Radar className="h-5 w-5 text-amber-500" />}
                 title="Lancer un scan"
                 description="Scanner une nouvelle zone"
               />
               <QuickAction
                 href="/leads?has_website=false"
-                icon={<Target className="h-5 w-5 text-blue-600" />}
+                icon={<Target className="h-5 w-5 text-blue-400" />}
                 title="Voir les prospects sans site"
                 description={`${stats?.leads_without_site || 0} entreprises`}
               />
               <QuickAction
                 href="/leads?priority=hot"
-                icon={<Flame className="h-5 w-5 text-red-500" />}
+                icon={<Flame className="h-5 w-5 text-red-400" />}
                 title="Leads chauds"
                 description={`${stats?.hot_leads || 0} prospects prioritaires`}
               />
               <QuickAction
                 href="/pipeline"
-                icon={<Kanban className="h-5 w-5 text-violet-600" />}
+                icon={<Kanban className="h-5 w-5 text-violet-400" />}
                 title="Pipeline"
-                description="Gerez vos opportunites"
+                description="Gérez vos opportunités"
               />
             </div>
           </Card>
@@ -186,48 +186,34 @@ function DashboardPage() {
 
 function OnboardingEmptyState() {
   return (
-    <Card className="max-w-2xl mx-auto p-8 border-amber-200 bg-amber-50/40">
+    <Card className="max-w-2xl mx-auto p-8 border-amber-500/20 bg-amber-500/[0.04]">
       <div className="text-center mb-8">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-100 mx-auto mb-4">
-          <Target className="h-8 w-8 text-amber-600" />
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/20 mx-auto mb-4">
+          <Target className="h-8 w-8 text-amber-500" />
         </div>
-        <h2 className="text-2xl font-bold text-zinc-900 mb-2">Bienvenue sur LeadHunter !</h2>
-        <p className="text-zinc-500">Trouvez vos premiers prospects en 3 étapes simples.</p>
+        <h2 className="text-2xl font-bold text-white mb-2">Bienvenue sur LeadHunter !</h2>
+        <p className="text-zinc-400">Trouvez vos premiers prospects en 3 étapes simples.</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3 mb-8">
-        <div className="flex flex-col items-center text-center p-4 bg-white rounded-xl border border-amber-100">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 text-amber-700 font-bold text-sm mb-3">1</div>
-          <div className="flex items-center justify-center mb-2">
-            <Radar className="h-5 w-5 text-amber-500" />
+        {[
+          { num: '1', icon: <Radar className="h-5 w-5 text-amber-500" />, title: 'Scannez', desc: 'Recherchez des entreprises locales via Google Maps' },
+          { num: '2', icon: <Flame className="h-5 w-5 text-red-400" />, title: 'Qualifiez', desc: 'Identifiez les prospects sans site ou à refondre' },
+          { num: '3', icon: <Kanban className="h-5 w-5 text-violet-400" />, title: 'Contactez', desc: 'Envoyez un email et suivez vos opportunités' },
+        ].map(({ num, icon, title, desc }) => (
+          <div key={num} className="flex flex-col items-center text-center p-4 bg-zinc-800/40 rounded-xl border border-white/[0.06]">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-500/20 text-amber-400 font-bold text-sm mb-3">{num}</div>
+            <div className="flex items-center justify-center mb-2">{icon}</div>
+            <p className="font-semibold text-white text-sm">{title}</p>
+            <p className="text-xs text-zinc-500 mt-1">{desc}</p>
           </div>
-          <p className="font-semibold text-zinc-900 text-sm">Scannez</p>
-          <p className="text-xs text-zinc-500 mt-1">Recherchez des entreprises locales via Google Maps</p>
-        </div>
-
-        <div className="flex flex-col items-center text-center p-4 bg-white rounded-xl border border-amber-100">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 text-amber-700 font-bold text-sm mb-3">2</div>
-          <div className="flex items-center justify-center mb-2">
-            <Flame className="h-5 w-5 text-red-500" />
-          </div>
-          <p className="font-semibold text-zinc-900 text-sm">Qualifiez</p>
-          <p className="text-xs text-zinc-500 mt-1">Identifiez les prospects sans site ou à refondre</p>
-        </div>
-
-        <div className="flex flex-col items-center text-center p-4 bg-white rounded-xl border border-amber-100">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 text-amber-700 font-bold text-sm mb-3">3</div>
-          <div className="flex items-center justify-center mb-2">
-            <Kanban className="h-5 w-5 text-violet-500" />
-          </div>
-          <p className="font-semibold text-zinc-900 text-sm">Contactez</p>
-          <p className="text-xs text-zinc-500 mt-1">Envoyez un email et suivez vos opportunités</p>
-        </div>
+        ))}
       </div>
 
       <div className="text-center">
         <a
           href="/scanner"
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-amber-500 text-white font-semibold hover:bg-amber-600 transition-colors"
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold hover:opacity-90 transition-opacity"
         >
           <Radar className="h-4 w-4" />
           Lancer mon premier scan
@@ -247,16 +233,16 @@ function QuickAction({ href, icon, title, description }: {
   return (
     <a
       href={href}
-      className="flex items-center gap-3 p-3 rounded-lg border border-transparent hover:bg-amber-50/60 hover:border-amber-200/50 transition-colors group"
+      className="flex items-center gap-3 p-3 rounded-xl border border-transparent hover:bg-white/5 hover:border-white/[0.06] transition-all group"
     >
-      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-100 group-hover:bg-amber-100/60 transition-colors shrink-0">
+      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-800/60 group-hover:bg-zinc-700/60 transition-colors shrink-0">
         {icon}
       </div>
       <div>
-        <p className="font-medium text-zinc-900 group-hover:text-amber-600 transition-colors">
+        <p className="font-medium text-zinc-200 group-hover:text-white transition-colors text-sm">
           {title}
         </p>
-        <p className="text-sm text-zinc-500">{description}</p>
+        <p className="text-xs text-zinc-500">{description}</p>
       </div>
     </a>
   )

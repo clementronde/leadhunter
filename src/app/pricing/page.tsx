@@ -28,20 +28,20 @@ function PricingContent() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50">
+    <div className="min-h-screen bg-[#09090b]">
       {/* Navbar */}
-      <header className="sticky top-0 z-50 bg-white/85 backdrop-blur-xl border-b border-zinc-200">
+      <header className="sticky top-0 z-50 bg-[#09090b]/90 backdrop-blur-xl border-b border-white/[0.06]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
           <Link href="/" className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-orange-600">
               <Target className="h-5 w-5 text-white" />
             </div>
-            <span className="text-lg font-bold text-zinc-900">
+            <span className="text-lg font-bold text-white">
               Lead<span className="text-amber-500">Hunter</span>
             </span>
           </Link>
           <div className="flex items-center gap-3">
-            <Link href="/login" className="text-sm font-medium text-zinc-600 hover:text-zinc-900 transition-colors">
+            <Link href="/login" className="text-sm font-medium text-zinc-400 hover:text-white transition-colors">
               Se connecter
             </Link>
           </div>
@@ -51,8 +51,8 @@ function PricingContent() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-20">
         {/* Success banner */}
         {success && (
-          <div className="mb-8 flex items-center gap-3 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800">
-            <Zap className="h-5 w-5 text-emerald-600 shrink-0" />
+          <div className="mb-8 flex items-center gap-3 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300">
+            <Zap className="h-5 w-5 text-emerald-400 shrink-0" />
             <div>
               <p className="font-semibold">Bienvenue dans LeadHunter Pro !</p>
               <p className="text-sm">Votre abonnement est actif. Profitez de toutes les fonctionnalités Pro.</p>
@@ -62,7 +62,7 @@ function PricingContent() {
 
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl sm:text-5xl font-bold text-zinc-900 mb-4">
+          <h1 className="text-4xl sm:text-5xl font-bold text-white mb-4">
             Des tarifs simples et transparents
           </h1>
           <p className="text-zinc-500 text-lg">
@@ -73,10 +73,10 @@ function PricingContent() {
         {/* Plans */}
         <div className="grid gap-6 sm:grid-cols-2 max-w-2xl mx-auto">
           {/* Free plan */}
-          <div className="rounded-2xl border border-zinc-200 bg-white p-8 flex flex-col">
+          <div className="rounded-2xl border border-white/[0.08] bg-zinc-900/60 p-8 flex flex-col">
             <div className="mb-6">
-              <p className="font-semibold text-zinc-900 text-lg mb-1">Gratuit</p>
-              <p className="text-4xl font-bold text-zinc-900">
+              <p className="font-semibold text-white text-lg mb-1">Gratuit</p>
+              <p className="text-4xl font-bold text-white">
                 0€<span className="text-base font-normal text-zinc-500">/mois</span>
               </p>
             </div>
@@ -87,7 +87,7 @@ function PricingContent() {
                 'Scoring basique',
                 'Pipeline CRM',
               ].map((f) => (
-                <li key={f} className="flex items-center gap-2 text-sm text-zinc-600">
+                <li key={f} className="flex items-center gap-2 text-sm text-zinc-300">
                   <Check className="h-4 w-4 text-amber-500 shrink-0" />
                   {f}
                 </li>
@@ -105,7 +105,7 @@ function PricingContent() {
             </ul>
             <Link
               href="/login"
-              className="w-full text-center py-2.5 rounded-xl font-medium text-sm border border-zinc-200 bg-zinc-50 text-zinc-700 hover:bg-zinc-100 transition-colors"
+              className="w-full text-center py-2.5 rounded-xl font-medium text-sm border border-white/[0.08] bg-zinc-800/60 text-zinc-300 hover:bg-zinc-700/60 hover:text-white transition-colors"
             >
               Commencer gratuitement
             </Link>
@@ -119,8 +119,8 @@ function PricingContent() {
               </span>
             </div>
             <div className="mb-6">
-              <p className="font-semibold text-zinc-900 text-lg mb-1">Pro</p>
-              <p className="text-4xl font-bold text-zinc-900">
+              <p className="font-semibold text-white text-lg mb-1">Pro</p>
+              <p className="text-4xl font-bold text-white">
                 29€<span className="text-base font-normal text-zinc-500">/mois</span>
               </p>
             </div>
@@ -133,7 +133,7 @@ function PricingContent() {
                 'Alertes automatiques',
                 'Support prioritaire',
               ].map((f) => (
-                <li key={f} className="flex items-center gap-2 text-sm text-zinc-700">
+                <li key={f} className="flex items-center gap-2 text-sm text-zinc-300">
                   <Check className="h-4 w-4 text-amber-500 shrink-0" />
                   {f}
                 </li>

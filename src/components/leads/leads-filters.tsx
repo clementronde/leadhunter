@@ -83,7 +83,7 @@ export function LeadsFilters({ filters, onChange, onReset }: LeadsFiltersProps) 
         <Button
           variant="outline"
           onClick={() => setShowAdvanced(!showAdvanced)}
-          className={showAdvanced ? 'bg-zinc-100' : ''}
+          className={showAdvanced ? 'bg-zinc-700/40' : ''}
         >
           <SlidersHorizontal className="h-4 w-4" />
           Plus de filtres
@@ -100,7 +100,7 @@ export function LeadsFilters({ filters, onChange, onReset }: LeadsFiltersProps) 
       
       {/* Advanced filters */}
       {showAdvanced && (
-        <div className="flex flex-wrap gap-3 p-4 bg-zinc-50 rounded-lg">
+        <div className="flex flex-wrap gap-3 p-4 bg-zinc-800/40 border border-white/[0.06] rounded-lg">
           {/* Sector */}
           <div className="space-y-1">
             <label className="text-xs font-medium text-zinc-500">Secteur</label>
@@ -205,9 +205,9 @@ export function LeadsFilters({ filters, onChange, onReset }: LeadsFiltersProps) 
 
 function FilterBadge({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
-    <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 text-amber-800 text-xs font-medium rounded-full">
+    <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-500/20 text-amber-400 text-xs font-medium rounded-full">
       {label}
-      <button onClick={onRemove} className="hover:bg-amber-100 rounded-full p-0.5">
+      <button onClick={onRemove} className="hover:bg-amber-500/30 rounded-full p-0.5">
         <X className="h-3 w-3" />
       </button>
     </span>

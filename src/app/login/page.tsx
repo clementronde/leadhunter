@@ -38,7 +38,7 @@ export default function LoginPage() {
       if (error) {
         setError(error)
       } else {
-        setMessage('Compte cree ! Verifiez votre email pour confirmer votre inscription.')
+        setMessage('Compte créé ! Vérifiez votre email pour confirmer votre inscription.')
       }
     }
 
@@ -51,32 +51,37 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-zinc-50 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-[#09090b] px-4">
+      {/* Ambient glow */}
+      <div className="pointer-events-none fixed inset-0 -z-10">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full bg-amber-500/8 blur-[120px]" />
+      </div>
+
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
-          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 mb-4">
+          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 mb-4 shadow-lg shadow-amber-900/30">
             <Target className="h-8 w-8 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-zinc-900">
+          <h1 className="text-2xl font-bold text-white">
             Lead<span className="text-amber-500">Hunter</span>
           </h1>
           <p className="text-sm text-zinc-500 mt-1">
-            {mode === 'login' ? 'Connectez-vous a votre compte' : 'Creez votre compte'}
+            {mode === 'login' ? 'Connectez-vous à votre compte' : 'Créez votre compte'}
           </p>
         </div>
 
         {/* Card */}
-        <div className="bg-white rounded-2xl shadow-sm border border-zinc-200 p-8">
+        <div className="rounded-2xl border border-white/[0.08] bg-zinc-900/60 backdrop-blur-xl p-8 shadow-2xl shadow-black/50">
           {/* Mode tabs */}
-          <div className="flex rounded-lg bg-zinc-100 p-1 mb-6">
+          <div className="flex rounded-lg bg-zinc-800/60 p-1 mb-6">
             <button
               type="button"
               onClick={() => { setMode('login'); setError(null); setMessage(null) }}
               className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
                 mode === 'login'
-                  ? 'bg-white text-zinc-900 shadow-sm'
-                  : 'text-zinc-500 hover:text-zinc-700'
+                  ? 'bg-zinc-700 text-white shadow-sm'
+                  : 'text-zinc-500 hover:text-zinc-300'
               }`}
             >
               Se connecter
@@ -86,8 +91,8 @@ export default function LoginPage() {
               onClick={() => { setMode('register'); setError(null); setMessage(null) }}
               className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
                 mode === 'register'
-                  ? 'bg-white text-zinc-900 shadow-sm'
-                  : 'text-zinc-500 hover:text-zinc-700'
+                  ? 'bg-zinc-700 text-white shadow-sm'
+                  : 'text-zinc-500 hover:text-zinc-300'
               }`}
             >
               Créer un compte
@@ -97,7 +102,7 @@ export default function LoginPage() {
           {/* Google OAuth */}
           <button
             onClick={handleGoogleSignIn}
-            className="w-full flex items-center justify-center gap-3 px-4 py-2.5 border border-zinc-200 rounded-lg text-sm font-medium text-zinc-700 hover:bg-zinc-50 transition-colors"
+            className="w-full flex items-center justify-center gap-3 px-4 py-2.5 border border-white/[0.08] bg-zinc-800/40 rounded-lg text-sm font-medium text-zinc-300 hover:bg-zinc-700/60 hover:text-white transition-colors"
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
@@ -109,32 +114,32 @@ export default function LoginPage() {
           </button>
 
           <div className="flex items-center gap-3 my-6">
-            <div className="flex-1 h-px bg-zinc-200" />
-            <span className="text-xs text-zinc-400 uppercase">ou</span>
-            <div className="flex-1 h-px bg-zinc-200" />
+            <div className="flex-1 h-px bg-white/[0.06]" />
+            <span className="text-xs text-zinc-600 uppercase">ou</span>
+            <div className="flex-1 h-px bg-white/[0.06]" />
           </div>
 
           {/* Email/Password Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-zinc-700">Email</label>
+              <label className="text-sm font-medium text-zinc-400">Email</label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="vous@exemple.com"
-                  className="w-full pl-10 pr-4 py-2.5 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2.5 border border-white/[0.08] bg-zinc-800/60 rounded-lg text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-zinc-700">Mot de passe</label>
+              <label className="text-sm font-medium text-zinc-400">Mot de passe</label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
                 <input
                   type="password"
                   required
@@ -142,19 +147,19 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   minLength={6}
-                  className="w-full pl-10 pr-4 py-2.5 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2.5 border border-white/[0.08] bg-zinc-800/60 rounded-lg text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors"
                 />
               </div>
             </div>
 
             {error && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+              <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-400">
                 {error}
               </div>
             )}
 
             {message && (
-              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-sm text-emerald-700">
+              <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-sm text-emerald-400">
                 {message}
               </div>
             )}
@@ -162,13 +167,12 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-zinc-900 text-white rounded-lg text-sm font-medium hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading && <Loader2 className="h-4 w-4 animate-spin" />}
               {mode === 'login' ? 'Se connecter' : "S'inscrire"}
             </button>
           </form>
-
         </div>
       </div>
     </div>

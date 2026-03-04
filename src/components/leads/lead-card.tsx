@@ -42,7 +42,7 @@ export function LeadCard({ lead, onStatusChange }: LeadCardProps) {
   return (
     <Card className="overflow-hidden hover:shadow-md transition-shadow">
       {/* Score bar */}
-      <div className="h-1.5 w-full bg-zinc-100/80">
+      <div className="h-1.5 w-full bg-zinc-800">
         <div
           className="h-full transition-all bg-gradient-to-r from-amber-400 to-orange-500"
           style={{ width: `${lead.prospect_score}%` }}
@@ -55,7 +55,7 @@ export function LeadCard({ lead, onStatusChange }: LeadCardProps) {
           <div className="flex items-start gap-3 min-w-0">
             <div
               className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${
-                lead.has_website ? 'bg-zinc-100' : 'bg-amber-50'
+                lead.has_website ? 'bg-zinc-800/80' : 'bg-amber-500/10'
               }`}
             >
               {lead.has_website ? (
@@ -66,7 +66,7 @@ export function LeadCard({ lead, onStatusChange }: LeadCardProps) {
             </div>
             <div className="min-w-0">
               <Link href={`/leads/${lead.id}`}>
-                <h3 className="font-semibold text-zinc-900 hover:text-amber-600 transition-colors truncate">
+                <h3 className="font-semibold text-zinc-200 hover:text-amber-400 transition-colors truncate">
                   {lead.name}
                 </h3>
               </Link>
@@ -79,7 +79,7 @@ export function LeadCard({ lead, onStatusChange }: LeadCardProps) {
                 </div>
                 {lead.sector && (
                   <>
-                    <span className="text-zinc-300">•</span>
+                    <span className="text-zinc-700">•</span>
                     <span className="text-sm text-zinc-500">{sectorLabels[lead.sector]}</span>
                   </>
                 )}
@@ -100,11 +100,11 @@ export function LeadCard({ lead, onStatusChange }: LeadCardProps) {
 
         {/* Note Google Maps */}
         {hasGoogleData && (
-          <div className="flex items-center gap-4 mb-4 p-3 bg-blue-50/70 backdrop-blur-sm rounded-lg">
+          <div className="flex items-center gap-4 mb-4 p-3 bg-blue-500/[0.08] rounded-lg border border-blue-500/20">
             {lead.google_rating !== null && lead.google_rating !== undefined && (
               <div className="flex items-center gap-1.5">
                 <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                <span className="text-sm font-bold text-zinc-900">
+                <span className="text-sm font-bold text-white">
                   {lead.google_rating.toFixed(1)}
                 </span>
                 <span className="text-sm text-zinc-500">/ 5</span>
@@ -113,7 +113,7 @@ export function LeadCard({ lead, onStatusChange }: LeadCardProps) {
             {lead.google_reviews_count !== null && lead.google_reviews_count !== undefined && (
               <div className="flex items-center gap-1.5">
                 <MessageSquare className="h-4 w-4 text-blue-500" />
-                <span className="text-sm text-zinc-700">
+                <span className="text-sm text-zinc-300">
                   {lead.google_reviews_count.toLocaleString('fr-FR')} avis
                 </span>
               </div>
@@ -123,7 +123,7 @@ export function LeadCard({ lead, onStatusChange }: LeadCardProps) {
                 href={lead.google_maps_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="ml-auto text-xs text-blue-600 hover:underline flex items-center gap-1"
+                className="ml-auto text-xs text-blue-400 hover:underline flex items-center gap-1"
               >
                 <ExternalLink className="h-3.5 w-3.5" />
                 Fiche Maps
@@ -137,7 +137,7 @@ export function LeadCard({ lead, onStatusChange }: LeadCardProps) {
           {lead.phone && (
             <a
               href={`tel:${lead.phone}`}
-              className="flex items-center gap-1.5 text-zinc-600 hover:text-zinc-900"
+              className="flex items-center gap-1.5 text-zinc-400 hover:text-white"
             >
               <Phone className="h-4 w-4" />
               {lead.phone}
@@ -148,7 +148,7 @@ export function LeadCard({ lead, onStatusChange }: LeadCardProps) {
               href={lead.website}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 text-zinc-600 hover:text-amber-600"
+              className="flex items-center gap-1.5 text-zinc-400 hover:text-amber-400"
             >
               <ExternalLink className="h-4 w-4" />
               Voir le site
@@ -163,7 +163,7 @@ export function LeadCard({ lead, onStatusChange }: LeadCardProps) {
 
         {/* Scores Lighthouse (si audit disponible) */}
         {audit && (
-          <div className="grid grid-cols-4 gap-2 p-3 bg-zinc-50/70 backdrop-blur-sm rounded-lg mb-4">
+          <div className="grid grid-cols-4 gap-2 p-3 bg-zinc-800/40 rounded-lg mb-4 border border-white/[0.06]">
             <div className="text-center">
               <Gauge className="h-4 w-4 mx-auto text-zinc-400 mb-1" />
               <p className={`text-sm font-semibold ${getLighthouseColor(audit.performance_score)}`}>
@@ -175,7 +175,7 @@ export function LeadCard({ lead, onStatusChange }: LeadCardProps) {
               <Shield className="h-4 w-4 mx-auto text-zinc-400 mb-1" />
               <p
                 className={`text-sm font-semibold ${
-                  audit.is_https ? 'text-emerald-600' : 'text-red-600'
+                  audit.is_https ? 'text-emerald-400' : 'text-red-400'
                 }`}
               >
                 {audit.is_https ? 'Oui' : 'Non'}
@@ -186,7 +186,7 @@ export function LeadCard({ lead, onStatusChange }: LeadCardProps) {
               <Smartphone className="h-4 w-4 mx-auto text-zinc-400 mb-1" />
               <p
                 className={`text-sm font-semibold ${
-                  audit.is_mobile_friendly ? 'text-emerald-600' : 'text-red-600'
+                  audit.is_mobile_friendly ? 'text-emerald-400' : 'text-red-400'
                 }`}
               >
                 {audit.is_mobile_friendly ? 'Oui' : 'Non'}
@@ -208,7 +208,7 @@ export function LeadCard({ lead, onStatusChange }: LeadCardProps) {
         )}
 
         {/* Footer */}
-        <div className="flex items-center justify-between pt-3 border-t border-zinc-100">
+        <div className="flex items-center justify-between pt-3 border-t border-white/[0.06]">
           <Badge className={statusColors[lead.status]}>{statusLabels[lead.status]}</Badge>
 
           <div className="flex items-center gap-2">

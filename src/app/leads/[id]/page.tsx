@@ -217,7 +217,7 @@ export default function LeadDetailPage() {
         {/* Back link */}
         <Link 
           href="/leads" 
-          className="inline-flex items-center gap-2 text-sm text-zinc-500 hover:text-zinc-900 transition-colors"
+          className="inline-flex items-center gap-2 text-sm text-zinc-500 hover:text-white transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
           Retour aux leads
@@ -230,7 +230,7 @@ export default function LeadDetailPage() {
               {/* Left: Company info */}
               <div className="flex items-start gap-4">
                 <div className={`flex h-16 w-16 items-center justify-center rounded-2xl ${
-                  lead.has_website ? 'bg-zinc-100' : 'bg-amber-50'
+                  lead.has_website ? 'bg-zinc-800/80' : 'bg-amber-500/10'
                 }`}>
                   {lead.has_website ? (
                     <Globe className="h-8 w-8 text-zinc-400" />
@@ -241,13 +241,13 @@ export default function LeadDetailPage() {
                 
                 <div>
                   <div className="flex items-center gap-3 mb-2">
-                    <h1 className="text-2xl font-bold text-zinc-900">{lead.name}</h1>
+                    <h1 className="text-2xl font-bold text-white">{lead.name}</h1>
                     <Badge className={priorityColors[lead.priority]} variant="outline">
                       {priorityLabels[lead.priority]}
                     </Badge>
                   </div>
                   
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-zinc-600">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-zinc-400">
                     <span className="flex items-center gap-1.5">
                       <MapPin className="h-4 w-4 text-zinc-400" />
                       {lead.address || lead.city}, {lead.postal_code}
@@ -262,13 +262,13 @@ export default function LeadDetailPage() {
                   
                   <div className="flex flex-wrap items-center gap-4 mt-3">
                     {lead.phone && (
-                      <a href={`tel:${lead.phone}`} className="flex items-center gap-1.5 text-sm text-zinc-600 hover:text-amber-600">
+                      <a href={`tel:${lead.phone}`} className="flex items-center gap-1.5 text-sm text-zinc-400 hover:text-amber-400">
                         <Phone className="h-4 w-4" />
                         {lead.phone}
                       </a>
                     )}
                     {lead.email && (
-                      <a href={`mailto:${lead.email}`} className="flex items-center gap-1.5 text-sm text-zinc-600 hover:text-amber-600">
+                      <a href={`mailto:${lead.email}`} className="flex items-center gap-1.5 text-sm text-zinc-400 hover:text-amber-400">
                         <Mail className="h-4 w-4" />
                         {lead.email}
                       </a>
@@ -346,7 +346,7 @@ export default function LeadDetailPage() {
                   </div>
                   
                   {/* Technical info */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-zinc-50 rounded-lg mb-6">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-zinc-800/60 rounded-lg mb-6">
                     <TechItem
                       label="HTTPS"
                       value={audit.is_https}
@@ -359,14 +359,14 @@ export default function LeadDetailPage() {
                     />
                     <div className="text-center">
                       <Clock className="h-4 w-4 mx-auto text-zinc-400 mb-1" />
-                      <p className={`font-semibold ${(audit.load_time_ms || 0) > 3000 ? 'text-red-600' : 'text-emerald-600'}`}>
+                      <p className={`font-semibold ${(audit.load_time_ms || 0) > 3000 ? 'text-red-400' : 'text-emerald-400'}`}>
                         {audit.load_time_ms ? `${(audit.load_time_ms / 1000).toFixed(1)}s` : '-'}
                       </p>
                       <p className="text-xs text-zinc-500">Chargement</p>
                     </div>
                     <div className="text-center">
                       <Building2 className="h-4 w-4 mx-auto text-zinc-400 mb-1" />
-                      <p className="font-semibold text-zinc-900">
+                      <p className="font-semibold text-white">
                         {audit.cms || 'N/A'}
                       </p>
                       <p className="text-xs text-zinc-500">CMS</p>
@@ -421,10 +421,10 @@ export default function LeadDetailPage() {
                 </Button>
               </Card>
             ) : (
-              <Card className="p-8 text-center bg-amber-50 border-amber-200">
+              <Card className="p-8 text-center bg-amber-500/[0.08] border-amber-500/20">
                 <Globe2 className="h-12 w-12 mx-auto mb-4 text-amber-500" />
-                <h3 className="font-semibold text-amber-800 mb-2">Pas de site web</h3>
-                <p className="text-sm text-amber-700">
+                <h3 className="font-semibold text-amber-300 mb-2">Pas de site web</h3>
+                <p className="text-sm text-amber-400">
                   Cette entreprise n'a pas de site internet. C'est un prospect idéal pour une création de site !
                 </p>
               </Card>
@@ -476,8 +476,8 @@ export default function LeadDetailPage() {
                 <div className="space-y-3 max-h-96 overflow-y-auto">
                   {lead.notes.length > 0 ? (
                     lead.notes.map((note) => (
-                      <div key={note.id} className="p-3 bg-zinc-50 rounded-lg">
-                        <p className="text-sm text-zinc-700">{note.content}</p>
+                      <div key={note.id} className="p-3 bg-zinc-800/60 rounded-lg">
+                        <p className="text-sm text-zinc-300">{note.content}</p>
                         <p className="text-xs text-zinc-400 mt-2">
                           {timeAgo(note.created_at)}
                         </p>
@@ -516,7 +516,7 @@ export default function LeadDetailPage() {
 // Helper components
 function ScoreBox({ label, score, icon }: { label: string; score: number | null; icon: React.ReactNode }) {
   return (
-    <div className="text-center p-4 bg-zinc-50 rounded-lg">
+    <div className="text-center p-4 bg-zinc-800/60 border border-white/[0.06] rounded-lg">
       <div className="text-zinc-400 mb-2">{icon}</div>
       <p className={`text-2xl font-bold ${getLighthouseColor(score)}`}>
         {score ?? '-'}
@@ -530,7 +530,7 @@ function TechItem({ label, value, icon }: { label: string; value: boolean; icon:
   return (
     <div className="text-center">
       <div className="text-zinc-400 mb-1">{icon}</div>
-      <p className={`font-semibold ${value ? 'text-emerald-600' : 'text-red-600'}`}>
+      <p className={`font-semibold ${value ? 'text-emerald-400' : 'text-red-400'}`}>
         {value ? 'Oui' : 'Non'}
       </p>
       <p className="text-xs text-zinc-500">{label}</p>
@@ -542,7 +542,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between">
       <span className="text-zinc-500">{label}</span>
-      <span className="font-medium text-zinc-900">{value}</span>
+      <span className="font-medium text-white">{value}</span>
     </div>
   )
 }

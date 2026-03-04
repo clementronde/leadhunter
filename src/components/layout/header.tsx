@@ -34,7 +34,6 @@ export function Header({ title, subtitle, action }: HeaderProps) {
   const [loadingNotifs, setLoadingNotifs] = useState(false)
   const notifRef = useRef<HTMLDivElement>(null)
 
-  // Count hot/warm new leads for badge on mount
   useEffect(() => {
     supabase
       .from('companies')
@@ -44,7 +43,6 @@ export function Header({ title, subtitle, action }: HeaderProps) {
       .then(({ count }) => setNotifCount(count || 0))
   }, [])
 
-  // Close dropdown on outside click
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
@@ -80,31 +78,31 @@ export function Header({ title, subtitle, action }: HeaderProps) {
   }
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-white/50 bg-white/60 backdrop-blur-xl px-6">
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-white/[0.06] bg-[#09090b]/80 backdrop-blur-xl px-6">
       <div>
-        <h1 className="text-xl font-bold text-zinc-900">{title}</h1>
+        <h1 className="text-xl font-bold text-white">{title}</h1>
         {subtitle && (
           <p className="text-sm text-zinc-500">{subtitle}</p>
         )}
       </div>
 
       <div className="flex items-center gap-4">
-        {/* Search — navigates to /leads?search=... on Enter */}
+        {/* Search */}
         <div className="hidden md:block w-64">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 pointer-events-none" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 pointer-events-none" />
             <input
               type="text"
               placeholder="Rechercher un lead... (Entrée)"
               value={searchValue}
               onChange={(e) => setSearchValue(e.target.value)}
               onKeyDown={handleSearchKeyDown}
-              className="w-full h-9 pl-9 pr-3 text-sm bg-zinc-100 border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 placeholder:text-zinc-400"
+              className="w-full h-9 pl-9 pr-3 text-sm bg-zinc-800/60 border border-white/[0.08] text-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 placeholder:text-zinc-500"
             />
           </div>
         </div>
 
-        {/* Quick Scan Button → redirect to /scanner */}
+        {/* Quick Scan Button */}
         <Button
           size="sm"
           onClick={() => router.push('/scanner')}
@@ -126,7 +124,7 @@ export function Header({ title, subtitle, action }: HeaderProps) {
         <div ref={notifRef} className="relative">
           <button
             onClick={handleNotifToggle}
-            className="relative flex h-9 w-9 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-100 transition-colors"
+            className="relative flex h-9 w-9 items-center justify-center rounded-lg text-zinc-400 hover:bg-white/5 hover:text-white transition-colors"
           >
             <Bell size={18} />
             {notifCount > 0 && (
@@ -137,27 +135,27 @@ export function Header({ title, subtitle, action }: HeaderProps) {
           </button>
 
           {showNotifications && (
-            <div className="absolute right-0 top-11 w-80 bg-white rounded-xl shadow-xl border border-zinc-200 overflow-hidden z-50">
-              <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-100">
+            <div className="absolute right-0 top-11 w-80 rounded-xl shadow-2xl shadow-black/50 border border-white/[0.08] bg-zinc-900/95 backdrop-blur-xl overflow-hidden z-50">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
                 <div>
-                  <h3 className="font-semibold text-zinc-900 text-sm">Leads à contacter</h3>
-                  <p className="text-xs text-zinc-400">Priorités haute et tiède non contactés</p>
+                  <h3 className="font-semibold text-white text-sm">Leads à contacter</h3>
+                  <p className="text-xs text-zinc-500">Priorités haute et tiède non contactés</p>
                 </div>
                 <button
                   onClick={() => setShowNotifications(false)}
-                  className="p-1 rounded hover:bg-zinc-100 text-zinc-400"
+                  className="p-1 rounded hover:bg-white/5 text-zinc-400 hover:text-white transition-colors"
                 >
                   <X className="h-4 w-4" />
                 </button>
               </div>
 
               {loadingNotifs ? (
-                <div className="p-6 text-center text-sm text-zinc-400">Chargement...</div>
+                <div className="p-6 text-center text-sm text-zinc-500">Chargement...</div>
               ) : notifLeads.length === 0 ? (
                 <div className="p-6 text-center">
-                  <Zap className="h-8 w-8 text-zinc-200 mx-auto mb-2" />
-                  <p className="text-sm text-zinc-500">Aucun lead prioritaire en attente</p>
-                  <p className="text-xs text-zinc-400 mt-1">Tous vos leads chauds ont été contactés 🎉</p>
+                  <Zap className="h-8 w-8 text-zinc-700 mx-auto mb-2" />
+                  <p className="text-sm text-zinc-400">Aucun lead prioritaire en attente</p>
+                  <p className="text-xs text-zinc-600 mt-1">Tous vos leads chauds ont été contactés 🎉</p>
                 </div>
               ) : (
                 <div>
@@ -166,11 +164,11 @@ export function Header({ title, subtitle, action }: HeaderProps) {
                       key={lead.id}
                       href={`/leads/${lead.id}`}
                       onClick={() => setShowNotifications(false)}
-                      className="flex items-center justify-between px-4 py-3 hover:bg-zinc-50 transition-colors border-b border-zinc-50 last:border-0"
+                      className="flex items-center justify-between px-4 py-3 hover:bg-white/5 transition-colors border-b border-white/[0.04] last:border-0"
                     >
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-zinc-900 truncate">{lead.name}</p>
-                        <p className="text-xs text-zinc-400">
+                        <p className="text-sm font-medium text-white truncate">{lead.name}</p>
+                        <p className="text-xs text-zinc-500">
                           {lead.city} · {lead.priority === 'hot' ? '🔥 Chaud' : '🌤️ Tiède'}
                         </p>
                       </div>
@@ -178,15 +176,15 @@ export function Header({ title, subtitle, action }: HeaderProps) {
                         <span className={`text-sm font-bold ${getScoreColor(lead.prospect_score)}`}>
                           {lead.prospect_score}
                         </span>
-                        <ChevronRight className="h-4 w-4 text-zinc-300" />
+                        <ChevronRight className="h-4 w-4 text-zinc-600" />
                       </div>
                     </Link>
                   ))}
-                  <div className="px-4 py-3 border-t border-zinc-100">
+                  <div className="px-4 py-3 border-t border-white/[0.06]">
                     <Link
                       href="/leads?priority=hot&status=new"
                       onClick={() => setShowNotifications(false)}
-                      className="block text-center text-xs font-medium text-amber-600 hover:text-amber-700 transition-colors"
+                      className="block text-center text-xs font-medium text-amber-500 hover:text-amber-400 transition-colors"
                     >
                       Voir tous les leads chauds →
                     </Link>

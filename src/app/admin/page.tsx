@@ -71,17 +71,17 @@ export default function AdminPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-zinc-100 text-left text-zinc-500">
+                    <tr className="border-b border-white/[0.06] text-left text-zinc-500">
                       <th className="pb-3 font-medium">Email</th>
                       <th className="pb-3 font-medium">Plan</th>
                       <th className="pb-3 font-medium">Rôle</th>
                       <th className="pb-3 font-medium">Inscrit le</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-zinc-100">
+                  <tbody className="divide-y divide-white/[0.04]">
                     {users.map((u) => (
-                      <tr key={u.id} className="hover:bg-zinc-50 transition-colors">
-                        <td className="py-3 text-zinc-900 font-medium">
+                      <tr key={u.id} className="hover:bg-white/[0.02] transition-colors">
+                        <td className="py-3 text-zinc-200 font-medium">
                           {u.email ?? <span className="text-zinc-400 italic">—</span>}
                         </td>
                         <td className="py-3">
@@ -125,7 +125,7 @@ function StatCard({
         <div className="flex items-center gap-3">
           {icon}
           <div>
-            <p className="text-2xl font-bold text-zinc-900">{value}</p>
+            <p className="text-2xl font-bold text-white">{value}</p>
             <p className="text-xs text-zinc-500">{label}</p>
           </div>
         </div>
@@ -144,7 +144,7 @@ function PlanBadge({ plan }: { plan: string }) {
     )
   }
   return (
-    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-500">
+    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-700 text-zinc-400">
       FREE
     </span>
   )
@@ -160,7 +160,7 @@ function RoleBadge({ role }: { role: string }) {
     )
   }
   return (
-    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-500">
+    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-700 text-zinc-400">
       CLIENT
     </span>
   )

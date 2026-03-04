@@ -64,17 +64,17 @@ function BulkContactModal({ filters, onClose }: { filters: LeadFilters; onClose:
     >
       <div className="absolute inset-0 bg-zinc-900/50 backdrop-blur-sm" />
       <div
-        className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl max-h-[85vh] flex flex-col"
+        className="relative w-full max-w-2xl rounded-2xl border border-white/[0.08] bg-zinc-900/95 backdrop-blur-xl shadow-2xl shadow-black/60 max-h-[85vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50">
-              <Users className="h-5 w-5 text-blue-600" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/15">
+              <Users className="h-5 w-5 text-blue-400" />
             </div>
             <div>
-              <h2 className="font-semibold text-zinc-900">Contacter tous les leads</h2>
+              <h2 className="font-semibold text-white">Contacter tous les leads</h2>
               {!loading && (
                 <p className="text-sm text-zinc-500">
                   {leads.length} lead{leads.length > 1 ? 's' : ''} avec un email sur les filtres actifs
@@ -84,7 +84,7 @@ function BulkContactModal({ filters, onClose }: { filters: LeadFilters; onClose:
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-zinc-400 hover:bg-zinc-100 transition-colors"
+            className="p-1.5 rounded-lg text-zinc-500 hover:bg-white/5 hover:text-white transition-colors"
           >
             <X className="h-4 w-4" />
           </button>
@@ -104,12 +104,12 @@ function BulkContactModal({ filters, onClose }: { filters: LeadFilters; onClose:
         ) : (
           <>
             {/* Actions bar */}
-            <div className="px-6 py-3 bg-zinc-50 border-b border-zinc-100 flex items-center gap-3 flex-wrap">
+            <div className="px-6 py-3 bg-zinc-800/40 border-b border-white/[0.06] flex items-center gap-3 flex-wrap">
               <button
                 onClick={handleCopyEmails}
-                className="flex items-center gap-1.5 text-sm font-medium text-zinc-700 hover:text-zinc-900 bg-white border border-zinc-200 rounded-lg px-3 py-1.5 transition-colors"
+                className="flex items-center gap-1.5 text-sm font-medium text-zinc-300 hover:text-white bg-zinc-800 border border-white/[0.08] rounded-lg px-3 py-1.5 transition-colors"
               >
-                {copied ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
+                {copied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
                 {copied ? 'Copié !' : 'Copier tous les emails'}
               </button>
 
@@ -117,7 +117,7 @@ function BulkContactModal({ filters, onClose }: { filters: LeadFilters; onClose:
                 href={`mailto:?bcc=${encodeURIComponent(allEmails)}&subject=${encodeURIComponent('Proposition de services web')}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-800 bg-white border border-blue-200 rounded-lg px-3 py-1.5 transition-colors"
+                className="flex items-center gap-1.5 text-sm font-medium text-blue-400 hover:text-blue-300 bg-blue-500/10 border border-blue-500/20 rounded-lg px-3 py-1.5 transition-colors"
               >
                 <ExternalLink className="h-4 w-4" />
                 Ouvrir en BCC dans ma messagerie
@@ -127,7 +127,7 @@ function BulkContactModal({ filters, onClose }: { filters: LeadFilters; onClose:
                 <button
                   onClick={handleMarkAll}
                   disabled={markingAll}
-                  className="flex items-center gap-1.5 text-sm font-medium text-emerald-700 hover:text-emerald-900 bg-white border border-emerald-200 rounded-lg px-3 py-1.5 transition-colors disabled:opacity-50"
+                  className="flex items-center gap-1.5 text-sm font-medium text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-3 py-1.5 transition-colors disabled:opacity-50"
                 >
                   {markingAll ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                   Marquer tous comme contactés
@@ -136,16 +136,16 @@ function BulkContactModal({ filters, onClose }: { filters: LeadFilters; onClose:
             </div>
 
             {/* Lead list */}
-            <div className="overflow-y-auto flex-1 divide-y divide-zinc-50">
+            <div className="overflow-y-auto flex-1 divide-y divide-white/[0.04]">
               {leads.map((lead) => (
-                <div key={lead.id} className={`flex items-center justify-between px-6 py-3 ${markedIds.has(lead.id) ? 'opacity-50' : ''}`}>
+                <div key={lead.id} className={`flex items-center justify-between px-6 py-3 ${markedIds.has(lead.id) ? 'opacity-40' : ''}`}>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-zinc-900 truncate">{lead.name}</p>
-                    <p className="text-xs text-zinc-400">{lead.city} · {lead.email}</p>
+                    <p className="text-sm font-medium text-zinc-200 truncate">{lead.name}</p>
+                    <p className="text-xs text-zinc-500">{lead.city} · {lead.email}</p>
                   </div>
                   <div className="flex items-center gap-2 ml-4 shrink-0">
                     {markedIds.has(lead.id) ? (
-                      <span className="text-xs text-emerald-600 font-medium flex items-center gap-1">
+                      <span className="text-xs text-emerald-400 font-medium flex items-center gap-1">
                         <Check className="h-3.5 w-3.5" /> Contacté
                       </span>
                     ) : (
@@ -154,7 +154,7 @@ function BulkContactModal({ filters, onClose }: { filters: LeadFilters; onClose:
                           href={`mailto:${lead.email}?subject=${encodeURIComponent('Proposition de services web')}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-xs text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"
+                          className="text-xs text-blue-400 hover:text-blue-300 font-medium flex items-center gap-1"
                         >
                           <Mail className="h-3.5 w-3.5" />
                           Contacter
@@ -164,7 +164,7 @@ function BulkContactModal({ filters, onClose }: { filters: LeadFilters; onClose:
                             await leadsApi.updateStatus(lead.id, 'contacted')
                             setMarkedIds((prev) => new Set([...prev, lead.id]))
                           }}
-                          className="text-xs text-zinc-400 hover:text-emerald-600 font-medium transition-colors"
+                          className="text-xs text-zinc-500 hover:text-emerald-400 font-medium transition-colors"
                           title="Marquer comme contacté"
                         >
                           ✓
@@ -177,8 +177,8 @@ function BulkContactModal({ filters, onClose }: { filters: LeadFilters; onClose:
             </div>
 
             {/* Footer */}
-            <div className="px-6 py-3 border-t border-zinc-100 bg-zinc-50 rounded-b-2xl">
-              <p className="text-xs text-zinc-400 text-center">
+            <div className="px-6 py-3 border-t border-white/[0.06] bg-zinc-800/40 rounded-b-2xl">
+              <p className="text-xs text-zinc-500 text-center">
                 {markedIds.size > 0 ? `${markedIds.size} lead${markedIds.size > 1 ? 's' : ''} marqués comme contactés` : `${leads.length} email${leads.length > 1 ? 's' : ''} disponible${leads.length > 1 ? 's' : ''}`}
               </p>
             </div>
@@ -307,8 +307,8 @@ function LeadsContent() {
             'Chargement...'
           ) : (
             <>
-              <span className="font-semibold text-zinc-900">{leads.length}</span> sur{' '}
-              <span className="font-semibold text-zinc-900">{pagination.total}</span> resultats
+              <span className="font-semibold text-zinc-200">{leads.length}</span> sur{' '}
+              <span className="font-semibold text-zinc-200">{pagination.total}</span> resultats
             </>
           )}
         </p>
@@ -329,11 +329,11 @@ function LeadsContent() {
           ) : (
             <button
               onClick={() => setShowUpgradeModal(true)}
-              className="flex items-center gap-1.5 text-sm font-medium text-zinc-400 hover:text-amber-600 border border-zinc-200 rounded-lg px-3 py-1.5 transition-colors"
+              className="flex items-center gap-1.5 text-sm font-medium text-zinc-500 hover:text-amber-400 border border-white/[0.08] rounded-lg px-3 py-1.5 transition-colors"
             >
               <Mail className="h-4 w-4" />
               Contacter tous
-              <span className="bg-amber-100 text-amber-700 text-[9px] font-bold px-1 py-0.5 rounded-full leading-none">Pro</span>
+              <span className="bg-amber-500/20 text-amber-400 text-[9px] font-bold px-1 py-0.5 rounded-full leading-none">Pro</span>
             </button>
           )}
 
@@ -359,11 +359,11 @@ function LeadsContent() {
             </Button>
           </ProGate>
 
-          <div className="flex items-center gap-0.5 bg-zinc-100 p-1 rounded-lg">
+          <div className="flex items-center gap-0.5 bg-zinc-800/60 p-1 rounded-lg border border-white/[0.06]">
             <button
               onClick={() => setViewMode('table')}
               className={`p-2 rounded-md transition-colors ${
-                viewMode === 'table' ? 'bg-white shadow-sm' : 'hover:bg-zinc-200'
+                viewMode === 'table' ? 'bg-zinc-700 shadow-sm text-white' : 'text-zinc-400 hover:bg-white/5 hover:text-zinc-200'
               }`}
               title="Vue tableau"
             >
@@ -372,7 +372,7 @@ function LeadsContent() {
             <button
               onClick={() => setViewMode('cards')}
               className={`p-2 rounded-md transition-colors ${
-                viewMode === 'cards' ? 'bg-white shadow-sm' : 'hover:bg-zinc-200'
+                viewMode === 'cards' ? 'bg-zinc-700 shadow-sm text-white' : 'text-zinc-400 hover:bg-white/5 hover:text-zinc-200'
               }`}
               title="Vue cartes"
             >
@@ -426,7 +426,7 @@ function LeadsContent() {
                 </p>
                 <button
                   onClick={() => setFilters({})}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-zinc-100 text-zinc-700 text-sm font-medium hover:bg-zinc-200 transition-colors"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-zinc-800 text-zinc-300 text-sm font-medium hover:bg-zinc-700 transition-colors"
                 >
                   Réinitialiser les filtres
                 </button>
@@ -486,8 +486,8 @@ function LeadsContent() {
                     onClick={() => handlePageChange(pageNum)}
                     className={`h-8 w-8 rounded-lg text-sm font-medium transition-colors ${
                       pageNum === pagination.page
-                        ? 'bg-zinc-900 text-white'
-                        : 'hover:bg-zinc-100'
+                        ? 'bg-amber-500 text-white'
+                        : 'text-zinc-400 hover:bg-white/[0.06] hover:text-white'
                     }`}
                   >
                     {pageNum}

@@ -36,7 +36,7 @@ function AnimatedNumber({ value }: { value: number }) {
   }, [isInView, value, motionValue])
 
   return (
-    <p ref={ref} className="mt-2 text-3xl font-bold text-zinc-900">
+    <p ref={ref} className="mt-2 text-3xl font-bold text-white">
       {value}
     </p>
   )
@@ -69,11 +69,11 @@ function StatCard({ title, value, change, icon, iconBg = 'bg-zinc-100', subtitle
       <Card className="p-5 hover:shadow-lg transition-shadow">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-sm font-medium text-zinc-500">{title}</p>
+            <p className="text-sm font-medium text-zinc-400">{title}</p>
             {typeof value === 'number' ? (
               <AnimatedNumber value={value} />
             ) : (
-              <p className="mt-2 text-3xl font-bold text-zinc-900">{value}</p>
+              <p className="mt-2 text-3xl font-bold text-white">{value}</p>
             )}
             {(change !== undefined || subtitle) && (
               <div className="mt-2 flex items-center gap-1.5">

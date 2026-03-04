@@ -26,12 +26,11 @@ interface LeadsChartProps {
 }
 
 export function LeadsChart({ data }: LeadsChartProps) {
-  // Format dates for display
   const formattedData = data.map(d => ({
     ...d,
     date: new Date(d.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
   }))
-  
+
   return (
     <Card>
       <CardHeader>
@@ -43,34 +42,36 @@ export function LeadsChart({ data }: LeadsChartProps) {
             <AreaChart data={formattedData}>
               <defs>
                 <linearGradient id="colorNewLeads" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3} />
+                  <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.25} />
                   <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="colorContacted" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.25} />
                   <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" />
-              <XAxis 
-                dataKey="date" 
-                tick={{ fontSize: 12 }} 
-                stroke="#a1a1aa"
+              <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+              <XAxis
+                dataKey="date"
+                tick={{ fontSize: 12, fill: '#71717a' }}
+                stroke="#3f3f46"
                 tickLine={false}
               />
-              <YAxis 
-                tick={{ fontSize: 12 }} 
-                stroke="#a1a1aa"
+              <YAxis
+                tick={{ fontSize: 12, fill: '#71717a' }}
+                stroke="#3f3f46"
                 tickLine={false}
                 axisLine={false}
               />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: 'white',
-                  border: '1px solid #e4e4e7',
+                  backgroundColor: '#18181b',
+                  border: '1px solid rgba(255,255,255,0.08)',
                   borderRadius: '8px',
-                  boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+                  boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
+                  color: '#fafafa',
                 }}
+                labelStyle={{ color: '#a1a1aa' }}
               />
               <Area
                 type="monotone"
@@ -113,7 +114,7 @@ export function SectorsChart({ data }: SectorsChartProps) {
     fullName: sectorLabels[d.sector] || d.sector,
     count: d.count
   }))
-  
+
   return (
     <Card>
       <CardHeader>
@@ -123,29 +124,31 @@ export function SectorsChart({ data }: SectorsChartProps) {
         <div className="h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={formattedData} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" horizontal={true} vertical={false} />
-              <XAxis type="number" tick={{ fontSize: 12 }} stroke="#a1a1aa" tickLine={false} />
-              <YAxis 
-                type="category" 
-                dataKey="name" 
-                tick={{ fontSize: 12 }} 
-                stroke="#a1a1aa" 
+              <CartesianGrid strokeDasharray="3 3" stroke="#27272a" horizontal={true} vertical={false} />
+              <XAxis type="number" tick={{ fontSize: 12, fill: '#71717a' }} stroke="#3f3f46" tickLine={false} />
+              <YAxis
+                type="category"
+                dataKey="name"
+                tick={{ fontSize: 12, fill: '#71717a' }}
+                stroke="#3f3f46"
                 tickLine={false}
                 axisLine={false}
                 width={80}
               />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: 'white',
-                  border: '1px solid #e4e4e7',
+                  backgroundColor: '#18181b',
+                  border: '1px solid rgba(255,255,255,0.08)',
                   borderRadius: '8px',
-                  boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+                  boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
+                  color: '#fafafa',
                 }}
+                labelStyle={{ color: '#a1a1aa' }}
                 formatter={(value, name, props) => [value, props.payload.fullName]}
               />
-              <Bar 
-                dataKey="count" 
-                fill="#f59e0b" 
+              <Bar
+                dataKey="count"
+                fill="#f59e0b"
                 radius={[0, 4, 4, 0]}
                 name="Leads"
               />

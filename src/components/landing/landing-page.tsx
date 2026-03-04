@@ -151,50 +151,66 @@ function Hero() {
         transition={{ delay: 0.5, duration: 0.7, ease: 'easeOut' }}
         className="mt-16 w-full max-w-3xl mx-auto"
       >
-        <HeroMockup />
+        <DashboardMockup />
       </motion.div>
     </section>
   )
 }
 
-/* ─── Hero Mockup ─────────────────────────────────────────────────────────── */
+/* ─── Dashboard Mockup (Hero) ─────────────────────────────────────────────── */
 
-const HERO_LEADS = [
-  { name: 'Boulangerie Martin', city: 'Paris 15e', phone: '01 45 32 11 44', hasWebsite: false, score: 95 },
-  { name: 'Au Pain Doré', city: 'Paris 15e', phone: '01 45 78 09 23', hasWebsite: false, score: 91 },
-  { name: 'La Fournée', city: 'Paris 15e', phone: '01 48 28 45 77', hasWebsite: true, score: 48 },
-  { name: 'Artisan Blé', city: 'Paris 15e', phone: '01 45 79 33 60', hasWebsite: false, score: 88 },
+const CHART_BARS = [40, 65, 45, 80, 55, 90, 95]
+const DASH_RECENT = [
+  { name: 'Boulangerie Martin', tag: 'Chaud', score: 95 },
+  { name: 'Plomberie Moreau', tag: 'Chaud', score: 91 },
+  { name: 'Coiffure Élise', tag: 'Tiède', score: 62 },
 ]
 
-function HeroMockup() {
-  const [visibleCount, setVisibleCount] = useState(0)
-  const [scanning, setScanning] = useState(true)
+function DashboardMockup() {
+  const [counts, setCounts] = useState({ leads: 0, hot: 0, scans: 0, rate: 0 })
+  const [chartVisible, setChartVisible] = useState(0)
+  const [recentVisible, setRecentVisible] = useState(0)
 
   useEffect(() => {
-    const t1 = setTimeout(() => setScanning(false), 1800)
-    return () => clearTimeout(t1)
+    function animate() {
+      setCounts({ leads: 0, hot: 0, scans: 0, rate: 0 })
+      setChartVisible(0)
+      setRecentVisible(0)
+
+      let step = 0
+      const total = 40
+      const t = setInterval(() => {
+        step++
+        const p = Math.min(step / total, 1)
+        const e = 1 - (1 - p) ** 3
+        setCounts({
+          leads: Math.round(247 * e),
+          hot: Math.round(38 * e),
+          scans: Math.round(12 * e),
+          rate: Math.round(8 * e),
+        })
+        if (step >= total) {
+          clearInterval(t)
+          let bi = 0
+          const bt = setInterval(() => {
+            bi++; setChartVisible(bi)
+            if (bi >= CHART_BARS.length) {
+              clearInterval(bt)
+              let ri = 0
+              const rt = setInterval(() => {
+                ri++; setRecentVisible(ri)
+                if (ri >= DASH_RECENT.length) {
+                  clearInterval(rt)
+                  setTimeout(animate, 5000)
+                }
+              }, 400)
+            }
+          }, 100)
+        }
+      }, 35)
+    }
+    animate()
   }, [])
-
-  useEffect(() => {
-    if (scanning) return
-    let i = 0
-    const interval = setInterval(() => {
-      i++
-      setVisibleCount(i)
-      if (i >= HERO_LEADS.length) {
-        clearInterval(interval)
-        // reset loop
-        setTimeout(() => {
-          setVisibleCount(0)
-          setScanning(true)
-          setTimeout(() => {
-            setScanning(false)
-          }, 1800)
-        }, 4000)
-      }
-    }, 350)
-    return () => clearInterval(interval)
-  }, [scanning])
 
   return (
     <div className="rounded-2xl border border-white/[0.08] bg-zinc-900/60 backdrop-blur-sm overflow-hidden shadow-2xl shadow-black/60">
@@ -203,60 +219,60 @@ function HeroMockup() {
         <div className="w-3 h-3 rounded-full bg-red-500/70" />
         <div className="w-3 h-3 rounded-full bg-amber-500/70" />
         <div className="w-3 h-3 rounded-full bg-emerald-500/70" />
-        <span className="ml-3 text-xs text-zinc-500">LeadHunter — Scanner</span>
+        <span className="ml-3 text-xs text-zinc-500">LeadHunter — Dashboard</span>
       </div>
 
       <div className="p-5">
-        {/* Mock inputs */}
-        <div className="flex gap-3 mb-5">
-          <div className="flex-1 flex items-center gap-2 bg-zinc-800/60 border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-zinc-300">
-            <Building2 className="h-3.5 w-3.5 text-zinc-500 shrink-0" />
-            Boulangeries
-          </div>
-          <div className="flex-1 flex items-center gap-2 bg-zinc-800/60 border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-zinc-300">
-            <MapPin className="h-3.5 w-3.5 text-zinc-500 shrink-0" />
-            Paris 15ème
-          </div>
-          <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-orange-600 text-white text-sm font-medium">
-            {scanning ? (
-              <><div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Analyse...</>
-            ) : (
-              <><Zap className="h-3.5 w-3.5" /> Scanné</>
-            )}
+        {/* Stats grid */}
+        <div className="grid grid-cols-4 gap-2.5 mb-5">
+          {[
+            { label: 'Leads trouvés', value: counts.leads, suffix: '', color: 'text-white' },
+            { label: 'Leads chauds', value: counts.hot, suffix: ' 🔥', color: 'text-red-400' },
+            { label: 'Scans / mois', value: counts.scans, suffix: '', color: 'text-amber-400' },
+            { label: 'Taux closing', value: counts.rate, suffix: '%', color: 'text-emerald-400' },
+          ].map(({ label, value, suffix, color }) => (
+            <div key={label} className="bg-zinc-800/50 border border-white/[0.06] rounded-xl p-3">
+              <p className="text-[9px] text-zinc-500 mb-1.5 leading-tight">{label}</p>
+              <p className={`text-xl font-bold font-mono leading-none ${color}`}>{value}{suffix}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Mini bar chart */}
+        <div className="mb-4">
+          <p className="text-[9px] text-zinc-500 mb-2 uppercase tracking-wide">Activité — 7 derniers jours</p>
+          <div className="flex items-end gap-1 h-14">
+            {CHART_BARS.map((h, i) => (
+              <motion.div
+                key={i}
+                className="flex-1 rounded-t-sm bg-gradient-to-t from-amber-500/60 to-amber-400/20"
+                style={{ height: '0%' }}
+                animate={{ height: i < chartVisible ? `${h}%` : '0%' }}
+                transition={{ duration: 0.3, ease: 'easeOut' }}
+              />
+            ))}
           </div>
         </div>
 
-        {/* Results */}
-        <div className="space-y-2">
-          {scanning && (
-            <div className="flex items-center gap-3 py-4 justify-center text-zinc-500 text-sm">
-              <div className="w-4 h-4 border-2 border-amber-500/40 border-t-amber-500 rounded-full animate-spin" />
-              Détection en cours via Google Maps...
-            </div>
-          )}
-          {!scanning && HERO_LEADS.slice(0, visibleCount).map((lead, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, x: -12 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.3 }}
-              className="flex items-center gap-3 p-3 rounded-xl bg-zinc-800/40 border border-white/[0.05]"
-            >
-              <div className={`shrink-0 w-2 h-2 rounded-full ${lead.hasWebsite ? 'bg-blue-400' : 'bg-red-400'}`} />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white truncate">{lead.name}</p>
-                <p className="text-xs text-zinc-500">{lead.city} · {lead.phone}</p>
-              </div>
-              <div className={`shrink-0 text-xs font-bold px-2 py-0.5 rounded-full ${
-                lead.hasWebsite
-                  ? 'bg-blue-500/20 text-blue-400'
-                  : 'bg-red-500/20 text-red-400'
-              }`}>
-                {lead.hasWebsite ? 'Site web' : 'Sans site 🔥'}
-              </div>
-              <div className="shrink-0 text-xs font-semibold text-zinc-400">{lead.score}</div>
-            </motion.div>
-          ))}
+        {/* Recent leads — fixed height prevents layout shift */}
+        <div>
+          <p className="text-[9px] text-zinc-500 uppercase tracking-wide mb-2">Derniers leads détectés</p>
+          <div className="space-y-1.5 min-h-[126px]">
+            {DASH_RECENT.slice(0, recentVisible).map((lead, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.25 }}
+                className="flex items-center gap-2 p-2 rounded-lg bg-zinc-800/40 border border-white/[0.04]"
+              >
+                <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${lead.tag === 'Chaud' ? 'bg-red-400' : 'bg-amber-400'}`} />
+                <p className="text-xs font-medium text-white flex-1 truncate">{lead.name}</p>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${lead.tag === 'Chaud' ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-400'}`}>{lead.tag}</span>
+                <span className="text-[10px] font-bold text-zinc-500">{lead.score}</span>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
@@ -409,44 +425,47 @@ function ScannerMockup({ inView }: { inView: boolean }) {
           </div>
         </div>
 
-        {/* Status bar */}
-        {phase === 'loading' && (
-          <div className="flex items-center gap-2 py-2 text-xs text-zinc-500">
-            <div className="w-3 h-3 border border-amber-500/40 border-t-amber-500 rounded-full animate-spin" />
-            Interrogation de Google Maps en cours...
-          </div>
-        )}
+        {/* Dynamic area — fixed min-height prevents layout shift */}
+        <div className="min-h-[280px]">
+          {/* Status bar */}
+          {phase === 'loading' && (
+            <div className="flex items-center gap-2 py-2 text-xs text-zinc-500">
+              <div className="w-3 h-3 border border-amber-500/40 border-t-amber-500 rounded-full animate-spin" />
+              Interrogation de Google Maps en cours...
+            </div>
+          )}
 
-        {/* Results */}
-        {phase === 'results' && (
-          <div className="space-y-1.5">
-            {SCANNER_LEADS.slice(0, visible).map((lead, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.25 }}
-                className="flex items-center gap-2.5 p-2.5 rounded-lg bg-zinc-800/40 border border-white/[0.04]"
-              >
-                <div className={`shrink-0 w-1.5 h-1.5 rounded-full ${lead.hasWebsite ? 'bg-blue-400' : 'bg-red-400'}`} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-white truncate">{lead.name}</p>
-                  <p className="text-[10px] text-zinc-500 flex items-center gap-1">
-                    <Phone className="h-2.5 w-2.5" />{lead.phone}
-                  </p>
-                </div>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  {lead.hasWebsite ? (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400">Site web</span>
-                  ) : (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 font-medium">Sans site 🔥</span>
-                  )}
-                  <span className="text-[10px] text-zinc-500">★ {lead.rating}</span>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        )}
+          {/* Results */}
+          {phase === 'results' && (
+            <div className="space-y-1.5">
+              {SCANNER_LEADS.slice(0, visible).map((lead, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.25 }}
+                  className="flex items-center gap-2.5 p-2.5 rounded-lg bg-zinc-800/40 border border-white/[0.04]"
+                >
+                  <div className={`shrink-0 w-1.5 h-1.5 rounded-full ${lead.hasWebsite ? 'bg-blue-400' : 'bg-red-400'}`} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-white truncate">{lead.name}</p>
+                    <p className="text-[10px] text-zinc-500 flex items-center gap-1">
+                      <Phone className="h-2.5 w-2.5" />{lead.phone}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {lead.hasWebsite ? (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400">Site web</span>
+                    ) : (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 font-medium">Sans site 🔥</span>
+                    )}
+                    <span className="text-[10px] text-zinc-500">★ {lead.rating}</span>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -590,29 +609,31 @@ function AuditMockup({ inView }: { inView: boolean }) {
           </span>
         </div>
 
-        {/* Issues */}
-        {showIssues && (
-          <div className="space-y-1.5 pt-1 border-t border-white/[0.06]">
-            <p className="text-[10px] text-zinc-500 font-medium uppercase tracking-wide">Problèmes détectés</p>
-            {ISSUES.slice(0, issueCount).map(({ icon: Icon, label, sev }, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.2 }}
-                className={`flex items-center gap-2 text-xs p-2 rounded-lg ${
-                  sev === 'critical' ? 'bg-red-500/10 text-red-400' : 'bg-amber-500/10 text-amber-400'
-                }`}
-              >
-                <Icon className="h-3 w-3 shrink-0" />
-                {label}
-                <span className={`ml-auto text-[9px] px-1.5 py-0.5 rounded font-bold uppercase ${
-                  sev === 'critical' ? 'bg-red-500/20' : 'bg-amber-500/20'
-                }`}>{sev}</span>
-              </motion.div>
-            ))}
-          </div>
-        )}
+        {/* Issues — fixed min-height prevents layout shift */}
+        <div className="min-h-[140px]">
+          {showIssues && (
+            <div className="space-y-1.5 pt-1 border-t border-white/[0.06]">
+              <p className="text-[10px] text-zinc-500 font-medium uppercase tracking-wide">Problèmes détectés</p>
+              {ISSUES.slice(0, issueCount).map(({ icon: Icon, label, sev }, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className={`flex items-center gap-2 text-xs p-2 rounded-lg ${
+                    sev === 'critical' ? 'bg-red-500/10 text-red-400' : 'bg-amber-500/10 text-amber-400'
+                  }`}
+                >
+                  <Icon className="h-3 w-3 shrink-0" />
+                  {label}
+                  <span className={`ml-auto text-[9px] px-1.5 py-0.5 rounded font-bold uppercase ${
+                    sev === 'critical' ? 'bg-red-500/20' : 'bg-amber-500/20'
+                  }`}>{sev}</span>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

@@ -18,10 +18,10 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         <input
           type={type}
           className={cn(
-            'flex h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm transition-colors',
+            'flex h-10 w-full rounded-lg border border-white/[0.08] bg-zinc-800/60 px-3 py-2 text-sm text-zinc-200 transition-colors',
             'file:border-0 file:bg-transparent file:text-sm file:font-medium',
-            'placeholder:text-zinc-400',
-            'focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:ring-offset-1',
+            'placeholder:text-zinc-500',
+            'focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-1 focus:ring-offset-zinc-950',
             'disabled:cursor-not-allowed disabled:opacity-50',
             icon && 'pl-10',
             error && 'border-red-500 focus:ring-red-500',
@@ -31,7 +31,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           {...props}
         />
         {error && (
-          <p className="mt-1 text-xs text-red-500">{error}</p>
+          <p className="mt-1 text-xs text-red-400">{error}</p>
         )}
       </div>
     )

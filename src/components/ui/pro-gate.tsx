@@ -53,7 +53,7 @@ export function ProGate({
       <div className="absolute inset-0 flex items-center justify-center">
         <button
           onClick={handleClick}
-          className="flex items-center gap-2 bg-white/90 backdrop-blur-sm border border-amber-200 text-amber-700 text-sm font-semibold px-4 py-2 rounded-xl shadow-lg hover:bg-amber-50 transition-colors"
+          className="flex items-center gap-2 bg-zinc-900/90 backdrop-blur-sm border border-amber-500/30 text-amber-400 text-sm font-semibold px-4 py-2 rounded-xl shadow-lg hover:bg-zinc-800/90 transition-colors"
         >
           <Lock className="h-4 w-4" />
           Fonctionnalité Pro

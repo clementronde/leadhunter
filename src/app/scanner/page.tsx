@@ -384,8 +384,8 @@ export default function ScannerPage() {
         {health && (
           <div className={`flex items-start gap-3 p-4 rounded-lg border text-sm ${
             health.keys.GOOGLE_MAPS_API_KEY.configured
-              ? 'bg-emerald-500/10 backdrop-blur-sm border-emerald-300/40 text-emerald-800'
-              : 'bg-red-50 border-red-200 text-red-800'
+              ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+              : 'bg-red-500/10 border-red-500/20 text-red-400'
           }`}>
             <KeyRound className="h-4 w-4 mt-0.5 shrink-0" />
             <div className="flex-1">
@@ -400,12 +400,12 @@ export default function ScannerPage() {
                 <div>
                   <p className="font-semibold">Clé API Google Maps manquante ou invalide</p>
                   <p className="mt-1 text-xs">
-                    Créez ou vérifiez votre fichier <code className="bg-red-100 px-1 rounded">.env.local</code> à la racine du projet :
+                    Créez ou vérifiez votre fichier <code className="bg-red-500/20 px-1 rounded">.env.local</code> à la racine du projet :
                   </p>
-                  <pre className="mt-2 text-xs bg-red-100 p-2 rounded font-mono">
+                  <pre className="mt-2 text-xs bg-red-500/20 p-2 rounded font-mono">
                     GOOGLE_MAPS_API_KEY=AIzaSy...votre_clé</pre>
                   <p className="mt-1 text-xs opacity-80">
-                    Puis redémarrez le serveur : <code className="bg-red-100 px-1 rounded">Ctrl+C</code> → <code className="bg-red-100 px-1 rounded">npm run dev</code>
+                    Puis redémarrez le serveur : <code className="bg-red-500/20 px-1 rounded">Ctrl+C</code> → <code className="bg-red-500/20 px-1 rounded">npm run dev</code>
                   </p>
                 </div>
               )}
@@ -417,16 +417,16 @@ export default function ScannerPage() {
         {!isPro && (
           <div className={`flex items-center gap-3 p-3 rounded-lg border text-sm ${
             !canScan
-              ? 'bg-red-50 border-red-200'
+              ? 'bg-red-500/10 border-red-500/20'
               : scanCountThisMonth >= FREE_SCAN_LIMIT - 1
-              ? 'bg-amber-50 border-amber-200'
-              : 'bg-zinc-100 border-zinc-200'
+              ? 'bg-amber-500/10 border-amber-500/20'
+              : 'bg-zinc-800/60 border-white/[0.08]'
           }`}>
             <div className="flex-1">
-              <span className={`font-medium ${!canScan ? 'text-red-700' : scanCountThisMonth >= FREE_SCAN_LIMIT - 1 ? 'text-amber-700' : 'text-zinc-700'}`}>
+              <span className={`font-medium ${!canScan ? 'text-red-400' : scanCountThisMonth >= FREE_SCAN_LIMIT - 1 ? 'text-amber-400' : 'text-zinc-300'}`}>
                 {scanCountThisMonth} / {FREE_SCAN_LIMIT} scans ce mois
               </span>
-              <div className="mt-1.5 h-1.5 bg-zinc-300 rounded-full overflow-hidden">
+              <div className="mt-1.5 h-1.5 bg-zinc-700 rounded-full overflow-hidden">
                 <div
                   className={`h-full rounded-full transition-all ${
                     !canScan ? 'bg-red-500' : scanCountThisMonth >= FREE_SCAN_LIMIT - 1 ? 'bg-amber-500' : 'bg-emerald-500'
@@ -438,7 +438,7 @@ export default function ScannerPage() {
             {!canScan && (
               <button
                 onClick={() => setUpgradeModal('scan_limit')}
-                className="text-xs font-semibold text-amber-700 bg-amber-100 px-2.5 py-1 rounded-full hover:bg-amber-200 transition-colors"
+                className="text-xs font-semibold text-amber-400 bg-amber-500/20 px-2.5 py-1 rounded-full hover:bg-amber-500/30 transition-colors"
               >
                 Passer à Pro
               </button>
@@ -453,13 +453,13 @@ export default function ScannerPage() {
             className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm transition-all border ${
               activeSource === 'google_maps'
                 ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                : 'bg-white/70 backdrop-blur-sm text-zinc-600 border-zinc-200 hover:border-blue-300'
+                : 'bg-zinc-800/60 text-zinc-400 border-white/[0.08] hover:border-blue-500/40'
             }`}
           >
             <Map className="h-4 w-4" />
             Google Maps
             <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${
-              activeSource === 'google_maps' ? 'bg-blue-500 text-white' : 'bg-emerald-100 text-emerald-700'
+              activeSource === 'google_maps' ? 'bg-blue-500 text-white' : 'bg-emerald-500/20 text-emerald-400'
             }`}>
               Recommandé
             </span>
@@ -470,7 +470,7 @@ export default function ScannerPage() {
             className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm transition-all border ${
               activeSource === 'insee'
                 ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
-                : 'bg-white/70 backdrop-blur-sm text-zinc-600 border-zinc-200 hover:border-amber-300'
+                : 'bg-zinc-800/60 text-zinc-400 border-white/[0.08] hover:border-amber-500/40'
             }`}
           >
             <Database className="h-4 w-4" />
@@ -492,7 +492,7 @@ export default function ScannerPage() {
               <div className="space-y-4">
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                   <div className="space-y-2" ref={suggestionRef}>
-                    <label className="text-sm font-medium text-zinc-700">
+                    <label className="text-sm font-medium text-zinc-400">
                       Type d'entreprise *
                     </label>
                     <div className="relative">
@@ -504,7 +504,7 @@ export default function ScannerPage() {
                         icon={<Search className="h-4 w-4" />}
                       />
                       {showSuggestions && filteredTypes.length > 0 && (
-                        <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-white border border-zinc-200 rounded-lg shadow-lg max-h-52 overflow-y-auto">
+                        <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-zinc-900 border border-white/[0.08] rounded-lg shadow-lg shadow-black/40 max-h-52 overflow-y-auto">
                           {filteredTypes.map((type) => (
                             <button
                               key={type}
@@ -514,7 +514,7 @@ export default function ScannerPage() {
                                 setGmQuery(type)
                                 setShowSuggestions(false)
                               }}
-                              className="w-full text-left px-3 py-2 text-sm text-zinc-700 hover:bg-amber-50 hover:text-amber-700 transition-colors"
+                              className="w-full text-left px-3 py-2 text-sm text-zinc-300 hover:bg-amber-500/10 hover:text-amber-400 transition-colors"
                             >
                               {type}
                             </button>
@@ -525,7 +525,7 @@ export default function ScannerPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-zinc-700">
+                    <label className="text-sm font-medium text-zinc-400">
                       Ville / Zone *
                     </label>
                     <Input
@@ -537,7 +537,7 @@ export default function ScannerPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-zinc-700">
+                    <label className="text-sm font-medium text-zinc-400">
                       Nombre de lieux
                     </label>
                     <Select
@@ -549,7 +549,7 @@ export default function ScannerPage() {
                 </div>
 
                 {/* Option audit PageSpeed */}
-                <div className={`flex items-start gap-3 p-4 rounded-lg border ${canAudit ? 'bg-blue-50 border-blue-200' : 'bg-zinc-50 border-zinc-200'}`}>
+                <div className={`flex items-start gap-3 p-4 rounded-lg border ${canAudit ? 'bg-blue-500/10 border-blue-500/20' : 'bg-zinc-800/40 border-white/[0.08]'}`}>
                   <input
                     type="checkbox"
                     id="audit-websites"
@@ -567,25 +567,25 @@ export default function ScannerPage() {
                   <div className="flex-1">
                     <label
                       htmlFor="audit-websites"
-                      className={`text-sm font-medium cursor-pointer flex items-center gap-1.5 ${canAudit ? 'text-blue-900' : 'text-zinc-500'}`}
+                      className={`text-sm font-medium cursor-pointer flex items-center gap-1.5 ${canAudit ? 'text-blue-300' : 'text-zinc-500'}`}
                       onClick={() => { if (!canAudit) setUpgradeModal('audit') }}
                     >
                       <Zap className="h-3.5 w-3.5" />
                       Analyser les performances des sites trouvés (Core Web Vitals)
                       {!canAudit && (
-                        <span className="ml-1 text-xs font-semibold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
+                        <span className="ml-1 text-xs font-semibold bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full">
                           Pro
                         </span>
                       )}
                     </label>
-                    <p className={`text-xs mt-0.5 ${canAudit ? 'text-blue-700' : 'text-zinc-400'}`}>
+                    <p className={`text-xs mt-0.5 ${canAudit ? 'text-blue-400' : 'text-zinc-400'}`}>
                       Lance un audit PageSpeed Insights sur chaque site web détecté. Plus lent mais
                       identifie précisément les sites datés ou peu performants.
                     </p>
                   </div>
                 </div>
 
-                <div className="p-3 bg-zinc-50 rounded-lg text-sm text-zinc-600 border border-zinc-200">
+                <div className="p-3 bg-zinc-800/40 rounded-lg text-sm text-zinc-400 border border-white/[0.06]">
                   <strong>Comment ça marche :</strong> Google Maps retourne les entreprises réelles
                   avec leurs coordonnées, téléphone et site web. Les entreprises sans site web sont
                   identifiées comme prospects{' '}
@@ -599,7 +599,7 @@ export default function ScannerPage() {
               <div className="space-y-4">
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-zinc-700">Ville</label>
+                    <label className="text-sm font-medium text-zinc-400">Ville</label>
                     <Input
                       placeholder="Ex: Boulogne-Billancourt"
                       value={location}
@@ -609,7 +609,7 @@ export default function ScannerPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-zinc-700">ou Code postal</label>
+                    <label className="text-sm font-medium text-zinc-400">ou Code postal</label>
                     <Input
                       placeholder="Ex: 92100"
                       value={codePostal}
@@ -619,7 +619,7 @@ export default function ScannerPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-zinc-700">Activité (optionnel)</label>
+                    <label className="text-sm font-medium text-zinc-400">Activité (optionnel)</label>
                     <Input
                       placeholder="Ex: restaurant, coiffure..."
                       value={activite}
@@ -629,7 +629,7 @@ export default function ScannerPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-zinc-700">Nombre max</label>
+                    <label className="text-sm font-medium text-zinc-400">Nombre max</label>
                     <Select
                       options={nombreOptions}
                       value={nombreResultats}
@@ -638,7 +638,7 @@ export default function ScannerPage() {
                   </div>
                 </div>
 
-                <div className="p-3 bg-amber-50 rounded-lg text-sm text-amber-800 border border-amber-200">
+                <div className="p-3 bg-amber-500/10 rounded-lg text-sm text-amber-400 border border-amber-500/20">
                   <strong>💡 INSEE Sirene :</strong> Recherche dans le registre officiel des
                   entreprises françaises. Très exhaustif mais les coordonnées téléphoniques et sites
                   web ne sont pas toujours disponibles. Renseignez au moins la ville ou le code
@@ -668,14 +668,14 @@ export default function ScannerPage() {
 
         {/* Scan en cours */}
         {scanStatus === 'scanning' && (
-          <Card className="border-amber-200 bg-amber-50/50">
+          <Card className="border-amber-500/30 bg-amber-500/[0.06]">
             <CardContent className="pt-6">
               <div className="flex items-center gap-4 mb-4">
-                <div className="h-12 w-12 rounded-xl bg-amber-100 flex items-center justify-center">
-                  <Loader2 className="h-6 w-6 text-amber-600 animate-spin" />
+                <div className="h-12 w-12 rounded-xl bg-amber-500/20 flex items-center justify-center">
+                  <Loader2 className="h-6 w-6 text-amber-400 animate-spin" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-zinc-900">Recherche en cours...</h3>
+                  <h3 className="font-semibold text-white">Recherche en cours...</h3>
                   <p className="text-sm text-zinc-500">
                     {activeSource === 'google_maps'
                       ? gmAuditWebsites
@@ -696,36 +696,36 @@ export default function ScannerPage() {
 
         {/* Erreur */}
         {scanStatus === 'error' && errorMessage && (
-          <Card className="border-red-200 bg-red-50/50">
+          <Card className="border-red-500/30 bg-red-500/[0.06]">
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-xl bg-red-100 flex items-center justify-center">
-                  <AlertTriangle className="h-6 w-6 text-red-600" />
+                <div className="h-12 w-12 rounded-xl bg-red-500/20 flex items-center justify-center">
+                  <AlertTriangle className="h-6 w-6 text-red-400" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-red-900">Erreur lors du scan</h3>
-                  <p className="text-sm text-red-700">{errorMessage}</p>
+                  <h3 className="font-semibold text-red-400">Erreur lors du scan</h3>
+                  <p className="text-sm text-red-300">{errorMessage}</p>
                 </div>
               </div>
 
               {/* Messages d'aide contextuels — uniquement si erreur de config */}
               {activeSource === 'google_maps' && errorMessage && (errorMessage.toLowerCase().includes('api') || errorMessage.toLowerCase().includes('clé') || errorMessage.toLowerCase().includes('key') || errorMessage.toLowerCase().includes('configuré')) && (
-                <div className="mt-4 p-3 bg-red-100 rounded-lg text-sm">
+                <div className="mt-4 p-3 bg-red-500/10 rounded-lg text-sm">
                   <strong>Configuration requise :</strong> Ajoutez votre clé API Google Maps dans{' '}
                   <code>.env.local</code> :
-                  <pre className="mt-2 text-xs bg-red-200 p-2 rounded">
+                  <pre className="mt-2 text-xs bg-red-500/20 p-2 rounded">
                     {`GOOGLE_MAPS_API_KEY=votre_cle_api_google`}
                   </pre>
-                  <p className="mt-2 text-xs text-red-700">
+                  <p className="mt-2 text-xs text-red-300">
                     Assurez-vous que <strong>Places API</strong> est activée dans Google Cloud Console.
                   </p>
                 </div>
               )}
               {activeSource === 'insee' && errorMessage && errorMessage.toLowerCase().includes('insee') && (
-                <div className="mt-4 p-3 bg-red-100 rounded-lg text-sm">
+                <div className="mt-4 p-3 bg-red-500/10 rounded-lg text-sm">
                   <strong>Configuration requise :</strong> Ajoutez vos credentials INSEE dans{' '}
                   <code>.env.local</code> :
-                  <pre className="mt-2 text-xs bg-red-200 p-2 rounded">
+                  <pre className="mt-2 text-xs bg-red-500/20 p-2 rounded">
                     {`INSEE_API_KEY=votre_token`}
                   </pre>
                 </div>
@@ -736,14 +736,14 @@ export default function ScannerPage() {
 
         {/* Résultats */}
         {scanStatus === 'completed' && scanResult && (
-          <Card className="border-emerald-200 bg-emerald-50/50">
+          <Card className="border-emerald-500/30 bg-emerald-500/[0.06]">
             <CardContent className="pt-6">
               <div className="flex items-center gap-4 mb-6">
-                <div className="h-12 w-12 rounded-xl bg-emerald-100 flex items-center justify-center">
-                  <CheckCircle className="h-6 w-6 text-emerald-600" />
+                <div className="h-12 w-12 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                  <CheckCircle className="h-6 w-6 text-emerald-400" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-zinc-900">Scan terminé !</h3>
+                  <h3 className="font-semibold text-white">Scan terminé !</h3>
                   <p className="text-sm text-zinc-500">
                     {activeSource === 'google_maps'
                       ? `${scanResult.total_found} entreprises trouvées via Google Maps${scanResult.skipped ? ` · ${scanResult.skipped} déjà dans votre CRM` : ''}`
@@ -766,15 +766,15 @@ export default function ScannerPage() {
                 ).length
                 return (
                   <div className={`grid gap-4 text-center ${activeSource === 'google_maps' ? 'grid-cols-2 md:grid-cols-4' : 'grid-cols-3'}`}>
-                    <div className="p-4 bg-white rounded-lg">
+                    <div className="p-4 bg-zinc-800/60 border border-white/[0.06] rounded-lg">
                       <div className="flex items-center justify-center gap-2 mb-2">
                         <Building2 className="h-5 w-5 text-zinc-400" />
                       </div>
-                      <p className="text-3xl font-bold text-zinc-900">{scanResult.processed}</p>
+                      <p className="text-3xl font-bold text-white">{scanResult.processed}</p>
                       <p className="text-sm text-zinc-500">Entreprises traitées</p>
                     </div>
 
-                    <div className="p-4 bg-white rounded-lg">
+                    <div className="p-4 bg-zinc-800/60 border border-white/[0.06] rounded-lg">
                       <div className="flex items-center justify-center gap-2 mb-2">
                         <Globe className="h-5 w-5 text-red-500" />
                       </div>
@@ -782,7 +782,7 @@ export default function ScannerPage() {
                       <p className="text-sm text-zinc-500">Sans site web 🔥</p>
                     </div>
 
-                    <div className="p-4 bg-white rounded-lg">
+                    <div className="p-4 bg-zinc-800/60 border border-white/[0.06] rounded-lg">
                       <div className="flex items-center justify-center gap-2 mb-2">
                         <Wrench className="h-5 w-5 text-amber-500" />
                       </div>
@@ -791,7 +791,7 @@ export default function ScannerPage() {
                     </div>
 
                     {activeSource === 'google_maps' && (
-                      <div className="p-4 bg-white rounded-lg">
+                      <div className="p-4 bg-zinc-800/60 border border-white/[0.06] rounded-lg">
                         <div className="flex items-center justify-center gap-2 mb-2">
                           <Zap className="h-5 w-5 text-blue-500" />
                         </div>
@@ -805,20 +805,20 @@ export default function ScannerPage() {
 
               {/* Bannière progression audit Phase 2 */}
               {auditPhase && (
-                <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                <div className="mt-4 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl">
                   <div className="flex items-center gap-3 mb-2">
                     <div className="h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin flex-shrink-0" />
-                    <p className="text-sm font-medium text-blue-800">
+                    <p className="text-sm font-medium text-blue-300">
                       Analyse Speed Insights en cours... {auditProgress.current}/{auditProgress.total}
                     </p>
                   </div>
-                  <div className="h-1.5 bg-blue-100 rounded-full overflow-hidden">
+                  <div className="h-1.5 bg-blue-500/20 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-blue-500 transition-all duration-700 ease-out"
                       style={{ width: `${auditProgress.total > 0 ? (auditProgress.current / auditProgress.total) * 100 : 0}%` }}
                     />
                   </div>
-                  <p className="text-xs text-blue-600 mt-1">
+                  <p className="text-xs text-blue-400 mt-1">
                     Les scores de prospection se mettent à jour en temps réel
                   </p>
                 </div>
@@ -827,7 +827,7 @@ export default function ScannerPage() {
               {/* Top résultats */}
               {scanResult.companies.length > 0 && (
                 <div className="mt-6">
-                  <h4 className="text-sm font-semibold text-zinc-700 mb-3">
+                  <h4 className="text-sm font-semibold text-zinc-400 mb-3">
                     Aperçu des meilleurs prospects
                   </h4>
                   <div className="space-y-2">
@@ -837,21 +837,21 @@ export default function ScannerPage() {
                       .map((company, idx) => (
                         <div
                           key={idx}
-                          className="flex items-center gap-3 p-3 bg-white rounded-lg border border-zinc-100"
+                          className="flex items-center gap-3 p-3 bg-zinc-800/60 rounded-lg border border-white/[0.06]"
                         >
                           <div
                             className={`h-8 w-8 rounded-lg flex items-center justify-center text-xs font-bold ${
                               company.priority === 'hot'
                                 ? 'bg-red-100 text-red-700'
                                 : company.priority === 'warm'
-                                ? 'bg-amber-100 text-amber-700'
-                                : 'bg-blue-100 text-blue-700'
+                                ? 'bg-amber-500/20 text-amber-400'
+                                : 'bg-blue-500/20 text-blue-400'
                             }`}
                           >
                             {company.prospect_score}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium text-zinc-900 text-sm truncate">
+                            <p className="font-medium text-white text-sm truncate">
                               {company.name}
                             </p>
                             <p className="text-xs text-zinc-500 truncate">
@@ -901,17 +901,17 @@ export default function ScannerPage() {
                 scans.map((scan) => (
                   <div
                     key={scan.id}
-                    className="flex items-center gap-4 p-4 bg-zinc-50 rounded-lg"
+                    className="flex items-center gap-4 p-4 bg-zinc-800/40 rounded-lg border border-white/[0.04]"
                   >
                     <div
                       className={`h-10 w-10 rounded-lg flex items-center justify-center ${
                         scan.status === 'completed'
-                          ? 'bg-emerald-100'
+                          ? 'bg-emerald-500/20'
                           : scan.status === 'running'
-                          ? 'bg-amber-100'
+                          ? 'bg-amber-500/20'
                           : scan.status === 'failed'
-                          ? 'bg-red-100'
-                          : 'bg-zinc-200'
+                          ? 'bg-red-500/20'
+                          : 'bg-zinc-700'
                       }`}
                     >
                       {scan.status === 'completed' && (
@@ -929,7 +929,7 @@ export default function ScannerPage() {
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-zinc-900 truncate">{scan.query}</p>
+                      <p className="font-medium text-white truncate">{scan.query}</p>
                       <p className="text-sm text-zinc-500">
                         {new Date(scan.started_at).toLocaleDateString('fr-FR', {
                           day: 'numeric',

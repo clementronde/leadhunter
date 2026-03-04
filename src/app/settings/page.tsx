@@ -146,17 +146,17 @@ export default function SettingsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center justify-between p-4 bg-zinc-50 rounded-lg">
+            <div className="flex items-center justify-between p-4 bg-zinc-800/40 rounded-xl border border-white/[0.06]">
               <div className="flex items-center gap-3">
-                <div className={`flex h-10 w-10 items-center justify-center rounded-full ${isPro ? 'bg-amber-100' : 'bg-zinc-200'}`}>
+                <div className={`flex h-10 w-10 items-center justify-center rounded-full ${isPro ? 'bg-amber-500/20' : 'bg-zinc-700/60'}`}>
                   {isPro ? (
-                    <Crown className="h-5 w-5 text-amber-600" />
+                    <Crown className="h-5 w-5 text-amber-500" />
                   ) : (
-                    <Settings className="h-5 w-5 text-zinc-500" />
+                    <Settings className="h-5 w-5 text-zinc-400" />
                   )}
                 </div>
                 <div>
-                  <p className="font-semibold text-zinc-900">Plan {isPro ? 'Pro' : 'Gratuit'}</p>
+                  <p className="font-semibold text-white">Plan {isPro ? 'Pro' : 'Gratuit'}</p>
                   <p className="text-sm text-zinc-500">
                     {isPro
                       ? 'Accès illimité à toutes les fonctionnalités'
@@ -164,7 +164,7 @@ export default function SettingsPage() {
                   </p>
                 </div>
               </div>
-              <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${isPro ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white' : 'bg-zinc-200 text-zinc-600'}`}>
+              <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${isPro ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white' : 'bg-zinc-700 text-zinc-400'}`}>
                 {isPro ? 'PRO' : 'FREE'}
               </span>
             </div>
@@ -198,21 +198,21 @@ export default function SettingsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className={`flex items-center gap-3 p-4 rounded-lg border ${
+              <div className={`flex items-center gap-3 p-4 rounded-xl border ${
                 supabaseConfigured
-                  ? 'bg-emerald-50 border-emerald-200'
-                  : 'bg-red-50 border-red-200'
+                  ? 'bg-emerald-500/10 border-emerald-500/20'
+                  : 'bg-red-500/10 border-red-500/20'
               }`}>
                 {supabaseConfigured ? (
-                  <CheckCircle className="h-5 w-5 text-emerald-600 flex-shrink-0" />
+                  <CheckCircle className="h-5 w-5 text-emerald-400 flex-shrink-0" />
                 ) : (
-                  <XCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
+                  <XCircle className="h-5 w-5 text-red-400 flex-shrink-0" />
                 )}
                 <div>
-                  <p className={`font-medium ${supabaseConfigured ? 'text-emerald-800' : 'text-red-800'}`}>
+                  <p className={`font-medium ${supabaseConfigured ? 'text-emerald-400' : 'text-red-400'}`}>
                     {supabaseConfigured ? 'Connecté à Supabase' : 'Supabase non configuré'}
                   </p>
-                  <p className={`text-sm mt-0.5 ${supabaseConfigured ? 'text-emerald-700' : 'text-red-700'}`}>
+                  <p className={`text-sm mt-0.5 ${supabaseConfigured ? 'text-emerald-500' : 'text-red-500'}`}>
                     {supabaseConfigured
                       ? `Projet : ${supabasePreview}.supabase.co`
                       : 'Ajoutez NEXT_PUBLIC_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_ANON_KEY dans .env.local'}
@@ -221,18 +221,18 @@ export default function SettingsPage() {
               </div>
 
               {!supabaseConfigured && (
-                <div className="pt-2 border-t border-zinc-200">
-                  <p className="text-sm text-zinc-500 mb-3"><strong>Instructions :</strong></p>
-                  <ol className="text-sm text-zinc-600 space-y-2 list-decimal list-inside">
+                <div className="pt-2 border-t border-white/[0.06]">
+                  <p className="text-sm text-zinc-400 mb-3"><strong>Instructions :</strong></p>
+                  <ol className="text-sm text-zinc-500 space-y-2 list-decimal list-inside">
                     <li>
                       Créez un projet gratuit sur{' '}
-                      <a href="https://supabase.com" target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:underline">
+                      <a href="https://supabase.com" target="_blank" rel="noopener noreferrer" className="text-amber-500 hover:underline">
                         supabase.com <ExternalLink className="h-3 w-3 inline" />
                       </a>
                     </li>
                     <li>Copiez l'URL et la clé anon depuis Settings → API</li>
-                    <li>Ajoutez-les dans votre <code className="bg-zinc-100 px-1 rounded">.env.local</code></li>
-                    <li>Exécutez le schéma SQL (<code className="bg-zinc-100 px-1 rounded">supabase-schema.sql</code>)</li>
+                    <li>Ajoutez-les dans votre <code className="bg-zinc-800 px-1 rounded">.env.local</code></li>
+                    <li>Exécutez le schéma SQL (<code className="bg-zinc-800 px-1 rounded">supabase-schema.sql</code>)</li>
                   </ol>
                 </div>
               )}
@@ -296,26 +296,26 @@ export default function SettingsPage() {
             <div className="space-y-4">
               <label className="flex items-center justify-between">
                 <div>
-                  <p className="font-medium text-zinc-900">Nouveaux leads chauds</p>
+                  <p className="font-medium text-zinc-200">Nouveaux leads chauds</p>
                   <p className="text-sm text-zinc-500">Notification quand un lead avec score &gt; 80 est détecté</p>
                 </div>
-                <input type="checkbox" defaultChecked className="h-5 w-5 rounded border-zinc-300 text-amber-600 focus:ring-amber-500" />
+                <input type="checkbox" defaultChecked className="h-5 w-5 rounded border-zinc-700 text-amber-500 focus:ring-amber-500 accent-amber-500" />
               </label>
 
               <label className="flex items-center justify-between">
                 <div>
-                  <p className="font-medium text-zinc-900">Scan terminé</p>
+                  <p className="font-medium text-zinc-200">Scan terminé</p>
                   <p className="text-sm text-zinc-500">Notification quand un scan est complété</p>
                 </div>
-                <input type="checkbox" defaultChecked className="h-5 w-5 rounded border-zinc-300 text-amber-600 focus:ring-amber-500" />
+                <input type="checkbox" defaultChecked className="h-5 w-5 rounded border-zinc-700 text-amber-500 focus:ring-amber-500 accent-amber-500" />
               </label>
 
               <label className="flex items-center justify-between">
                 <div>
-                  <p className="font-medium text-zinc-900">Rappels de suivi</p>
+                  <p className="font-medium text-zinc-200">Rappels de suivi</p>
                   <p className="text-sm text-zinc-500">Rappel pour les leads non contactés depuis 7 jours</p>
                 </div>
-                <input type="checkbox" className="h-5 w-5 rounded border-zinc-300 text-amber-600 focus:ring-amber-500" />
+                <input type="checkbox" className="h-5 w-5 rounded border-zinc-700 text-amber-500 focus:ring-amber-500 accent-amber-500" />
               </label>
             </div>
           </CardContent>
@@ -343,17 +343,17 @@ export default function SettingsPage() {
 
             {/* Confirmation modale */}
             {showDeleteConfirm && (
-              <div className="p-4 bg-red-50 border border-red-200 rounded-xl space-y-3">
+              <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl space-y-3">
                 <div className="flex items-start gap-3">
-                  <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+                  <AlertTriangle className="h-5 w-5 text-red-400 mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="font-semibold text-red-800">Supprimer toutes les données ?</p>
-                    <p className="text-sm text-red-700 mt-1">
+                    <p className="font-semibold text-red-400">Supprimer toutes les données ?</p>
+                    <p className="text-sm text-red-500 mt-1">
                       Cette action supprimera définitivement tous vos leads et ne peut pas être annulée.
                     </p>
                   </div>
                 </div>
-                {deleteError && <p className="text-sm text-red-600">{deleteError}</p>}
+                {deleteError && <p className="text-sm text-red-400">{deleteError}</p>}
                 <div className="flex gap-2">
                   <button
                     onClick={handleDeleteAll}
@@ -365,7 +365,7 @@ export default function SettingsPage() {
                   </button>
                   <button
                     onClick={() => setShowDeleteConfirm(false)}
-                    className="px-4 py-2 bg-white text-zinc-700 text-sm font-medium rounded-lg border border-zinc-200 hover:bg-zinc-50 transition-colors"
+                    className="px-4 py-2 bg-zinc-800 text-zinc-300 text-sm font-medium rounded-lg border border-white/[0.08] hover:bg-zinc-700 transition-colors"
                   >
                     Annuler
                   </button>
@@ -376,10 +376,10 @@ export default function SettingsPage() {
         </Card>
 
         {/* About */}
-        <Card className="bg-zinc-50">
+        <Card>
           <CardContent className="pt-6">
             <div className="text-center">
-              <h3 className="text-lg font-semibold text-zinc-900">LeadHunter</h3>
+              <h3 className="text-lg font-semibold text-white">LeadHunter</h3>
               <p className="text-sm text-zinc-500 mt-1">Version 1.0.0</p>
             </div>
           </CardContent>
@@ -404,21 +404,21 @@ function ApiKeyRow({
   envVar: string
 }) {
   return (
-    <div className={`flex items-center justify-between p-4 rounded-lg border ${
-      status.configured ? 'bg-emerald-50 border-emerald-200' : 'bg-zinc-50 border-zinc-200'
+    <div className={`flex items-center justify-between p-4 rounded-xl border ${
+      status.configured ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-zinc-800/40 border-white/[0.06]'
     }`}>
       <div className="flex items-center gap-3">
         {status.configured ? (
-          <CheckCircle className="h-5 w-5 text-emerald-500 flex-shrink-0" />
+          <CheckCircle className="h-5 w-5 text-emerald-400 flex-shrink-0" />
         ) : (
-          <XCircle className="h-5 w-5 text-zinc-300 flex-shrink-0" />
+          <XCircle className="h-5 w-5 text-zinc-600 flex-shrink-0" />
         )}
         <div>
-          <p className="font-medium text-zinc-900">{name}</p>
+          <p className="font-medium text-zinc-200">{name}</p>
           <p className="text-sm text-zinc-500">
             {status.configured
-              ? <span className="font-mono text-xs text-emerald-700">{status.preview}</span>
-              : <span>{description} — ajoutez <code className="bg-zinc-100 px-1 rounded text-xs">{envVar}</code> dans .env.local</span>
+              ? <span className="font-mono text-xs text-emerald-400">{status.preview}</span>
+              : <span>{description} — ajoutez <code className="bg-zinc-800 px-1 rounded text-xs">{envVar}</code> dans .env.local</span>
             }
           </p>
         </div>

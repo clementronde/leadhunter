@@ -102,7 +102,7 @@ export function OutreachPanel({ lead, onStatusChange, onNoteAdded, compact }: Ou
     <div className={compact ? 'space-y-3' : 'space-y-4'}>
       {/* Template selector */}
       <div>
-        {!compact && <p className="text-sm font-medium text-zinc-700 mb-2">Modèle d'email</p>}
+        {!compact && <p className="text-sm font-medium text-zinc-400 mb-2">Modèle d'email</p>}
         <div className="flex gap-2 flex-wrap">
           {TEMPLATES.map((t) => (
             <button
@@ -111,7 +111,7 @@ export function OutreachPanel({ lead, onStatusChange, onNoteAdded, compact }: Ou
               className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors border ${
                 selectedTemplate === t.id
                   ? 'bg-amber-500 text-white border-amber-500'
-                  : 'bg-white text-zinc-600 border-zinc-200 hover:border-amber-300'
+                  : 'bg-zinc-800/60 text-zinc-400 border-white/[0.08] hover:border-amber-500/40 hover:text-zinc-200'
               }`}
             >
               {t.label}
@@ -130,7 +130,7 @@ export function OutreachPanel({ lead, onStatusChange, onNoteAdded, compact }: Ou
           readOnly
           value={body}
           rows={compact ? 5 : 7}
-          className="w-full text-xs text-zinc-700 bg-zinc-50 border border-zinc-200 rounded-lg p-3 resize-none font-mono leading-relaxed"
+          className="w-full text-xs text-zinc-300 bg-zinc-800/60 border border-white/[0.08] rounded-lg p-3 resize-none font-mono leading-relaxed"
         />
       </div>
 
@@ -146,13 +146,13 @@ export function OutreachPanel({ lead, onStatusChange, onNoteAdded, compact }: Ou
           Ouvrir dans ma messagerie
         </a>
       ) : (
-        <div className="text-xs text-zinc-500 bg-zinc-50 border border-zinc-200 rounded-lg p-3">
+        <div className="text-xs text-zinc-500 bg-zinc-800/40 border border-white/[0.08] rounded-lg p-3">
           Pas d'email connu — copiez le texte pour un envoi manuel.
         </div>
       )}
 
       {/* After sending */}
-      <div className="border-t border-zinc-100 pt-3">
+      <div className="border-t border-white/[0.06] pt-3">
         <p className="text-xs font-medium text-zinc-500 mb-2">Après l'envoi</p>
 
         <textarea
@@ -160,11 +160,11 @@ export function OutreachPanel({ lead, onStatusChange, onNoteAdded, compact }: Ou
           value={noteText}
           onChange={(e) => setNoteText(e.target.value)}
           rows={2}
-          className="w-full text-sm text-zinc-700 bg-white border border-zinc-200 rounded-lg p-2.5 resize-none mb-3"
+          className="w-full text-sm text-zinc-300 bg-zinc-800/60 border border-white/[0.08] rounded-lg p-2.5 resize-none mb-3 placeholder:text-zinc-600"
         />
 
         {contacted ? (
-          <div className="flex items-center gap-2 text-emerald-600 text-sm font-medium">
+          <div className="flex items-center gap-2 text-emerald-400 text-sm font-medium">
             <CheckCircle className="h-4 w-4" />
             Statut mis à jour
           </div>
