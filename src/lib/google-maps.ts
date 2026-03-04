@@ -387,22 +387,25 @@ export async function searchAndEnrichGooglePlaces(params: {
 
     if (places.length === 0) break
 
-    // Traiter chaque lieu (jusqu'à la limite)
-    const toProcess = places.slice(0, maxResults - fetchedCount)
+    // Traiter chaque lieu (jusqu'à la limite) — appels parallèles par batch de 5
+    const toProcess = places
+      .slice(0, maxResults - fetchedCount)
+      .filter((p) => p.business_status !== 'CLOSED_PERMANENTLY')
 
-    for (const place of toProcess) {
-      try {
-        // Ignorer les entreprises fermées définitivement
-        if (place.business_status === 'CLOSED_PERMANENTLY') continue
-
-        const enriched = await enrichGooglePlace(place)
-        enrichedPlaces.push(enriched)
-
-        // Pause pour respecter les rate limits Google API
-        await new Promise((resolve) => setTimeout(resolve, 200))
-      } catch (err) {
-        console.warn(`Erreur enrichissement ${place.name}:`, err)
-        // On continue avec les autres même si un lieu échoue
+    const BATCH_SIZE = 5
+    for (let i = 0; i < toProcess.length; i += BATCH_SIZE) {
+      const batch = toProcess.slice(i, i + BATCH_SIZE)
+      const results = await Promise.allSettled(batch.map((p) => enrichGooglePlace(p)))
+      for (const result of results) {
+        if (result.status === 'fulfilled') {
+          enrichedPlaces.push(result.value)
+        } else {
+          console.warn('Erreur enrichissement:', result.reason)
+        }
+      }
+      // Petite pause entre les batches pour respecter les rate limits
+      if (i + BATCH_SIZE < toProcess.length) {
+        await new Promise((resolve) => setTimeout(resolve, 300))
       }
     }
 

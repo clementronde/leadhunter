@@ -241,7 +241,16 @@ export default function ScannerPage() {
         })
       }
 
-      const data = await response.json()
+      const text = await response.text()
+      let data: Record<string, unknown>
+      try {
+        data = JSON.parse(text)
+      } catch {
+        if (response.status === 504) {
+          throw new Error('Le scan a dépassé le délai imparti — essayez avec moins de résultats ou réessayez')
+        }
+        throw new Error(`Erreur serveur inattendue (${response.status})`)
+      }
 
       if (!response.ok) {
         if (data.code === 'SCAN_LIMIT_REACHED') {
@@ -251,7 +260,8 @@ export default function ScannerPage() {
           setScans((prev) => prev.filter((s) => s.id !== newScan.id))
           return
         }
-        throw new Error(data.error || 'Erreur lors du scan')
+        const detail = data.details ? ` — ${data.details}` : ''
+        throw new Error((data.error as string || 'Erreur lors du scan') + detail)
       }
 
       setScanResult(data.data)
@@ -633,8 +643,8 @@ export default function ScannerPage() {
                 </div>
               </div>
 
-              {/* Messages d'aide contextuels */}
-              {activeSource === 'google_maps' && (
+              {/* Messages d'aide contextuels — uniquement si erreur de config */}
+              {activeSource === 'google_maps' && errorMessage && (errorMessage.toLowerCase().includes('api') || errorMessage.toLowerCase().includes('clé') || errorMessage.toLowerCase().includes('key') || errorMessage.toLowerCase().includes('configuré')) && (
                 <div className="mt-4 p-3 bg-red-100 rounded-lg text-sm">
                   <strong>Configuration requise :</strong> Ajoutez votre clé API Google Maps dans{' '}
                   <code>.env.local</code> :
@@ -642,12 +652,11 @@ export default function ScannerPage() {
                     {`GOOGLE_MAPS_API_KEY=votre_cle_api_google`}
                   </pre>
                   <p className="mt-2 text-xs text-red-700">
-                    Assurez-vous que <strong>Places API</strong> est activée dans Google Cloud
-                    Console.
+                    Assurez-vous que <strong>Places API</strong> est activée dans Google Cloud Console.
                   </p>
                 </div>
               )}
-              {activeSource === 'insee' && errorMessage.includes('INSEE') && (
+              {activeSource === 'insee' && errorMessage && errorMessage.toLowerCase().includes('insee') && (
                 <div className="mt-4 p-3 bg-red-100 rounded-lg text-sm">
                   <strong>Configuration requise :</strong> Ajoutez vos credentials INSEE dans{' '}
                   <code>.env.local</code> :
