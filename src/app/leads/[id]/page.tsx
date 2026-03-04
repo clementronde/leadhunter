@@ -88,16 +88,59 @@ export default function LeadDetailPage() {
     setAuditing(true)
     setAuditError(null)
     try {
-      const res = await fetch('/api/audit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: lead.website, companyId: lead.id }),
-      })
-      const data = await res.json()
-      if (!res.ok || !data.success) throw new Error(data.error || 'Erreur lors de l\'audit')
-      // Recharger le lead avec les nouvelles données d'audit
-      const updated = await leadsApi.getById(lead.id)
-      if (updated) setLead(updated)
+      let data: Record<string, unknown> | null = null
+
+      // Jusqu'à 3 tentatives avec backoff
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        if (attempt > 1) {
+          await new Promise((r) => setTimeout(r, 3000 * (attempt - 1)))
+        }
+        try {
+          const res = await fetch('/api/audit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: lead.website, companyId: lead.id }),
+          })
+          const text = await res.text()
+          let parsed: Record<string, unknown>
+          try {
+            parsed = JSON.parse(text)
+          } catch {
+            if (attempt === 3) throw new Error(`Erreur serveur (${res.status})`)
+            continue
+          }
+          if (!res.ok || !parsed.success) {
+            if (attempt === 3) throw new Error((parsed.error as string) || 'Échec de l\'audit')
+            continue
+          }
+          data = parsed
+          break
+        } catch (e) {
+          if (attempt === 3) throw e
+        }
+      }
+
+      if (!data) throw new Error('Échec de l\'audit après 3 tentatives')
+
+      const responseData = data.data as { audit: unknown; prospect_score: number; priority: string }
+
+      // Mettre à jour l'état local directement (visible immédiatement, sans attendre la DB)
+      setLead((prev) =>
+        prev
+          ? {
+              ...prev,
+              audit: responseData.audit as Company['audit'],
+              prospect_score: responseData.prospect_score,
+              priority: responseData.priority as Company['priority'],
+            }
+          : null
+      )
+
+      // Recharger depuis la DB en arrière-plan pour avoir les données fraîches
+      leadsApi.getById(lead.id).then((updated) => {
+        if (updated) setLead(updated)
+      }).catch(() => {/* garder les données de la réponse */})
+
     } catch (err) {
       setAuditError(err instanceof Error ? err.message : 'Erreur inconnue')
     } finally {

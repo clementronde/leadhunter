@@ -324,31 +324,38 @@ export default function ScannerPage() {
       const company = toAudit[i]
       setAuditProgress({ current: i + 1, total: toAudit.length })
 
-      try {
-        const res = await fetch('/api/audit', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url: company.website, companyId: company.id }),
-        })
-        if (res.ok) {
-          const data = await res.json()
-          if (data.success && data.data) {
+      let auditOk = false
+      for (let attempt = 1; attempt <= 3 && !auditOk; attempt++) {
+        try {
+          if (attempt > 1) await new Promise((r) => setTimeout(r, 3000 * (attempt - 1)))
+          const res = await fetch('/api/audit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: company.website, companyId: company.id }),
+          })
+          const text = await res.text()
+          let parsed: Record<string, unknown>
+          try { parsed = JSON.parse(text) } catch { continue }
+
+          if (res.ok && parsed.success && parsed.data) {
+            const d = parsed.data as { prospect_score: number; priority: string }
             setScanResult((prev) =>
               prev
                 ? {
                     ...prev,
                     companies: prev.companies.map((c) =>
                       c.id === company.id
-                        ? { ...c, prospect_score: data.data.prospect_score, priority: data.data.priority }
+                        ? { ...c, prospect_score: d.prospect_score, priority: d.priority as Company['priority'] }
                         : c
                     ),
                   }
                 : null
             )
+            auditOk = true
           }
+        } catch (e) {
+          console.warn(`Audit tentative ${attempt}/3 échouée pour`, company.website, e)
         }
-      } catch (e) {
-        console.warn('Audit échoué pour', company.website, e)
       }
 
       // Pause entre les audits pour respecter les limites Vercel (30s max par appel)

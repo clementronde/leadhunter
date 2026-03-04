@@ -3,7 +3,7 @@ import { createServerClient } from '@supabase/ssr'
 import { analyzeWebsite, calculateProspectScoreFromAudit } from '@/lib/pagespeed'
 import { getPriorityFromScore } from '@/lib/utils'
 
-export const maxDuration = 30
+export const maxDuration = 60
 
 function createSupabaseFromRequest(request: NextRequest) {
   const response = NextResponse.next({ request })

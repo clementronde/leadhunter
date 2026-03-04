@@ -84,19 +84,28 @@ export async function analyzeWebsite(url: string): Promise<{
       apiUrl.searchParams.set('key', process.env.PAGESPEED_API_KEY)
     }
 
-    const response = await fetch(apiUrl.toString(), {
-      headers: {
-        'Accept': 'application/json',
-      },
-    })
-
-    if (!response.ok) {
-      const error = await response.text()
-      console.error('PageSpeed API error:', error)
-      return {
-        success: false,
-        error: `PageSpeed API error: ${response.status}`
+    // Essayer jusqu'à 3 fois avec backoff progressif
+    let response: Response | null = null
+    let lastError = ''
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        response = await fetch(apiUrl.toString(), {
+          headers: { 'Accept': 'application/json' },
+          signal: AbortSignal.timeout(22000), // 22s max par tentative
+        })
+        if (response.ok) break
+        lastError = `HTTP ${response.status}`
+        console.warn(`PageSpeed tentative ${attempt}/3 échouée: ${lastError}`)
+      } catch (e) {
+        lastError = e instanceof Error ? e.message : 'timeout'
+        console.warn(`PageSpeed tentative ${attempt}/3 échouée: ${lastError}`)
+        response = null
       }
+      if (attempt < 3) await new Promise((r) => setTimeout(r, 2000 * attempt))
+    }
+
+    if (!response?.ok) {
+      return { success: false, error: `PageSpeed API error: ${lastError}` }
     }
 
     const data: PageSpeedResponse = await response.json()

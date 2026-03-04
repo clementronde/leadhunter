@@ -1,32 +1,20 @@
 'use client'
 
-import { useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { motion, useInView } from 'framer-motion'
 import {
-  Target,
-  MapPin,
-  Zap,
-  Globe,
-  KanbanSquare,
-  Download,
-  Database,
-  ArrowRight,
-  Check,
-  Star,
-  Radar,
-  BarChart2,
-  Building2,
-  X,
+  Target, MapPin, Zap, Globe, ArrowRight, Check, Phone,
+  ExternalLink, Shield, Smartphone, AlertTriangle, X,
+  Building2, Database, Download, KanbanSquare,
 } from 'lucide-react'
 
-/* ─── Animation helpers ──────────────────────────────────────────────────── */
+/* ─── Variants ─────────────────────────────────────────────────────────────── */
 
 const fadeUp = {
-  hidden: { opacity: 0, y: 24 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' as const } },
+  hidden: { opacity: 0, y: 28 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.55, ease: 'easeOut' as const } },
 }
-
 const stagger = {
   hidden: {},
   visible: { transition: { staggerChildren: 0.1 } },
@@ -36,14 +24,13 @@ const stagger = {
 
 export function LandingPage() {
   return (
-    <div className="min-h-screen overflow-x-hidden">
+    <div className="min-h-screen bg-[#09090b] text-white overflow-x-hidden">
       <Navbar />
       <Hero />
-      <TrustBar />
-      <Features />
-      <HowItWorks />
+      <ScannerSection />
+      <AuditSection />
+      <PipelineSection />
       <Pricing />
-      <Testimonials />
       <FinalCTA />
       <Footer />
     </div>
@@ -58,31 +45,26 @@ function Navbar() {
       initial={{ opacity: 0, y: -12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: 'easeOut' }}
-      className="sticky top-0 z-50 bg-white/85 backdrop-blur-xl border-b border-zinc-200"
+      className="sticky top-0 z-50 border-b border-white/[0.06] bg-[#09090b]/80 backdrop-blur-xl"
     >
       <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
         <div className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-orange-600">
-            <Target className="h-5 w-5 text-white" />
+            <Target className="h-4 w-4 text-white" />
           </div>
-          <span className="text-lg font-bold text-zinc-900">
-            Lead<span className="text-amber-500">Hunter</span>
-          </span>
+          <span className="text-lg font-bold">Lead<span className="text-amber-400">Hunter</span></span>
         </div>
-        <nav className="hidden sm:flex items-center gap-6 text-sm text-zinc-600">
-          <a href="#features" className="hover:text-zinc-900 transition-colors">Fonctionnalités</a>
-          <a href="#pricing" className="hover:text-zinc-900 transition-colors">Tarifs</a>
+        <nav className="hidden sm:flex items-center gap-6 text-sm text-zinc-400">
+          <a href="#scanner" className="hover:text-white transition-colors">Fonctionnalités</a>
+          <a href="#pricing" className="hover:text-white transition-colors">Tarifs</a>
         </nav>
         <div className="flex items-center gap-3">
-          <Link
-            href="/login"
-            className="text-sm font-medium text-zinc-600 hover:text-zinc-900 transition-colors"
-          >
-            Se connecter
+          <Link href="/login" className="text-sm text-zinc-400 hover:text-white transition-colors">
+            Connexion
           </Link>
           <Link
             href="/login"
-            className="text-sm font-medium px-4 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:opacity-90 transition-opacity"
+            className="text-sm font-medium px-4 py-2 rounded-lg bg-white text-zinc-900 hover:bg-zinc-100 transition-colors"
           >
             Essayer gratuitement
           </Link>
@@ -92,275 +74,635 @@ function Navbar() {
   )
 }
 
-/* ─── Hero ────────────────────────────────────────────────────────────────── */
+/* ─── Hero ─────────────────────────────────────────────────────────────────── */
 
 function Hero() {
   return (
-    <section className="relative max-w-6xl mx-auto px-4 sm:px-6 pt-20 pb-16 text-center">
-      <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
-        <motion.div
-          className="absolute top-0 left-1/4 w-72 h-72 rounded-full bg-amber-400/20 blur-3xl"
-          animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.8, 0.5] }}
-          transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-        />
-        <motion.div
-          className="absolute top-10 right-1/4 w-56 h-56 rounded-full bg-orange-400/15 blur-3xl"
-          animate={{ scale: [1, 1.25, 1], opacity: [0.4, 0.7, 0.4] }}
-          transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut', delay: 1.5 }}
-        />
+    <section className="relative min-h-[90vh] flex flex-col items-center justify-center px-4 sm:px-6 pt-20 pb-12 overflow-hidden">
+      {/* Ambient glow */}
+      <div className="pointer-events-none absolute inset-0 -z-10">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[400px] rounded-full bg-amber-500/10 blur-[120px]" />
+        <div className="absolute top-20 left-1/3 w-[300px] h-[300px] rounded-full bg-orange-600/8 blur-[80px]" />
       </div>
 
-      <motion.div variants={stagger} initial="hidden" animate="visible">
+      <motion.div
+        variants={stagger}
+        initial="hidden"
+        animate="visible"
+        className="text-center max-w-4xl mx-auto"
+      >
         <motion.div
           variants={fadeUp}
-          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 backdrop-blur border border-amber-200/60 text-amber-700 text-sm font-medium mb-6"
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-400 text-xs font-medium mb-8 tracking-wide uppercase"
         >
-          <Radar className="h-3.5 w-3.5" />
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
           Google Maps · INSEE / Sirene · Scoring automatique
         </motion.div>
 
         <motion.h1
           variants={fadeUp}
-          className="text-4xl sm:text-5xl lg:text-6xl font-bold text-zinc-900 leading-tight mb-6"
+          className="text-5xl sm:text-6xl lg:text-7xl font-bold leading-[1.08] tracking-tight mb-6"
         >
-          Trouvez des clients locaux{' '}
-          <span className="bg-gradient-to-r from-amber-500 to-orange-600 bg-clip-text text-transparent">
+          Trouvez les clients locaux{' '}
+          <span className="bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">
             qui ont besoin de vous
           </span>
         </motion.h1>
 
         <motion.p
           variants={fadeUp}
-          className="text-lg sm:text-xl text-zinc-500 max-w-2xl mx-auto mb-10"
+          className="text-lg sm:text-xl text-zinc-400 max-w-2xl mx-auto mb-10 leading-relaxed"
         >
-          Scannez n'importe quelle ville, détectez les entreprises sans site web ou avec un site
-          obsolète, et obtenez des leads qualifiés avec un scoring{' '}
-          <span className="text-red-500 font-medium">Chaud</span>{' '}·{' '}
-          <span className="text-amber-500 font-medium">Tiède</span>{' '}·{' '}
-          <span className="text-blue-500 font-medium">Froid</span> automatique.
+          Scannez n&apos;importe quelle ville, détectez les entreprises sans site web ou avec un site
+          obsolète — et obtenez des leads qualifiés avec scoring{' '}
+          <span className="text-red-400 font-medium">Chaud</span> ·{' '}
+          <span className="text-amber-400 font-medium">Tiède</span> ·{' '}
+          <span className="text-blue-400 font-medium">Froid</span> automatique.
         </motion.p>
 
         <motion.div
           variants={fadeUp}
-          className="flex flex-col sm:flex-row items-center justify-center gap-4"
+          className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-4"
         >
           <Link
             href="/login"
-            className="group flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold text-base hover:opacity-90 transition-opacity shadow-lg shadow-amber-200"
+            className="group flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold hover:opacity-90 transition-opacity shadow-lg shadow-amber-900/30"
           >
             Commencer gratuitement
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
           </Link>
           <a
-            href="#how-it-works"
-            className="flex items-center gap-2 px-6 py-3 rounded-xl border border-zinc-200 bg-white text-zinc-700 font-medium text-base hover:bg-zinc-50 transition-colors"
+            href="#scanner"
+            className="flex items-center gap-2 px-6 py-3 rounded-xl border border-white/10 text-zinc-300 font-medium hover:border-white/20 hover:text-white transition-all"
           >
-            Voir comment ça marche
+            Voir les fonctionnalités
           </a>
         </motion.div>
 
-        <motion.p variants={fadeUp} className="text-xs text-zinc-400 mt-4">
+        <motion.p variants={fadeUp} className="text-xs text-zinc-600">
           3 scans gratuits · Sans carte bancaire · Sans engagement
         </motion.p>
       </motion.div>
+
+      {/* Hero demo card */}
+      <motion.div
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5, duration: 0.7, ease: 'easeOut' }}
+        className="mt-16 w-full max-w-3xl mx-auto"
+      >
+        <HeroMockup />
+      </motion.div>
     </section>
   )
 }
 
-/* ─── Trust Bar ───────────────────────────────────────────────────────────── */
+/* ─── Hero Mockup ─────────────────────────────────────────────────────────── */
 
-const TRUST_ITEMS = [
-  { icon: Building2, label: '45+ types d\'entreprises supportés' },
-  { icon: Database, label: 'Google Maps + INSEE / Sirene' },
-  { icon: Zap, label: 'Scoring Chaud / Tiède / Froid' },
-  { icon: BarChart2, label: 'Audit Core Web Vitals (Pro)' },
+const HERO_LEADS = [
+  { name: 'Boulangerie Martin', city: 'Paris 15e', phone: '01 45 32 11 44', hasWebsite: false, score: 95 },
+  { name: 'Au Pain Doré', city: 'Paris 15e', phone: '01 45 78 09 23', hasWebsite: false, score: 91 },
+  { name: 'La Fournée', city: 'Paris 15e', phone: '01 48 28 45 77', hasWebsite: true, score: 48 },
+  { name: 'Artisan Blé', city: 'Paris 15e', phone: '01 45 79 33 60', hasWebsite: false, score: 88 },
 ]
 
-function TrustBar() {
-  const ref = useRef<HTMLElement>(null)
-  const inView = useInView(ref, { once: true, margin: '-50px' })
+function HeroMockup() {
+  const [visibleCount, setVisibleCount] = useState(0)
+  const [scanning, setScanning] = useState(true)
+
+  useEffect(() => {
+    const t1 = setTimeout(() => setScanning(false), 1800)
+    return () => clearTimeout(t1)
+  }, [])
+
+  useEffect(() => {
+    if (scanning) return
+    let i = 0
+    const interval = setInterval(() => {
+      i++
+      setVisibleCount(i)
+      if (i >= HERO_LEADS.length) {
+        clearInterval(interval)
+        // reset loop
+        setTimeout(() => {
+          setVisibleCount(0)
+          setScanning(true)
+          setTimeout(() => {
+            setScanning(false)
+          }, 1800)
+        }, 4000)
+      }
+    }, 350)
+    return () => clearInterval(interval)
+  }, [scanning])
 
   return (
-    <motion.section
-      ref={ref}
-      initial={{ opacity: 0, y: 16 }}
-      animate={inView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.5 }}
-      className="border-y border-zinc-200 bg-white"
-    >
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 grid grid-cols-2 sm:grid-cols-4 gap-4">
-        {TRUST_ITEMS.map(({ icon: Icon, label }) => (
-          <div key={label} className="flex items-center gap-2 justify-center text-center sm:text-left sm:justify-start">
-            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-amber-500/10">
-              <Icon className="h-4 w-4 text-amber-600" />
-            </div>
-            <p className="text-xs sm:text-sm text-zinc-600 font-medium">{label}</p>
-          </div>
-        ))}
+    <div className="rounded-2xl border border-white/[0.08] bg-zinc-900/60 backdrop-blur-sm overflow-hidden shadow-2xl shadow-black/60">
+      {/* Window bar */}
+      <div className="flex items-center gap-1.5 px-4 py-3 border-b border-white/[0.06] bg-zinc-950/50">
+        <div className="w-3 h-3 rounded-full bg-red-500/70" />
+        <div className="w-3 h-3 rounded-full bg-amber-500/70" />
+        <div className="w-3 h-3 rounded-full bg-emerald-500/70" />
+        <span className="ml-3 text-xs text-zinc-500">LeadHunter — Scanner</span>
       </div>
-    </motion.section>
-  )
-}
 
-/* ─── Features ────────────────────────────────────────────────────────────── */
-
-const FEATURES = [
-  {
-    icon: MapPin,
-    title: 'Scanner Google Maps',
-    description: 'Cherchez des restaurants, coiffeurs, plombiers… dans n\'importe quelle ville. Résultats enrichis avec rating, site web et coordonnées.',
-    badge: null,
-  },
-  {
-    icon: Database,
-    title: 'Scanner INSEE / Sirene',
-    description: 'Accédez à la base officielle des entreprises françaises par code postal et activité NAF. Données fiables et à jour.',
-    badge: null,
-  },
-  {
-    icon: Zap,
-    title: 'Scoring automatique',
-    description: 'Chaque lead est classé Chaud / Tiède / Froid selon la présence web, la qualité du site, les avis Google et le potentiel commercial.',
-    badge: null,
-  },
-  {
-    icon: Globe,
-    title: 'Audit de site web',
-    description: 'Performance Core Web Vitals, compatibilité mobile, SEO, technologies détectées — analysés automatiquement pour chaque prospect.',
-    badge: 'Pro',
-  },
-  {
-    icon: KanbanSquare,
-    title: 'Pipeline CRM Kanban',
-    description: 'Suivez vos leads de la découverte à la signature dans un tableau visuel. Nouveau · Contacté · RDV · Proposition · Gagné · Perdu.',
-    badge: null,
-  },
-  {
-    icon: Download,
-    title: 'Export XLSX',
-    description: 'Exportez vos leads qualifiés en Excel et alimentez directement vos campagnes d\'emailing ou outils CRM existants.',
-    badge: 'Pro',
-  },
-]
-
-function Features() {
-  const ref = useRef<HTMLElement>(null)
-  const inView = useInView(ref, { once: true, margin: '-80px' })
-
-  return (
-    <section id="features" ref={ref} className="max-w-6xl mx-auto px-4 sm:px-6 py-20">
-      <motion.div
-        variants={stagger}
-        initial="hidden"
-        animate={inView ? 'visible' : 'hidden'}
-        className="text-center mb-12"
-      >
-        <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl font-bold text-zinc-900 mb-4">
-          Tout ce qu'il faut pour prospecter efficacement
-        </motion.h2>
-        <motion.p variants={fadeUp} className="text-zinc-500 text-lg max-w-xl mx-auto">
-          De la détection au closing, LeadHunter couvre l'intégralité de votre cycle de prospection locale.
-        </motion.p>
-      </motion.div>
-
-      <motion.div
-        variants={stagger}
-        initial="hidden"
-        animate={inView ? 'visible' : 'hidden'}
-        className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
-      >
-        {FEATURES.map(({ icon: Icon, title, description, badge }) => (
-          <motion.div
-            key={title}
-            variants={fadeUp}
-            whileHover={{ y: -5, boxShadow: '0 16px 40px -12px rgba(0,0,0,0.10)' }}
-            transition={{ type: 'spring', stiffness: 300, damping: 22 }}
-            className="relative bg-white rounded-2xl border border-zinc-200 p-6 hover:bg-zinc-50/60 transition-colors"
-          >
-            {badge && (
-              <span className="absolute top-4 right-4 text-[10px] font-bold px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-600 text-white">
-                {badge}
-              </span>
+      <div className="p-5">
+        {/* Mock inputs */}
+        <div className="flex gap-3 mb-5">
+          <div className="flex-1 flex items-center gap-2 bg-zinc-800/60 border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-zinc-300">
+            <Building2 className="h-3.5 w-3.5 text-zinc-500 shrink-0" />
+            Boulangeries
+          </div>
+          <div className="flex-1 flex items-center gap-2 bg-zinc-800/60 border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-zinc-300">
+            <MapPin className="h-3.5 w-3.5 text-zinc-500 shrink-0" />
+            Paris 15ème
+          </div>
+          <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-orange-600 text-white text-sm font-medium">
+            {scanning ? (
+              <><div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Analyse...</>
+            ) : (
+              <><Zap className="h-3.5 w-3.5" /> Scanné</>
             )}
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 mb-4">
-              <Icon className="h-5 w-5 text-white" />
+          </div>
+        </div>
+
+        {/* Results */}
+        <div className="space-y-2">
+          {scanning && (
+            <div className="flex items-center gap-3 py-4 justify-center text-zinc-500 text-sm">
+              <div className="w-4 h-4 border-2 border-amber-500/40 border-t-amber-500 rounded-full animate-spin" />
+              Détection en cours via Google Maps...
             </div>
-            <h3 className="font-semibold text-zinc-900 mb-2">{title}</h3>
-            <p className="text-sm text-zinc-500 leading-relaxed">{description}</p>
-          </motion.div>
-        ))}
-      </motion.div>
-    </section>
+          )}
+          {!scanning && HERO_LEADS.slice(0, visibleCount).map((lead, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, x: -12 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.3 }}
+              className="flex items-center gap-3 p-3 rounded-xl bg-zinc-800/40 border border-white/[0.05]"
+            >
+              <div className={`shrink-0 w-2 h-2 rounded-full ${lead.hasWebsite ? 'bg-blue-400' : 'bg-red-400'}`} />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-white truncate">{lead.name}</p>
+                <p className="text-xs text-zinc-500">{lead.city} · {lead.phone}</p>
+              </div>
+              <div className={`shrink-0 text-xs font-bold px-2 py-0.5 rounded-full ${
+                lead.hasWebsite
+                  ? 'bg-blue-500/20 text-blue-400'
+                  : 'bg-red-500/20 text-red-400'
+              }`}>
+                {lead.hasWebsite ? 'Site web' : 'Sans site 🔥'}
+              </div>
+              <div className="shrink-0 text-xs font-semibold text-zinc-400">{lead.score}</div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </div>
   )
 }
 
-/* ─── How it works ────────────────────────────────────────────────────────── */
+/* ─── Scanner Section ─────────────────────────────────────────────────────── */
 
-const STEPS = [
-  {
-    number: '01',
-    title: 'Choisissez votre cible',
-    description: 'Saisissez un type d\'entreprise (ex : plombiers, restaurants) et une ville ou code postal. Lancez le scan en un clic.',
-  },
-  {
-    number: '02',
-    title: 'LeadHunter analyse et classe',
-    description: 'Des dizaines d\'entreprises sont détectées, leur site web audité, et chaque lead scoré automatiquement Chaud / Tiède / Froid.',
-  },
-  {
-    number: '03',
-    title: 'Contactez depuis votre pipeline',
-    description: 'Gérez vos prospects dans le CRM Kanban intégré, exportez en XLSX ou intégrez à vos outils existants.',
-  },
-]
-
-function HowItWorks() {
+function ScannerSection() {
   const ref = useRef<HTMLElement>(null)
-  const inView = useInView(ref, { once: true, margin: '-80px' })
+  const inView = useInView(ref, { once: false, margin: '-100px' })
 
   return (
-    <section id="how-it-works" ref={ref} className="relative bg-zinc-950 py-20 overflow-hidden">
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-amber-500/5 blur-3xl pointer-events-none" />
-      <motion.div
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[280px] h-[280px] rounded-full bg-amber-500/8 blur-2xl pointer-events-none"
-        animate={{ scale: [1, 1.35, 1], opacity: [0.25, 0.55, 0.25] }}
-        transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
-      />
-
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 relative">
+    <section id="scanner" ref={ref} className="py-28 max-w-6xl mx-auto px-4 sm:px-6">
+      <div className="grid lg:grid-cols-2 gap-16 items-center">
         <motion.div
           variants={stagger}
           initial="hidden"
           animate={inView ? 'visible' : 'hidden'}
-          className="text-center mb-12"
         >
-          <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl font-bold text-white mb-4">
-            Comment ça marche ?
+          <motion.div variants={fadeUp} className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-400 text-xs font-medium mb-6 uppercase tracking-wide">
+            <MapPin className="h-3 w-3" /> Scanner Google Maps
+          </motion.div>
+          <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl font-bold leading-tight mb-5">
+            Détectez des dizaines de leads{' '}
+            <span className="text-zinc-400">en quelques secondes</span>
           </motion.h2>
-          <motion.p variants={fadeUp} className="text-zinc-400 text-lg max-w-xl mx-auto">
-            Trois étapes pour passer d'une ville à un pipeline de prospects qualifiés.
+          <motion.p variants={fadeUp} className="text-zinc-400 leading-relaxed mb-8">
+            Saisissez un type d&apos;activité et une ville. LeadHunter interroge Google Maps
+            et récupère les fiches enrichies — téléphone, site web, note, avis — pour chaque établissement.
           </motion.p>
+          <motion.ul variants={stagger} className="space-y-3">
+            {[
+              '45+ types d\'entreprises prédéfinis (restaurants, coiffeurs, plombiers…)',
+              'Déduplication automatique des fiches déjà dans votre CRM',
+              'Scoring chaud / tiède / froid en temps réel',
+              'Jusqu\'à 60 résultats par scan (Pro)',
+            ].map((item) => (
+              <motion.li key={item} variants={fadeUp} className="flex items-start gap-3 text-sm text-zinc-400">
+                <Check className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+                {item}
+              </motion.li>
+            ))}
+          </motion.ul>
         </motion.div>
 
         <motion.div
-          variants={stagger}
-          initial="hidden"
-          animate={inView ? 'visible' : 'hidden'}
-          className="grid gap-8 sm:grid-cols-3"
+          initial={{ opacity: 0, x: 40 }}
+          animate={inView ? { opacity: 1, x: 0 } : {}}
+          transition={{ duration: 0.6, ease: 'easeOut', delay: 0.15 }}
         >
-          {STEPS.map((step) => (
-            <motion.div key={step.number} variants={fadeUp} className="text-center">
+          <ScannerMockup inView={inView} />
+        </motion.div>
+      </div>
+    </section>
+  )
+}
+
+/* ─── Scanner Mockup (animated) ───────────────────────────────────────────── */
+
+const SCANNER_LEADS = [
+  { name: 'Plomberie Moreau', phone: '04 91 55 23 10', hasWebsite: false, score: 95, rating: 4.1 },
+  { name: 'SOS Plombier 13', phone: '04 91 77 89 00', hasWebsite: false, score: 92, rating: 3.8 },
+  { name: 'Artisan Plombier Sud', phone: '04 91 33 44 55', hasWebsite: true, score: 44, rating: 4.5 },
+  { name: 'Depannage Express', phone: '04 91 20 11 99', hasWebsite: false, score: 89, rating: 4.0 },
+  { name: 'Robinetterie Pro', phone: '04 91 66 88 12', hasWebsite: false, score: 87, rating: 3.9 },
+]
+
+function ScannerMockup({ inView }: { inView: boolean }) {
+  const [phase, setPhase] = useState<'idle' | 'typing-q' | 'typing-l' | 'loading' | 'results'>('idle')
+  const [queryTxt, setQueryTxt] = useState('')
+  const [locationTxt, setLocationTxt] = useState('')
+  const [visible, setVisible] = useState(0)
+  const started = useRef(false)
+
+  const QUERY = 'Plombiers'
+  const LOCATION = 'Marseille 13'
+
+  useEffect(() => {
+    if (!inView || started.current) return
+    started.current = true
+    runAnimation()
+  }, [inView])
+
+  function runAnimation() {
+    setPhase('typing-q')
+    setQueryTxt('')
+    setLocationTxt('')
+    setVisible(0)
+
+    let q = ''
+    const typeQ = setInterval(() => {
+      q += QUERY[q.length]
+      setQueryTxt(q)
+      if (q.length === QUERY.length) {
+        clearInterval(typeQ)
+        setTimeout(() => {
+          setPhase('typing-l')
+          let l = ''
+          const typeL = setInterval(() => {
+            l += LOCATION[l.length]
+            setLocationTxt(l)
+            if (l.length === LOCATION.length) {
+              clearInterval(typeL)
+              setTimeout(() => {
+                setPhase('loading')
+                setTimeout(() => {
+                  setPhase('results')
+                  let i = 0
+                  const show = setInterval(() => {
+                    i++; setVisible(i)
+                    if (i >= SCANNER_LEADS.length) {
+                      clearInterval(show)
+                      setTimeout(() => {
+                        started.current = false
+                        runAnimation()
+                      }, 5000)
+                    }
+                  }, 400)
+                }, 1600)
+              }, 300)
+            }
+          }, 65)
+        }, 200)
+      }
+    }, 70)
+  }
+
+  return (
+    <div className="rounded-2xl border border-white/[0.08] bg-zinc-900/80 overflow-hidden shadow-2xl shadow-black/50">
+      <div className="flex items-center gap-1.5 px-4 py-3 border-b border-white/[0.06] bg-zinc-950/50">
+        <div className="w-2.5 h-2.5 rounded-full bg-red-500/60" />
+        <div className="w-2.5 h-2.5 rounded-full bg-amber-500/60" />
+        <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/60" />
+        <span className="ml-3 text-[11px] text-zinc-500">Scanner — Google Maps</span>
+      </div>
+
+      <div className="p-4 space-y-3">
+        {/* Inputs */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="bg-zinc-800/60 border border-white/[0.07] rounded-lg px-3 py-2.5 text-sm text-zinc-200 font-mono min-h-[38px] flex items-center gap-1.5">
+            <Building2 className="h-3 w-3 text-zinc-500 shrink-0" />
+            {queryTxt}
+            {phase === 'typing-q' && <span className="w-0.5 h-3.5 bg-amber-400 animate-pulse" />}
+          </div>
+          <div className="bg-zinc-800/60 border border-white/[0.07] rounded-lg px-3 py-2.5 text-sm text-zinc-200 font-mono min-h-[38px] flex items-center gap-1.5">
+            <MapPin className="h-3 w-3 text-zinc-500 shrink-0" />
+            {locationTxt}
+            {phase === 'typing-l' && <span className="w-0.5 h-3.5 bg-amber-400 animate-pulse" />}
+          </div>
+        </div>
+
+        {/* Status bar */}
+        {phase === 'loading' && (
+          <div className="flex items-center gap-2 py-2 text-xs text-zinc-500">
+            <div className="w-3 h-3 border border-amber-500/40 border-t-amber-500 rounded-full animate-spin" />
+            Interrogation de Google Maps en cours...
+          </div>
+        )}
+
+        {/* Results */}
+        {phase === 'results' && (
+          <div className="space-y-1.5">
+            {SCANNER_LEADS.slice(0, visible).map((lead, i) => (
               <motion.div
-                whileHover={{ scale: 1.1, rotate: [-3, 3, 0] }}
-                transition={{ duration: 0.35 }}
-                className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white font-bold text-lg mb-4"
+                key={i}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25 }}
+                className="flex items-center gap-2.5 p-2.5 rounded-lg bg-zinc-800/40 border border-white/[0.04]"
               >
-                {step.number}
+                <div className={`shrink-0 w-1.5 h-1.5 rounded-full ${lead.hasWebsite ? 'bg-blue-400' : 'bg-red-400'}`} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-white truncate">{lead.name}</p>
+                  <p className="text-[10px] text-zinc-500 flex items-center gap-1">
+                    <Phone className="h-2.5 w-2.5" />{lead.phone}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {lead.hasWebsite ? (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400">Site web</span>
+                  ) : (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 font-medium">Sans site 🔥</span>
+                  )}
+                  <span className="text-[10px] text-zinc-500">★ {lead.rating}</span>
+                </div>
               </motion.div>
-              <h3 className="font-semibold text-white text-lg mb-2">{step.title}</h3>
-              <p className="text-zinc-400 text-sm leading-relaxed">{step.description}</p>
-            </motion.div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/* ─── Audit Section ───────────────────────────────────────────────────────── */
+
+function AuditSection() {
+  const ref = useRef<HTMLElement>(null)
+  const inView = useInView(ref, { once: false, margin: '-100px' })
+
+  return (
+    <section ref={ref} className="py-28 relative overflow-hidden">
+      <div className="pointer-events-none absolute inset-0 -z-10">
+        <div className="absolute bottom-0 right-0 w-[500px] h-[400px] bg-orange-600/5 blur-[100px]" />
+      </div>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 grid lg:grid-cols-2 gap-16 items-center">
+        <motion.div
+          initial={{ opacity: 0, x: -40 }}
+          animate={inView ? { opacity: 1, x: 0 } : {}}
+          transition={{ duration: 0.6, ease: 'easeOut' }}
+        >
+          <AuditMockup inView={inView} />
+        </motion.div>
+
+        <motion.div variants={stagger} initial="hidden" animate={inView ? 'visible' : 'hidden'}>
+          <motion.div variants={fadeUp} className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-orange-500/30 bg-orange-500/10 text-orange-400 text-xs font-medium mb-6 uppercase tracking-wide">
+            <Zap className="h-3 w-3" /> Audit Speed Insights
+          </motion.div>
+          <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl font-bold leading-tight mb-5">
+            Identifiez les sites{' '}
+            <span className="text-zinc-400">qui ont besoin d&apos;une refonte</span>
+          </motion.h2>
+          <motion.p variants={fadeUp} className="text-zinc-400 leading-relaxed mb-8">
+            Pour chaque lead avec un site web, LeadHunter lance une analyse Lighthouse complète —
+            performance, SEO, compatibilité mobile, technologies détectées — et calcule un score de priorité.
+          </motion.p>
+          <motion.ul variants={stagger} className="space-y-3">
+            {[
+              'Performance Core Web Vitals (score 0-100)',
+              'Détection HTTPS · Mobile-friendly · CMS',
+              'Liste des problèmes avec recommandations',
+              'Mise à jour du scoring du lead en temps réel',
+            ].map((item) => (
+              <motion.li key={item} variants={fadeUp} className="flex items-start gap-3 text-sm text-zinc-400">
+                <Check className="h-4 w-4 text-orange-400 shrink-0 mt-0.5" />
+                {item}
+              </motion.li>
+            ))}
+          </motion.ul>
+        </motion.div>
+      </div>
+    </section>
+  )
+}
+
+/* ─── Audit Mockup (animated) ─────────────────────────────────────────────── */
+
+function AuditMockup({ inView }: { inView: boolean }) {
+  const [scores, setScores] = useState({ perf: 0, seo: 0, access: 0, bp: 0 })
+  const [showIssues, setShowIssues] = useState(false)
+  const [issueCount, setIssueCount] = useState(0)
+  const started = useRef(false)
+
+  useEffect(() => {
+    if (!inView || started.current) return
+    started.current = true
+
+    const animate = () => {
+      setScores({ perf: 0, seo: 0, access: 0, bp: 0 })
+      setShowIssues(false)
+      setIssueCount(0)
+
+      setTimeout(() => {
+        setScores({ perf: 18, seo: 42, access: 55, bp: 67 })
+        setTimeout(() => {
+          setShowIssues(true)
+          let n = 0
+          const t = setInterval(() => { n++; setIssueCount(n); if (n >= 3) { clearInterval(t); setTimeout(() => { started.current = false; animate() }, 5000) } }, 400)
+        }, 1200)
+      }, 600)
+    }
+    animate()
+  }, [inView])
+
+  const BAR_ITEMS = [
+    { label: 'Performance', value: scores.perf, color: scores.perf < 50 ? 'bg-red-500' : 'bg-amber-500' },
+    { label: 'SEO', value: scores.seo, color: scores.seo < 50 ? 'bg-red-500' : 'bg-amber-500' },
+    { label: 'Accessibilité', value: scores.access, color: scores.access < 50 ? 'bg-orange-500' : 'bg-amber-500' },
+    { label: 'Bonnes pratiques', value: scores.bp, color: scores.bp < 50 ? 'bg-orange-500' : 'bg-emerald-500' },
+  ]
+
+  const ISSUES = [
+    { icon: Shield, label: 'Pas de HTTPS', sev: 'critical' },
+    { icon: Smartphone, label: 'Non optimisé mobile', sev: 'critical' },
+    { icon: AlertTriangle, label: 'Performance 18/100', sev: 'warning' },
+  ]
+
+  return (
+    <div className="rounded-2xl border border-white/[0.08] bg-zinc-900/80 overflow-hidden shadow-2xl shadow-black/50">
+      <div className="flex items-center gap-1.5 px-4 py-3 border-b border-white/[0.06] bg-zinc-950/50">
+        <div className="w-2.5 h-2.5 rounded-full bg-red-500/60" />
+        <div className="w-2.5 h-2.5 rounded-full bg-amber-500/60" />
+        <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/60" />
+        <span className="ml-3 text-[11px] text-zinc-500 flex items-center gap-1.5">
+          <Globe className="h-3 w-3" /> www.boulangerie-martin.fr — Audit en cours
+        </span>
+      </div>
+
+      <div className="p-4 space-y-4">
+        {/* Scores */}
+        <div className="space-y-2.5">
+          {BAR_ITEMS.map(({ label, value, color }) => (
+            <div key={label}>
+              <div className="flex justify-between text-xs mb-1">
+                <span className="text-zinc-400">{label}</span>
+                <span className={`font-mono font-bold ${value < 50 ? 'text-red-400' : 'text-emerald-400'}`}>{value}</span>
+              </div>
+              <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                <motion.div
+                  className={`h-full ${color} rounded-full`}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${value}%` }}
+                  transition={{ duration: 0.8, ease: 'easeOut' }}
+                />
+              </div>
+            </div>
           ))}
+        </div>
+
+        {/* Tech badges */}
+        <div className="flex flex-wrap gap-1.5 pt-1">
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 border border-white/[0.05] flex items-center gap-1">
+            <Shield className="h-2.5 w-2.5 text-red-400" /> HTTP
+          </span>
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 border border-white/[0.05] flex items-center gap-1">
+            <Smartphone className="h-2.5 w-2.5 text-red-400" /> Non mobile
+          </span>
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 border border-white/[0.05]">
+            WordPress 5.2
+          </span>
+        </div>
+
+        {/* Issues */}
+        {showIssues && (
+          <div className="space-y-1.5 pt-1 border-t border-white/[0.06]">
+            <p className="text-[10px] text-zinc-500 font-medium uppercase tracking-wide">Problèmes détectés</p>
+            {ISSUES.slice(0, issueCount).map(({ icon: Icon, label, sev }, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.2 }}
+                className={`flex items-center gap-2 text-xs p-2 rounded-lg ${
+                  sev === 'critical' ? 'bg-red-500/10 text-red-400' : 'bg-amber-500/10 text-amber-400'
+                }`}
+              >
+                <Icon className="h-3 w-3 shrink-0" />
+                {label}
+                <span className={`ml-auto text-[9px] px-1.5 py-0.5 rounded font-bold uppercase ${
+                  sev === 'critical' ? 'bg-red-500/20' : 'bg-amber-500/20'
+                }`}>{sev}</span>
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/* ─── Pipeline Section ────────────────────────────────────────────────────── */
+
+function PipelineSection() {
+  const ref = useRef<HTMLElement>(null)
+  const inView = useInView(ref, { once: true, margin: '-80px' })
+
+  const COLUMNS = [
+    { label: 'Nouveau', color: 'text-zinc-400', dot: 'bg-zinc-500', leads: ['Boulangerie Martin', 'SOS Plombier'] },
+    { label: 'Contacté', color: 'text-blue-400', dot: 'bg-blue-500', leads: ['Au Pain Doré'] },
+    { label: 'RDV', color: 'text-amber-400', dot: 'bg-amber-500', leads: ['Artisan Blé'] },
+    { label: 'Gagné ✓', color: 'text-emerald-400', dot: 'bg-emerald-500', leads: ['La Fournée'] },
+  ]
+
+  return (
+    <section ref={ref} className="py-28 max-w-6xl mx-auto px-4 sm:px-6">
+      <div className="grid lg:grid-cols-2 gap-16 items-center">
+        <motion.div variants={stagger} initial="hidden" animate={inView ? 'visible' : 'hidden'}>
+          <motion.div variants={fadeUp} className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-xs font-medium mb-6 uppercase tracking-wide">
+            <KanbanSquare className="h-3 w-3" /> Pipeline CRM
+          </motion.div>
+          <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl font-bold leading-tight mb-5">
+            Suivez chaque lead de la{' '}
+            <span className="text-zinc-400">détection au closing</span>
+          </motion.h2>
+          <motion.p variants={fadeUp} className="text-zinc-400 leading-relaxed mb-8">
+            Pipeline Kanban intégré avec 6 étapes : Nouveau · Contacté · RDV · Proposition · Gagné · Perdu.
+            Notes, historique de contact et export XLSX inclus.
+          </motion.p>
+          <motion.ul variants={stagger} className="space-y-3">
+            {[
+              'Pipeline visuel Nouveau → Gagné en un glisser-déposer',
+              'Notes et timeline par lead',
+              'Export XLSX pour vos outils CRM existants (Pro)',
+              'Scoring mis à jour automatiquement après chaque audit',
+            ].map((item) => (
+              <motion.li key={item} variants={fadeUp} className="flex items-start gap-3 text-sm text-zinc-400">
+                <Check className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+                {item}
+              </motion.li>
+            ))}
+          </motion.ul>
+        </motion.div>
+
+        {/* Pipeline mockup */}
+        <motion.div
+          initial={{ opacity: 0, x: 40 }}
+          animate={inView ? { opacity: 1, x: 0 } : {}}
+          transition={{ duration: 0.6, ease: 'easeOut', delay: 0.15 }}
+        >
+          <div className="rounded-2xl border border-white/[0.08] bg-zinc-900/80 overflow-hidden shadow-2xl shadow-black/50">
+            <div className="flex items-center gap-1.5 px-4 py-3 border-b border-white/[0.06] bg-zinc-950/50">
+              <div className="w-2.5 h-2.5 rounded-full bg-red-500/60" />
+              <div className="w-2.5 h-2.5 rounded-full bg-amber-500/60" />
+              <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/60" />
+              <span className="ml-3 text-[11px] text-zinc-500">Pipeline CRM — Boulangeries Paris</span>
+            </div>
+            <div className="p-4 grid grid-cols-4 gap-2">
+              {COLUMNS.map(({ label, color, dot, leads }, ci) => (
+                <motion.div
+                  key={label}
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={inView ? { opacity: 1, y: 0 } : {}}
+                  transition={{ delay: 0.2 + ci * 0.1, duration: 0.4 }}
+                  className="space-y-2"
+                >
+                  <div className={`flex items-center gap-1.5 text-[10px] font-medium ${color}`}>
+                    <div className={`w-1.5 h-1.5 rounded-full ${dot}`} />
+                    {label}
+                  </div>
+                  {leads.map((name, li) => (
+                    <motion.div
+                      key={name}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={inView ? { opacity: 1, scale: 1 } : {}}
+                      transition={{ delay: 0.4 + ci * 0.1 + li * 0.08, duration: 0.3 }}
+                      className="bg-zinc-800/60 border border-white/[0.05] rounded-lg p-2"
+                    >
+                      <p className="text-[10px] font-medium text-white leading-tight">{name}</p>
+                      <p className="text-[9px] text-zinc-500 mt-0.5">Paris 15e</p>
+                    </motion.div>
+                  ))}
+                </motion.div>
+              ))}
+            </div>
+          </div>
         </motion.div>
       </div>
     </section>
@@ -369,24 +711,23 @@ function HowItWorks() {
 
 /* ─── Pricing ─────────────────────────────────────────────────────────────── */
 
-const FREE_FEATURES: { label: string; included: boolean }[] = [
-  { label: '3 scans / mois', included: true },
-  { label: '10 leads par scan', included: true },
-  { label: 'Scoring Chaud / Tiède / Froid', included: true },
-  { label: 'Pipeline CRM Kanban', included: true },
-  { label: 'Audit Core Web Vitals', included: false },
-  { label: 'Export XLSX', included: false },
-  { label: 'Support prioritaire', included: false },
+const FREE_FEATURES = [
+  { label: '3 scans / mois', ok: true },
+  { label: '10 leads par scan', ok: true },
+  { label: 'Scoring Chaud / Tiède / Froid', ok: true },
+  { label: 'Pipeline CRM Kanban', ok: true },
+  { label: 'Audit Core Web Vitals', ok: false },
+  { label: 'Export XLSX', ok: false },
 ]
 
-const PRO_FEATURES_LANDING: { label: string }[] = [
-  { label: 'Scans illimités' },
-  { label: 'Leads illimités par scan' },
-  { label: 'Scoring Chaud / Tiède / Froid' },
-  { label: 'Pipeline CRM Kanban' },
-  { label: 'Audit Core Web Vitals' },
-  { label: 'Export XLSX' },
-  { label: 'Support prioritaire' },
+const PRO_FEATURES = [
+  'Scans illimités',
+  'Jusqu\'à 60 leads par scan',
+  'Scoring Chaud / Tiède / Froid',
+  'Pipeline CRM Kanban',
+  'Audit Core Web Vitals (Speed Insights)',
+  'Export XLSX',
+  'Support prioritaire',
 ]
 
 function Pricing() {
@@ -394,190 +735,85 @@ function Pricing() {
   const inView = useInView(ref, { once: true, margin: '-80px' })
 
   return (
-    <section id="pricing" ref={ref} className="max-w-6xl mx-auto px-4 sm:px-6 py-20">
-      <motion.div
-        variants={stagger}
-        initial="hidden"
-        animate={inView ? 'visible' : 'hidden'}
-        className="text-center mb-12"
-      >
-        <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl font-bold text-zinc-900 mb-4">
-          Des tarifs simples et transparents
-        </motion.h2>
-        <motion.p variants={fadeUp} className="text-zinc-500 text-lg">
-          Commencez gratuitement, passez en Pro quand vous êtes prêt.
-        </motion.p>
-      </motion.div>
-
-      <motion.div
-        variants={stagger}
-        initial="hidden"
-        animate={inView ? 'visible' : 'hidden'}
-        className="grid gap-6 sm:grid-cols-2 max-w-2xl mx-auto"
-      >
-        {/* Free */}
-        <motion.div
-          variants={fadeUp}
-          whileHover={{ y: -4 }}
-          transition={{ type: 'spring', stiffness: 300, damping: 22 }}
-          className="bg-white rounded-2xl border border-zinc-200 p-8 flex flex-col"
-        >
-          <div className="mb-6">
-            <p className="font-semibold text-zinc-900 text-lg mb-1">Gratuit</p>
-            <p className="text-4xl font-bold text-zinc-900">
-              0€<span className="text-base font-normal text-zinc-500">/mois</span>
-            </p>
-            <p className="text-xs text-zinc-400 mt-1">Pour découvrir l'outil</p>
-          </div>
-
-          <ul className="space-y-3 mb-8 flex-1">
-            {FREE_FEATURES.map(({ label, included }) => (
-              <li key={label} className="flex items-center gap-2 text-sm">
-                {included ? (
-                  <Check className="h-4 w-4 text-amber-500 shrink-0" />
-                ) : (
-                  <X className="h-4 w-4 text-zinc-300 shrink-0" />
-                )}
-                <span className={included ? 'text-zinc-700' : 'text-zinc-400'}>{label}</span>
-              </li>
-            ))}
-          </ul>
-
-          <Link
-            href="/login"
-            className="w-full text-center py-2.5 rounded-xl font-medium text-sm border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 transition-colors"
-          >
-            Commencer gratuitement
-          </Link>
-        </motion.div>
-
-        {/* Pro */}
-        <motion.div
-          variants={fadeUp}
-          whileHover={{ y: -4 }}
-          transition={{ type: 'spring', stiffness: 300, damping: 22 }}
-          className="relative bg-gradient-to-br from-amber-500/10 to-orange-500/10 rounded-2xl border border-amber-400/50 shadow-xl shadow-amber-100/50 p-8 flex flex-col"
-        >
-          <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-            <span className="bg-gradient-to-r from-amber-500 to-orange-600 text-white text-xs font-semibold px-3 py-1 rounded-full">
-              Le plus populaire
-            </span>
-          </div>
-
-          <div className="mb-6">
-            <p className="font-semibold text-zinc-900 text-lg mb-1">Pro</p>
-            <p className="text-4xl font-bold text-zinc-900">
-              29€<span className="text-base font-normal text-zinc-500">/mois</span>
-            </p>
-            <p className="text-xs text-zinc-400 mt-1">Sans engagement · Annulable à tout moment</p>
-          </div>
-
-          <ul className="space-y-3 mb-8 flex-1">
-            {PRO_FEATURES_LANDING.map(({ label }) => (
-              <motion.li
-                key={label}
-                initial={{ opacity: 0, x: -8 }}
-                animate={inView ? { opacity: 1, x: 0 } : {}}
-                transition={{ duration: 0.3 }}
-                className="flex items-center gap-2 text-sm text-zinc-700"
-              >
-                <Check className="h-4 w-4 text-amber-500 shrink-0" />
-                {label}
-              </motion.li>
-            ))}
-          </ul>
-
-          <Link
-            href="/login"
-            className="w-full text-center py-2.5 rounded-xl font-medium text-sm bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:opacity-90 transition-opacity"
-          >
-            Essayer Pro
-          </Link>
-        </motion.div>
-      </motion.div>
-    </section>
-  )
-}
-
-/* ─── Testimonials ────────────────────────────────────────────────────────── */
-
-const TESTIMONIALS = [
-  {
-    name: 'Marie L.',
-    role: 'Freelance développement web',
-    quote: 'En 3 scans j\'avais déjà identifié 30 restaurants sans site dans ma ville. J\'ai signé 2 clients en moins d\'une semaine.',
-    initials: 'ML',
-  },
-  {
-    name: 'Thomas D.',
-    role: 'Agence digitale',
-    quote: 'Le scoring chaud/tiède/froid nous fait gagner un temps fou. On contacte uniquement les leads vraiment prioritaires.',
-    initials: 'TD',
-  },
-  {
-    name: 'Sarah M.',
-    role: 'Commerciale indépendante',
-    quote: 'Le pipeline CRM intégré est parfait pour mon usage. Plus besoin de jongler entre plusieurs outils pour ma prospection locale.',
-    initials: 'SM',
-  },
-]
-
-function Testimonials() {
-  const ref = useRef<HTMLElement>(null)
-  const inView = useInView(ref, { once: true, margin: '-80px' })
-
-  return (
-    <section ref={ref} className="bg-zinc-100 py-20">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6">
-        <motion.div
-          variants={stagger}
-          initial="hidden"
-          animate={inView ? 'visible' : 'hidden'}
-          className="text-center mb-12"
-        >
-          <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl font-bold text-zinc-900 mb-4">
-            Ils ont boosté leur prospection
+    <section id="pricing" ref={ref} className="py-28 relative overflow-hidden">
+      <div className="pointer-events-none absolute inset-0 -z-10">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] bg-amber-500/5 blur-[100px]" />
+      </div>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6">
+        <motion.div variants={stagger} initial="hidden" animate={inView ? 'visible' : 'hidden'} className="text-center mb-14">
+          <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl font-bold mb-4">
+            Tarifs simples et transparents
           </motion.h2>
+          <motion.p variants={fadeUp} className="text-zinc-400 text-lg">
+            Commencez gratuitement, passez en Pro quand vous êtes prêt.
+          </motion.p>
         </motion.div>
 
         <motion.div
           variants={stagger}
           initial="hidden"
           animate={inView ? 'visible' : 'hidden'}
-          className="grid gap-6 sm:grid-cols-3"
+          className="grid sm:grid-cols-2 gap-5"
         >
-          {TESTIMONIALS.map((t) => (
-            <motion.div
-              key={t.name}
-              variants={fadeUp}
-              whileHover={{ y: -5, boxShadow: '0 16px 40px -12px rgba(0,0,0,0.10)' }}
-              transition={{ type: 'spring', stiffness: 300, damping: 22 }}
-              className="bg-white rounded-2xl border border-zinc-200 p-6"
+          {/* Free */}
+          <motion.div
+            variants={fadeUp}
+            className="rounded-2xl border border-white/[0.08] bg-zinc-900/60 p-8 flex flex-col"
+          >
+            <div className="mb-8">
+              <p className="text-zinc-400 text-sm font-medium mb-2">Gratuit</p>
+              <p className="text-5xl font-bold">0€<span className="text-lg font-normal text-zinc-500">/mois</span></p>
+              <p className="text-xs text-zinc-500 mt-1.5">Pour découvrir l&apos;outil</p>
+            </div>
+            <ul className="space-y-3 flex-1 mb-8">
+              {FREE_FEATURES.map(({ label, ok }) => (
+                <li key={label} className="flex items-center gap-2.5 text-sm">
+                  {ok
+                    ? <Check className="h-4 w-4 text-amber-400 shrink-0" />
+                    : <X className="h-4 w-4 text-zinc-700 shrink-0" />
+                  }
+                  <span className={ok ? 'text-zinc-300' : 'text-zinc-600'}>{label}</span>
+                </li>
+              ))}
+            </ul>
+            <Link
+              href="/login"
+              className="text-center py-3 rounded-xl text-sm font-medium border border-white/10 text-zinc-300 hover:border-white/20 hover:text-white transition-all"
             >
-              <div className="flex items-center gap-1 mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <motion.span
-                    key={i}
-                    initial={{ opacity: 0, scale: 0 }}
-                    animate={inView ? { opacity: 1, scale: 1 } : {}}
-                    transition={{ delay: 0.3 + i * 0.08, type: 'spring', stiffness: 400, damping: 15 }}
-                  >
-                    <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                  </motion.span>
-                ))}
-              </div>
-              <p className="text-zinc-600 text-sm leading-relaxed mb-6">"{t.quote}"</p>
-              <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-amber-500 to-orange-600 text-white text-xs font-bold">
-                  {t.initials}
-                </div>
-                <div>
-                  <p className="font-medium text-zinc-900 text-sm">{t.name}</p>
-                  <p className="text-xs text-zinc-500">{t.role}</p>
-                </div>
-              </div>
-            </motion.div>
-          ))}
+              Commencer gratuitement
+            </Link>
+          </motion.div>
+
+          {/* Pro */}
+          <motion.div
+            variants={fadeUp}
+            className="relative rounded-2xl border border-amber-500/40 bg-gradient-to-b from-amber-500/[0.07] to-transparent p-8 flex flex-col"
+          >
+            <div className="absolute -top-3 left-6">
+              <span className="bg-gradient-to-r from-amber-500 to-orange-600 text-white text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wide">
+                Populaire
+              </span>
+            </div>
+            <div className="mb-8">
+              <p className="text-zinc-400 text-sm font-medium mb-2">Pro</p>
+              <p className="text-5xl font-bold">29€<span className="text-lg font-normal text-zinc-500">/mois</span></p>
+              <p className="text-xs text-zinc-500 mt-1.5">Sans engagement · Annulable à tout moment</p>
+            </div>
+            <ul className="space-y-3 flex-1 mb-8">
+              {PRO_FEATURES.map((label) => (
+                <li key={label} className="flex items-center gap-2.5 text-sm text-zinc-300">
+                  <Check className="h-4 w-4 text-amber-400 shrink-0" />
+                  {label}
+                </li>
+              ))}
+            </ul>
+            <Link
+              href="/login"
+              className="text-center py-3 rounded-xl text-sm font-semibold bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:opacity-90 transition-opacity"
+            >
+              Passer à Pro
+            </Link>
+          </motion.div>
         </motion.div>
       </div>
     </section>
@@ -596,23 +832,23 @@ function FinalCTA() {
       variants={stagger}
       initial="hidden"
       animate={inView ? 'visible' : 'hidden'}
-      className="max-w-6xl mx-auto px-4 sm:px-6 py-20 text-center"
+      className="py-24 text-center px-4 border-t border-white/[0.06]"
     >
-      <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl font-bold text-zinc-900 mb-4">
+      <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl font-bold mb-4">
         Prêt à trouver vos prochains clients ?
       </motion.h2>
-      <motion.p variants={fadeUp} className="text-zinc-500 text-lg mb-8">
+      <motion.p variants={fadeUp} className="text-zinc-400 text-lg mb-10">
         Commencez avec 3 scans gratuits — aucune carte bancaire requise.
       </motion.p>
       <motion.div variants={fadeUp}>
         <Link
           href="/login"
-          className="group inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold text-base hover:opacity-90 transition-opacity shadow-lg shadow-amber-200"
+          className="group inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold text-lg hover:opacity-90 transition-opacity shadow-xl shadow-amber-900/30"
         >
           Créer mon compte gratuitement
-          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+          <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
         </Link>
-        <p className="text-xs text-zinc-400 mt-3">3 scans gratuits · Sans carte bancaire · Sans engagement</p>
+        <p className="text-xs text-zinc-600 mt-4">3 scans gratuits · Sans carte bancaire · Sans engagement</p>
       </motion.div>
     </motion.section>
   )
@@ -622,21 +858,19 @@ function FinalCTA() {
 
 function Footer() {
   return (
-    <footer className="border-t border-zinc-200/60 bg-white/90 backdrop-blur-md">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+    <footer className="border-t border-white/[0.06] py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-orange-600">
             <Target className="h-4 w-4 text-white" />
           </div>
-          <span className="font-bold text-zinc-900 text-sm">
-            Lead<span className="text-amber-500">Hunter</span>
-          </span>
-          <span className="text-zinc-400 text-sm ml-2">— Prospection locale automatique</span>
+          <span className="font-bold text-sm">Lead<span className="text-amber-400">Hunter</span></span>
+          <span className="text-zinc-600 text-sm ml-2">— Prospection locale automatique</span>
         </div>
-        <nav className="flex items-center gap-5 text-sm text-zinc-500">
-          <Link href="/login" className="hover:text-zinc-900 transition-colors">Connexion</Link>
-          <a href="#features" className="hover:text-zinc-900 transition-colors">Fonctionnalités</a>
-          <a href="#pricing" className="hover:text-zinc-900 transition-colors">Tarifs</a>
+        <nav className="flex items-center gap-5 text-sm text-zinc-600">
+          <Link href="/login" className="hover:text-white transition-colors">Connexion</Link>
+          <a href="#scanner" className="hover:text-white transition-colors">Fonctionnalités</a>
+          <a href="#pricing" className="hover:text-white transition-colors">Tarifs</a>
         </nav>
       </div>
     </footer>
