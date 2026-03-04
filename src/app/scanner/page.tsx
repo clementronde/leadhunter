@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Header } from '@/components/layout'
 import {
@@ -119,6 +119,34 @@ export default function ScannerPage() {
   const [gmQuery, setGmQuery] = useState('')
   const [gmMaxResults, setGmMaxResults] = useState('20')
   const [gmAuditWebsites, setGmAuditWebsites] = useState(false)
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const suggestionRef = useRef<HTMLDivElement>(null)
+
+  const BUSINESS_TYPES = [
+    'Restaurants', 'Pizzerias', 'Boulangeries', 'Pâtisseries', 'Bouchers', 'Traiteurs', 'Bars', 'Cafés',
+    'Coiffeurs', 'Salons de beauté', 'Instituts de beauté', 'Tatoueurs', 'Ongleries',
+    'Plombiers', 'Électriciens', 'Maçons', 'Carreleurs', 'Peintres', 'Menuisiers', 'Charpentiers',
+    'Couvreurs', 'Chauffagistes', 'Climaticiens', 'Serruriers', 'Vitriers', 'Plâtriers',
+    'Jardiniers', 'Paysagistes', 'Piscinistes',
+    'Médecins', 'Dentistes', 'Vétérinaires', 'Kinésithérapeutes', 'Opticiens', 'Pharmacies',
+    'Architectes', 'Comptables', 'Avocats', 'Notaires',
+    'Agences immobilières', 'Garages auto', 'Carrosseries', 'Auto-écoles',
+    'Photographes', 'Hôtels', 'Campings', 'Salles de sport',
+  ]
+
+  const filteredTypes = gmQuery.length > 0
+    ? BUSINESS_TYPES.filter((t) => t.toLowerCase().includes(gmQuery.toLowerCase()))
+    : BUSINESS_TYPES
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (suggestionRef.current && !suggestionRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
 
   // ============================================
   // Options de formulaire
@@ -388,16 +416,37 @@ export default function ScannerPage() {
               /* ── Formulaire Google Maps ── */
               <div className="space-y-4">
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  <div className="space-y-2">
+                  <div className="space-y-2" ref={suggestionRef}>
                     <label className="text-sm font-medium text-zinc-700">
                       Type d'entreprise *
                     </label>
-                    <Input
-                      placeholder="Ex: restaurants, coiffeurs, plombiers..."
-                      value={gmQuery}
-                      onChange={(e) => setGmQuery(e.target.value)}
-                      icon={<Search className="h-4 w-4" />}
-                    />
+                    <div className="relative">
+                      <Input
+                        placeholder="Ex: restaurants, coiffeurs, plombiers..."
+                        value={gmQuery}
+                        onChange={(e) => { setGmQuery(e.target.value); setShowSuggestions(true) }}
+                        onFocus={() => setShowSuggestions(true)}
+                        icon={<Search className="h-4 w-4" />}
+                      />
+                      {showSuggestions && filteredTypes.length > 0 && (
+                        <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-white border border-zinc-200 rounded-lg shadow-lg max-h-52 overflow-y-auto">
+                          {filteredTypes.map((type) => (
+                            <button
+                              key={type}
+                              type="button"
+                              onMouseDown={(e) => {
+                                e.preventDefault()
+                                setGmQuery(type)
+                                setShowSuggestions(false)
+                              }}
+                              className="w-full text-left px-3 py-2 text-sm text-zinc-700 hover:bg-amber-50 hover:text-amber-700 transition-colors"
+                            >
+                              {type}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   <div className="space-y-2">

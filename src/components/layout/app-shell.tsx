@@ -2,6 +2,7 @@
 
 import { useAuth } from '@/components/auth/auth-provider'
 import { usePathname } from 'next/navigation'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Sidebar } from './sidebar'
 import { useUIStore } from '@/lib/store'
 
@@ -23,14 +24,38 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   if (!showSidebar) {
-    return <main className="min-h-screen">{children}</main>
+    return (
+      <main className="min-h-screen">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={pathname}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+          >
+            {children}
+          </motion.div>
+        </AnimatePresence>
+      </main>
+    )
   }
 
   return (
     <>
       <Sidebar />
       <main className={`${sidebarOpen ? 'ml-64' : 'ml-20'} min-h-screen transition-all duration-300`}>
-        {children}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={pathname}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+          >
+            {children}
+          </motion.div>
+        </AnimatePresence>
       </main>
     </>
   )

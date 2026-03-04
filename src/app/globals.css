@@ -12,6 +12,10 @@
   --font-mono: var(--font-geist-mono);
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   background: linear-gradient(135deg, #fafafa 0%, #f4f4f5 50%, #f8f7f5 100%);
   color: var(--foreground);
