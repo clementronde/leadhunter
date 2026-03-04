@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Header } from '@/components/layout'
 import { Card, CardHeader, CardTitle, CardContent, Button } from '@/components/ui'
 import { usePlan } from '@/hooks/usePlan'
+import { useAuth } from '@/components/auth/auth-provider'
 import { supabase } from '@/lib/supabase'
 import {
   Settings,
@@ -38,6 +39,7 @@ interface HealthData {
 export default function SettingsPage() {
   const router = useRouter()
   const { isPro } = usePlan()
+  const { isAdmin } = useAuth()
   const [portalLoading, setPortalLoading] = useState(false)
   const [health, setHealth] = useState<HealthData | null>(null)
   const [exporting, setExporting] = useState(false)
@@ -186,97 +188,101 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        {/* Database connection */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Database className="h-5 w-5" />
-              Base de données Supabase
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className={`flex items-center gap-3 p-4 rounded-lg border ${
-              supabaseConfigured
-                ? 'bg-emerald-50 border-emerald-200'
-                : 'bg-red-50 border-red-200'
-            }`}>
-              {supabaseConfigured ? (
-                <CheckCircle className="h-5 w-5 text-emerald-600 flex-shrink-0" />
-              ) : (
-                <XCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
+        {/* Database connection — admin only */}
+        {isAdmin && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Database className="h-5 w-5" />
+                Base de données Supabase
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className={`flex items-center gap-3 p-4 rounded-lg border ${
+                supabaseConfigured
+                  ? 'bg-emerald-50 border-emerald-200'
+                  : 'bg-red-50 border-red-200'
+              }`}>
+                {supabaseConfigured ? (
+                  <CheckCircle className="h-5 w-5 text-emerald-600 flex-shrink-0" />
+                ) : (
+                  <XCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
+                )}
+                <div>
+                  <p className={`font-medium ${supabaseConfigured ? 'text-emerald-800' : 'text-red-800'}`}>
+                    {supabaseConfigured ? 'Connecté à Supabase' : 'Supabase non configuré'}
+                  </p>
+                  <p className={`text-sm mt-0.5 ${supabaseConfigured ? 'text-emerald-700' : 'text-red-700'}`}>
+                    {supabaseConfigured
+                      ? `Projet : ${supabasePreview}.supabase.co`
+                      : 'Ajoutez NEXT_PUBLIC_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_ANON_KEY dans .env.local'}
+                  </p>
+                </div>
+              </div>
+
+              {!supabaseConfigured && (
+                <div className="pt-2 border-t border-zinc-200">
+                  <p className="text-sm text-zinc-500 mb-3"><strong>Instructions :</strong></p>
+                  <ol className="text-sm text-zinc-600 space-y-2 list-decimal list-inside">
+                    <li>
+                      Créez un projet gratuit sur{' '}
+                      <a href="https://supabase.com" target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:underline">
+                        supabase.com <ExternalLink className="h-3 w-3 inline" />
+                      </a>
+                    </li>
+                    <li>Copiez l'URL et la clé anon depuis Settings → API</li>
+                    <li>Ajoutez-les dans votre <code className="bg-zinc-100 px-1 rounded">.env.local</code></li>
+                    <li>Exécutez le schéma SQL (<code className="bg-zinc-100 px-1 rounded">supabase-schema.sql</code>)</li>
+                  </ol>
+                </div>
               )}
-              <div>
-                <p className={`font-medium ${supabaseConfigured ? 'text-emerald-800' : 'text-red-800'}`}>
-                  {supabaseConfigured ? 'Connecté à Supabase' : 'Supabase non configuré'}
-                </p>
-                <p className={`text-sm mt-0.5 ${supabaseConfigured ? 'text-emerald-700' : 'text-red-700'}`}>
-                  {supabaseConfigured
-                    ? `Projet : ${supabasePreview}.supabase.co`
-                    : 'Ajoutez NEXT_PUBLIC_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_ANON_KEY dans .env.local'}
-                </p>
-              </div>
-            </div>
+            </CardContent>
+          </Card>
+        )}
 
-            {!supabaseConfigured && (
-              <div className="pt-2 border-t border-zinc-200">
-                <p className="text-sm text-zinc-500 mb-3"><strong>Instructions :</strong></p>
-                <ol className="text-sm text-zinc-600 space-y-2 list-decimal list-inside">
-                  <li>
-                    Créez un projet gratuit sur{' '}
-                    <a href="https://supabase.com" target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:underline">
-                      supabase.com <ExternalLink className="h-3 w-3 inline" />
-                    </a>
-                  </li>
-                  <li>Copiez l'URL et la clé anon depuis Settings → API</li>
-                  <li>Ajoutez-les dans votre <code className="bg-zinc-100 px-1 rounded">.env.local</code></li>
-                  <li>Exécutez le schéma SQL (<code className="bg-zinc-100 px-1 rounded">supabase-schema.sql</code>)</li>
-                </ol>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* API Keys */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Key className="h-5 w-5" />
-              Clés API externes
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {health ? (
-              <>
-                <ApiKeyRow
-                  name="Google Places API"
-                  description="Recherche d'entreprises locales"
-                  status={health.keys.GOOGLE_MAPS_API_KEY}
-                  docsUrl="https://developers.google.com/maps/documentation/places/web-service"
-                  envVar="GOOGLE_MAPS_API_KEY"
-                />
-                <ApiKeyRow
-                  name="PageSpeed Insights API"
-                  description="Audit de performance des sites (gratuit)"
-                  status={health.keys.PAGESPEED_API_KEY}
-                  docsUrl="https://developers.google.com/speed/docs/insights/v5/get-started"
-                  envVar="PAGESPEED_API_KEY"
-                />
-                <ApiKeyRow
-                  name="API Sirene INSEE"
-                  description="Base officielle des entreprises françaises (gratuit)"
-                  status={health.keys.INSEE_API_KEY}
-                  docsUrl="https://api.insee.fr/catalogue/"
-                  envVar="INSEE_CONSUMER_KEY"
-                />
-              </>
-            ) : (
-              <div className="flex items-center gap-2 text-zinc-400 text-sm py-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Vérification des clés...
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        {/* API Keys — admin only */}
+        {isAdmin && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Key className="h-5 w-5" />
+                Clés API externes
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {health ? (
+                <>
+                  <ApiKeyRow
+                    name="Google Places API"
+                    description="Recherche d'entreprises locales"
+                    status={health.keys.GOOGLE_MAPS_API_KEY}
+                    docsUrl="https://developers.google.com/maps/documentation/places/web-service"
+                    envVar="GOOGLE_MAPS_API_KEY"
+                  />
+                  <ApiKeyRow
+                    name="PageSpeed Insights API"
+                    description="Audit de performance des sites (gratuit)"
+                    status={health.keys.PAGESPEED_API_KEY}
+                    docsUrl="https://developers.google.com/speed/docs/insights/v5/get-started"
+                    envVar="PAGESPEED_API_KEY"
+                  />
+                  <ApiKeyRow
+                    name="API Sirene INSEE"
+                    description="Base officielle des entreprises françaises (gratuit)"
+                    status={health.keys.INSEE_API_KEY}
+                    docsUrl="https://api.insee.fr/catalogue/"
+                    envVar="INSEE_CONSUMER_KEY"
+                  />
+                </>
+              ) : (
+                <div className="flex items-center gap-2 text-zinc-400 text-sm py-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Vérification des clés...
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Notifications */}
         <Card>

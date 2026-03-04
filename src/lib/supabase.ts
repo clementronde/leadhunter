@@ -11,3 +11,10 @@ export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey)
 export function createServerSupabaseClient() {
   return createClient(supabaseUrl, supabaseAnonKey)
 }
+
+// Client admin avec service role key (bypass RLS) — serveur uniquement
+export const supabaseAdmin = createClient(
+  supabaseUrl,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  { auth: { autoRefreshToken: false, persistSession: false } }
+)

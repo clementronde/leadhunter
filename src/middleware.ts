@@ -28,6 +28,7 @@ export async function middleware(request: NextRequest) {
   const isLoginPage = request.nextUrl.pathname === '/login'
   const isRootPage = request.nextUrl.pathname === '/'
   const isPricingPage = request.nextUrl.pathname === '/pricing'
+  const isAdminRoute = request.nextUrl.pathname.startsWith('/admin')
 
   // Not logged in and not on login/landing/pricing page -> redirect to login
   if (!user && !isLoginPage && !isRootPage && !isPricingPage) {
@@ -41,6 +42,21 @@ export async function middleware(request: NextRequest) {
     const url = request.nextUrl.clone()
     url.pathname = '/'
     return NextResponse.redirect(url)
+  }
+
+  // Admin route protection
+  if (user && isAdminRoute) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (profile?.role !== 'admin') {
+      const url = request.nextUrl.clone()
+      url.pathname = '/'
+      return NextResponse.redirect(url)
+    }
   }
 
   return supabaseResponse

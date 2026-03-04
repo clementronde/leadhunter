@@ -10,6 +10,7 @@ interface AuthContextType {
   session: Session | null
   loading: boolean
   isPro: boolean
+  isAdmin: boolean
   signIn: (email: string, password: string) => Promise<{ error: string | null }>
   signUp: (email: string, password: string) => Promise<{ error: string | null }>
   signOut: () => Promise<void>
@@ -24,14 +25,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
   const [isPro, setIsPro] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
 
   const fetchProfile = useCallback(async (userId: string) => {
     const { data } = await supabase
       .from('profiles')
-      .select('plan')
+      .select('plan, role')
       .eq('id', userId)
       .single()
     setIsPro(data?.plan === 'pro')
+    setIsAdmin(data?.role === 'admin')
   }, [])
 
   useEffect(() => {
@@ -51,6 +54,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         fetchProfile(session.user.id)
       } else {
         setIsPro(false)
+        setIsAdmin(false)
       }
       setLoading(false)
     })
@@ -81,7 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, isPro, signIn, signUp, signOut, signInWithGoogle }}>
+    <AuthContext.Provider value={{ user, session, loading, isPro, isAdmin, signIn, signUp, signOut, signInWithGoogle }}>
       {children}
     </AuthContext.Provider>
   )
