@@ -28,6 +28,7 @@ CREATE TABLE companies (
   has_website BOOLEAN NOT NULL DEFAULT false,
 
   -- Google Maps data
+  google_place_id TEXT,
   google_rating NUMERIC(2,1),
   google_reviews_count INTEGER,
   google_maps_url TEXT,
@@ -53,6 +54,7 @@ CREATE INDEX idx_companies_status ON companies(status);
 CREATE INDEX idx_companies_priority ON companies(priority);
 CREATE INDEX idx_companies_has_website ON companies(has_website);
 CREATE INDEX idx_companies_prospect_score ON companies(prospect_score DESC);
+CREATE INDEX idx_companies_google_place_id ON companies(user_id, google_place_id);
 
 -- ============================================
 -- Table: website_audits

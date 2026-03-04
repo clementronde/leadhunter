@@ -15,7 +15,7 @@ import { Sector } from '@/types'
 // Types internes Google Places API
 // ============================================
 
-interface PlaceSearchResult {
+export interface PlaceSearchResult {
   place_id: string
   name: string
   formatted_address: string

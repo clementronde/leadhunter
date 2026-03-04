@@ -58,6 +58,7 @@ interface ScanResult {
   // Spécifique Google Maps
   with_site?: number
   audited?: number
+  skipped?: number
 }
 
 // ============================================
@@ -264,16 +265,17 @@ export default function ScannerPage() {
         throw new Error((data.error as string || 'Erreur lors du scan') + detail)
       }
 
-      setScanResult(data.data)
+      setScanResult(data.data as ScanResult)
       setScanStatus('completed')
 
+      const scanData = data.data as ScanResult
       const completedScan: SearchScan = {
         ...newScan,
         status: 'completed',
         progress: 100,
-        companies_found: data.data.processed,
-        companies_without_site: data.data.without_site,
-        companies_needing_refonte: data.data.needing_refonte,
+        companies_found: scanData.processed,
+        companies_without_site: scanData.without_site,
+        companies_needing_refonte: scanData.needing_refonte,
         completed_at: new Date().toISOString(),
       }
       setScans((prev) => prev.map((s) => (s.id === newScan.id ? completedScan : s)))
@@ -681,7 +683,7 @@ export default function ScannerPage() {
                   <h3 className="font-semibold text-zinc-900">Scan terminé !</h3>
                   <p className="text-sm text-zinc-500">
                     {activeSource === 'google_maps'
-                      ? `${scanResult.total_found} entreprises trouvées via Google Maps`
+                      ? `${scanResult.total_found} entreprises trouvées via Google Maps${scanResult.skipped ? ` · ${scanResult.skipped} déjà dans votre CRM` : ''}`
                       : `${scanResult.total_found} entreprises trouvées dans la base SIRENE`}
                   </p>
                 </div>
