@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import Link from 'next/link'
 import { motion, useInView } from 'framer-motion'
 import {
@@ -76,14 +76,80 @@ function Navbar() {
 
 /* ─── Hero ─────────────────────────────────────────────────────────────────── */
 
+function HeroParticles() {
+  const [particles, setParticles] = useState<
+    { id: number; left: string; delay: number; duration: number; size: number; opacity: number }[]
+  >([])
+
+  useEffect(() => {
+    setParticles(
+      Array.from({ length: 18 }, (_, i) => ({
+        id: i,
+        left: `${4 + Math.random() * 92}%`,
+        delay: Math.random() * 7,
+        duration: 6 + Math.random() * 6,
+        size: 1 + Math.random() * 1.5,
+        opacity: 0.12 + Math.random() * 0.28,
+      }))
+    )
+  }, [])
+
+  return (
+    <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+      {particles.map((p) => (
+        <motion.div
+          key={p.id}
+          className="absolute rounded-full bg-amber-400"
+          style={{ left: p.left, bottom: 0, width: p.size, height: p.size }}
+          animate={{ y: [0, -680], opacity: [0, p.opacity, p.opacity, 0] }}
+          transition={{
+            duration: p.duration,
+            delay: p.delay,
+            repeat: Infinity,
+            ease: 'linear',
+          }}
+        />
+      ))}
+    </div>
+  )
+}
+
 function Hero() {
   return (
     <section className="relative min-h-[90vh] flex flex-col items-center justify-center px-4 sm:px-6 pt-20 pb-12 overflow-hidden">
-      {/* Ambient glow */}
+
+      {/* Dot grid background */}
+      <div
+        className="pointer-events-none absolute inset-0 -z-20"
+        style={{
+          backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px)',
+          backgroundSize: '34px 34px',
+          maskImage: 'radial-gradient(ellipse at 50% 0%, rgba(0,0,0,0.7) 0%, transparent 68%)',
+          WebkitMaskImage: 'radial-gradient(ellipse at 50% 0%, rgba(0,0,0,0.7) 0%, transparent 68%)',
+        }}
+      />
+
+      {/* Animated orbs */}
       <div className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[400px] rounded-full bg-amber-500/10 blur-[120px]" />
-        <div className="absolute top-20 left-1/3 w-[300px] h-[300px] rounded-full bg-orange-600/8 blur-[80px]" />
+        <motion.div
+          animate={{ scale: [1, 1.18, 1], opacity: [0.09, 0.16, 0.09] }}
+          transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut' }}
+          className="absolute top-[-60px] left-1/2 -translate-x-1/2 w-[720px] h-[480px] rounded-full bg-amber-500 blur-[130px]"
+        />
+        <motion.div
+          animate={{ scale: [1, 1.25, 1], x: [0, 40, 0], opacity: [0.06, 0.11, 0.06] }}
+          transition={{ duration: 13, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
+          className="absolute top-16 left-[18%] w-[280px] h-[280px] rounded-full bg-orange-600 blur-[100px]"
+        />
+        <motion.div
+          animate={{ scale: [1, 1.2, 1], x: [0, -30, 0], opacity: [0.05, 0.09, 0.05] }}
+          transition={{ duration: 11, repeat: Infinity, ease: 'easeInOut', delay: 4 }}
+          className="absolute top-24 right-[16%] w-[220px] h-[220px] rounded-full bg-amber-400 blur-[90px]"
+        />
       </div>
+
+      {/* Floating particles */}
+      <HeroParticles />
 
       <motion.div
         variants={stagger}
@@ -91,12 +157,19 @@ function Hero() {
         animate="visible"
         className="text-center max-w-4xl mx-auto"
       >
-        <motion.div
-          variants={fadeUp}
-          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-400 text-xs font-medium mb-8 tracking-wide uppercase"
-        >
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-          Google Maps · INSEE / Sirene · Scoring automatique
+        {/* Badge with shimmer */}
+        <motion.div variants={fadeUp} className="inline-flex mb-8">
+          <div className="relative inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-400 text-xs font-medium tracking-wide uppercase overflow-hidden">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+            Google Maps · INSEE / Sirene · Scoring automatique
+            {/* shimmer sweep */}
+            <motion.div
+              className="pointer-events-none absolute inset-0"
+              animate={{ x: ['-110%', '210%'] }}
+              transition={{ duration: 2.2, repeat: Infinity, repeatDelay: 3.5, ease: 'easeInOut' }}
+              style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent)' }}
+            />
+          </div>
         </motion.div>
 
         <motion.h1
@@ -104,9 +177,14 @@ function Hero() {
           className="text-5xl sm:text-6xl lg:text-7xl font-bold leading-[1.08] tracking-tight mb-6"
         >
           Trouvez les clients locaux{' '}
-          <span className="bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">
+          <motion.span
+            animate={{ backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] }}
+            transition={{ duration: 6, repeat: Infinity, ease: 'linear' }}
+            style={{ backgroundSize: '200% auto' }}
+            className="bg-gradient-to-r from-amber-400 via-orange-400 to-yellow-300 bg-clip-text text-transparent inline-block"
+          >
             qui ont besoin de vous
-          </span>
+          </motion.span>
         </motion.h1>
 
         <motion.p
@@ -126,8 +204,15 @@ function Hero() {
         >
           <Link
             href="/login"
-            className="group flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold hover:opacity-90 transition-opacity shadow-lg shadow-amber-900/30"
+            className="group relative flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold hover:opacity-90 transition-opacity shadow-lg shadow-amber-900/40 overflow-hidden"
           >
+            {/* CTA shimmer */}
+            <motion.div
+              className="pointer-events-none absolute inset-0"
+              animate={{ x: ['-110%', '210%'] }}
+              transition={{ duration: 1.8, repeat: Infinity, repeatDelay: 4, ease: 'easeInOut', delay: 1 }}
+              style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.22), transparent)' }}
+            />
             Commencer gratuitement
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
           </Link>
@@ -146,11 +231,17 @@ function Hero() {
 
       {/* Hero demo card */}
       <motion.div
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5, duration: 0.7, ease: 'easeOut' }}
+        initial={{ opacity: 0, y: 60, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ delay: 0.5, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
         className="mt-16 w-full max-w-3xl mx-auto"
       >
+        {/* Glow behind card */}
+        <motion.div
+          animate={{ opacity: [0.3, 0.55, 0.3] }}
+          transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+          className="absolute inset-x-12 -bottom-4 h-16 bg-amber-500/20 blur-2xl rounded-full pointer-events-none"
+        />
         <DashboardMockup />
       </motion.div>
     </section>
