@@ -1,13 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/auth/auth-provider'
 import { Target, Mail, Lock, Loader2 } from 'lucide-react'
 
 export default function LoginPage() {
   const router = useRouter()
-  const { signIn, signUp, signInWithGoogle } = useAuth()
+  const { signIn, signUp, signInWithGoogle, user, loading: authLoading } = useAuth()
 
   const [mode, setMode] = useState<'login' | 'register'>('login')
   const [email, setEmail] = useState('')
@@ -15,6 +15,13 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
+
+  // Rediriger dès que l'auth state est réellement mis à jour (après onAuthStateChange)
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.replace('/')
+    }
+  }, [user, authLoading, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -30,9 +37,8 @@ export default function LoginPage() {
           ? "Email ou mot de passe incorrect. Pas encore de compte ? Cliquez sur l'onglet « Créer un compte »."
           : error
         )
-      } else {
-        router.push('/')
       }
+      // Pas de router.push ici — le useEffect ci-dessus redirige quand user est défini
     } else {
       const { error } = await signUp(email, password)
       if (error) {
