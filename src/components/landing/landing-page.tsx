@@ -83,13 +83,13 @@ function HeroParticles() {
 
   useEffect(() => {
     setParticles(
-      Array.from({ length: 18 }, (_, i) => ({
+      Array.from({ length: 24 }, (_, i) => ({
         id: i,
         left: `${4 + Math.random() * 92}%`,
-        delay: Math.random() * 7,
-        duration: 6 + Math.random() * 6,
-        size: 1 + Math.random() * 1.5,
-        opacity: 0.12 + Math.random() * 0.28,
+        delay: Math.random() * 6,
+        duration: 5 + Math.random() * 5,
+        size: 2 + Math.random() * 2.5,
+        opacity: 0.4 + Math.random() * 0.45,
       }))
     )
   }, [])
@@ -122,27 +122,27 @@ function Hero() {
       <div
         className="pointer-events-none absolute inset-0 -z-20"
         style={{
-          backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px)',
+          backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.09) 1px, transparent 1px)',
           backgroundSize: '34px 34px',
-          maskImage: 'radial-gradient(ellipse at 50% 0%, rgba(0,0,0,0.7) 0%, transparent 68%)',
-          WebkitMaskImage: 'radial-gradient(ellipse at 50% 0%, rgba(0,0,0,0.7) 0%, transparent 68%)',
+          maskImage: 'radial-gradient(ellipse at 50% 20%, black 0%, transparent 70%)',
+          WebkitMaskImage: 'radial-gradient(ellipse at 50% 20%, black 0%, transparent 70%)',
         }}
       />
 
       {/* Animated orbs */}
       <div className="pointer-events-none absolute inset-0 -z-10">
         <motion.div
-          animate={{ scale: [1, 1.18, 1], opacity: [0.09, 0.16, 0.09] }}
+          animate={{ scale: [1, 1.18, 1], opacity: [0.22, 0.35, 0.22] }}
           transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut' }}
           className="absolute top-[-60px] left-1/2 -translate-x-1/2 w-[720px] h-[480px] rounded-full bg-amber-500 blur-[130px]"
         />
         <motion.div
-          animate={{ scale: [1, 1.25, 1], x: [0, 40, 0], opacity: [0.06, 0.11, 0.06] }}
+          animate={{ scale: [1, 1.25, 1], x: [0, 40, 0], opacity: [0.15, 0.25, 0.15] }}
           transition={{ duration: 13, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
           className="absolute top-16 left-[18%] w-[280px] h-[280px] rounded-full bg-orange-600 blur-[100px]"
         />
         <motion.div
-          animate={{ scale: [1, 1.2, 1], x: [0, -30, 0], opacity: [0.05, 0.09, 0.05] }}
+          animate={{ scale: [1, 1.2, 1], x: [0, -30, 0], opacity: [0.12, 0.22, 0.12] }}
           transition={{ duration: 11, repeat: Infinity, ease: 'easeInOut', delay: 4 }}
           className="absolute top-24 right-[16%] w-[220px] h-[220px] rounded-full bg-amber-400 blur-[90px]"
         />
@@ -167,7 +167,7 @@ function Hero() {
               className="pointer-events-none absolute inset-0"
               animate={{ x: ['-110%', '210%'] }}
               transition={{ duration: 2.2, repeat: Infinity, repeatDelay: 3.5, ease: 'easeInOut' }}
-              style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent)' }}
+              style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.40), transparent)' }}
             />
           </div>
         </motion.div>
@@ -179,9 +179,9 @@ function Hero() {
           Trouvez les clients locaux{' '}
           <motion.span
             animate={{ backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] }}
-            transition={{ duration: 6, repeat: Infinity, ease: 'linear' }}
-            style={{ backgroundSize: '200% auto' }}
-            className="bg-gradient-to-r from-amber-400 via-orange-400 to-yellow-300 bg-clip-text text-transparent inline-block"
+            transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+            style={{ backgroundSize: '300% auto' }}
+            className="bg-gradient-to-r from-white via-amber-300 to-orange-500 bg-clip-text text-transparent inline-block"
           >
             qui ont besoin de vous
           </motion.span>
@@ -211,7 +211,7 @@ function Hero() {
               className="pointer-events-none absolute inset-0"
               animate={{ x: ['-110%', '210%'] }}
               transition={{ duration: 1.8, repeat: Infinity, repeatDelay: 4, ease: 'easeInOut', delay: 1 }}
-              style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.22), transparent)' }}
+              style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent)' }}
             />
             Commencer gratuitement
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
