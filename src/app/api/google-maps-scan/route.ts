@@ -90,12 +90,17 @@ export async function POST(request: NextRequest) {
     let needingRefonte = 0
     let auditedCount = 0
 
+    // Limiter les audits à 5 max pour rester dans le timeout Vercel
+    const MAX_AUDITS = 5
+    let auditQueue = 0
+
     for (const place of places) {
       const company = googlePlaceToCompany(place)
 
-      if (auditWebsites && place.website) {
+      if (auditWebsites && place.website && auditQueue < MAX_AUDITS) {
+        auditQueue++
         try {
-          console.log(`🔍 Audit ${place.website}...`)
+          console.log(`🔍 Audit ${place.website}... (${auditQueue}/${MAX_AUDITS})`)
           const auditResult = await analyzeWebsite(place.website)
 
           if (auditResult.success && auditResult.data) {
@@ -117,8 +122,6 @@ export async function POST(request: NextRequest) {
         } catch (auditErr) {
           console.warn(`Audit echoue pour ${place.website}:`, auditErr)
         }
-
-        await new Promise((resolve) => setTimeout(resolve, 500))
       }
 
       companies.push({
