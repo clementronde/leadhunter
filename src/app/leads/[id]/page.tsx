@@ -81,7 +81,10 @@ export default function LeadDetailPage() {
   }
 
   const handleLaunchAudit = async () => {
-    if (!lead?.website) return
+    if (!lead?.website) {
+      setAuditError('Aucune URL de site web enregistrée pour ce lead.')
+      return
+    }
     setAuditing(true)
     setAuditError(null)
     try {

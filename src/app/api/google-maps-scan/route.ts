@@ -7,8 +7,6 @@ import {
   GooglePlaceEnriched,
   PlaceSearchResult,
 } from '@/lib/google-maps'
-import { analyzeWebsite, calculateProspectScoreFromAudit } from '@/lib/pagespeed'
-import { getPriorityFromScore } from '@/lib/utils'
 
 export const maxDuration = 60
 
@@ -36,7 +34,6 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = createSupabaseFromRequest(request)
 
-    // Get authenticated user
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
       return NextResponse.json({ error: 'Non authentifie' }, { status: 401 })
@@ -54,7 +51,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { query, location, maxResults: requestedMax = 20, auditWebsites = false } = body
+    const { query, location, maxResults: requestedMax = 20 } = body
 
     if (!query || !query.trim()) {
       return NextResponse.json(
@@ -79,9 +76,9 @@ export async function POST(request: NextRequest) {
 
     const maxResults = isProUser ? Math.min(requestedMax, 60) : Math.min(requestedMax, 10)
 
-    console.log(`🗺️ Demarrage scan Google Maps: "${query}" a "${location}" (max ${maxResults}) [user: ${user.id}]`)
+    console.log(`🗺️ Scan Google Maps: "${query}" à "${location}" (max ${maxResults}) [user: ${user.id}]`)
 
-    // 1. Text Search uniquement (peu coûteux) — collecte tous les place_ids
+    // 1. Text Search — collecte tous les place_ids (peu coûteux)
     const rawPlaces: PlaceSearchResult[] = []
     let pageToken: string | undefined = undefined
     let fetchedCount = 0
@@ -104,14 +101,13 @@ export async function POST(request: NextRequest) {
 
       if (!nextPageToken || fetchedCount >= maxResults) break
 
-      // Google impose une pause entre les pages (2 secondes minimum)
       await new Promise((resolve) => setTimeout(resolve, 2000))
       pageToken = nextPageToken
     }
 
-    console.log(`📍 ${rawPlaces.length} lieux trouvés au total`)
+    console.log(`📍 ${rawPlaces.length} lieux trouvés`)
 
-    // 2. Vérifier quels place_ids existent déjà en base pour cet utilisateur
+    // 2. Filtrer les fiches déjà connues en base
     const allPlaceIds = rawPlaces.map((p) => p.place_id)
     const { data: existingRows } = await supabase
       .from('companies')
@@ -125,9 +121,9 @@ export async function POST(request: NextRequest) {
     const newPlaces = rawPlaces.filter((p) => !knownPlaceIds.has(p.place_id))
     const skippedCount = rawPlaces.length - newPlaces.length
 
-    console.log(`📊 ${rawPlaces.length} trouvés: ${newPlaces.length} nouveaux, ${skippedCount} déjà en base`)
+    console.log(`📊 ${newPlaces.length} nouvelles fiches, ${skippedCount} déjà en base`)
 
-    // 3. Enrichir uniquement les nouvelles fiches (appels Place Details)
+    // 3. Enrichir uniquement les nouvelles fiches (Place Details — coûteux)
     const enrichedPlaces: GooglePlaceEnriched[] = []
     const BATCH_SIZE = 5
 
@@ -135,11 +131,8 @@ export async function POST(request: NextRequest) {
       const batch = newPlaces.slice(i, i + BATCH_SIZE)
       const results = await Promise.allSettled(batch.map((p) => enrichGooglePlace(p)))
       for (const result of results) {
-        if (result.status === 'fulfilled') {
-          enrichedPlaces.push(result.value)
-        } else {
-          console.warn('Erreur enrichissement:', result.reason)
-        }
+        if (result.status === 'fulfilled') enrichedPlaces.push(result.value)
+        else console.warn('Erreur enrichissement:', result.reason)
       }
       if (i + BATCH_SIZE < newPlaces.length) {
         await new Promise((resolve) => setTimeout(resolve, 300))
@@ -149,58 +142,26 @@ export async function POST(request: NextRequest) {
     const withWebsite = enrichedPlaces.filter((p) => p.has_website).length
     const withoutWebsite = enrichedPlaces.filter((p) => !p.has_website).length
 
-    // 4. Convertir en Company et optionnellement auditer
-    const companies = []
-    let needingRefonte = 0
-    let auditedCount = 0
-
-    // Limiter les audits à 5 max pour rester dans le timeout Vercel
-    const MAX_AUDITS = 5
-    let auditQueue = 0
+    // 4. Sauvegarder les entreprises et récupérer les IDs DB
+    let savedCount = 0
+    const savedCompanies: Array<ReturnType<typeof googlePlaceToCompany> & {
+      id?: string
+      google_place_id: string
+      google_maps_url: string | null
+      google_rating: number | null
+    }> = []
 
     for (const place of enrichedPlaces) {
       const company = googlePlaceToCompany(place)
-
-      if (auditWebsites && place.website && auditQueue < MAX_AUDITS) {
-        auditQueue++
-        try {
-          console.log(`🔍 Audit ${place.website}... (${auditQueue}/${MAX_AUDITS})`)
-          const auditResult = await analyzeWebsite(place.website)
-
-          if (auditResult.success && auditResult.data) {
-            const prospectScore = calculateProspectScoreFromAudit(auditResult.data)
-            company.prospect_score = prospectScore
-            company.priority = getPriorityFromScore(prospectScore)
-
-            const isUnderperforming =
-              (auditResult.data.performance_score !== null &&
-                auditResult.data.performance_score !== undefined &&
-                auditResult.data.performance_score < 50) ||
-              !auditResult.data.is_https ||
-              !auditResult.data.is_mobile_friendly ||
-              auditResult.data.is_outdated
-
-            if (isUnderperforming) needingRefonte++
-            auditedCount++
-          }
-        } catch (auditErr) {
-          console.warn(`Audit echoue pour ${place.website}:`, auditErr)
-        }
-      }
-
-      companies.push({
+      const companyWithMeta = {
         ...company,
         google_place_id: place.place_id,
         google_maps_url: place.google_maps_url,
         google_rating: place.rating,
-      })
-    }
+      }
 
-    // 5. Sauvegarder les nouvelles entreprises (toutes sont nouvelles, pas besoin de SELECT-then-INSERT)
-    let savedCount = 0
-    for (const company of companies) {
       try {
-        const { error: insertError } = await supabase
+        const { data: inserted, error: insertError } = await supabase
           .from('companies')
           .insert({
             user_id: user.id,
@@ -214,39 +175,44 @@ export async function POST(request: NextRequest) {
             source: company.source,
             website: company.website,
             has_website: company.has_website,
-            google_place_id: company.google_place_id,
-            google_rating: company.google_rating,
-            google_reviews_count: company.google_reviews_count,
-            google_maps_url: company.google_maps_url,
+            google_place_id: place.place_id,
+            google_rating: place.rating,
+            google_reviews_count: place.reviews_count,
+            google_maps_url: place.google_maps_url,
             prospect_score: company.prospect_score,
             priority: company.priority,
             status: 'new',
           })
+          .select('id')
+          .single()
 
         if (insertError) {
           console.warn(`Erreur insertion ${company.name}:`, insertError.message)
+          savedCompanies.push(companyWithMeta)
         } else {
           savedCount++
+          savedCompanies.push({ ...companyWithMeta, id: inserted.id })
         }
       } catch (saveErr) {
         console.warn(`Erreur sauvegarde ${company.name}:`, saveErr)
+        savedCompanies.push(companyWithMeta)
       }
     }
 
-    // 6. Enregistrer le scan
+    // 5. Enregistrer le scan
     await supabase.from('search_scans').insert({
       user_id: user.id,
       query: `${query} - ${location}`,
       location: { lat: 0, lng: 0, radius: 0 },
       status: 'completed',
       progress: 100,
-      companies_found: companies.length,
+      companies_found: savedCompanies.length,
       companies_without_site: withoutWebsite,
-      companies_needing_refonte: needingRefonte,
+      companies_needing_refonte: 0,
       completed_at: new Date().toISOString(),
     })
 
-    console.log(`💾 ${savedCount}/${companies.length} nouvelles entreprises sauvegardees [user: ${user.id}]`)
+    console.log(`💾 ${savedCount}/${enrichedPlaces.length} nouvelles entreprises sauvegardees [user: ${user.id}]`)
 
     return NextResponse.json({
       success: true,
@@ -256,10 +222,9 @@ export async function POST(request: NextRequest) {
         skipped: skippedCount,
         without_site: withoutWebsite,
         with_site: withWebsite,
-        needing_refonte: needingRefonte,
-        audited: auditedCount,
+        needing_refonte: 0,
         saved: savedCount,
-        companies,
+        companies: savedCompanies,
       },
     })
   } catch (error) {

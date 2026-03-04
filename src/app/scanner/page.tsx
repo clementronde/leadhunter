@@ -103,6 +103,10 @@ export default function ScannerPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [scans, setScans] = useState<SearchScan[]>([])
 
+  // Phase 2 : audits Speed Insights côté client
+  const [auditPhase, setAuditPhase] = useState(false)
+  const [auditProgress, setAuditProgress] = useState({ current: 0, total: 0 })
+
   // Load scan history from Supabase on mount
   useEffect(() => {
     scannerApi.getAll().then(setScans).catch(console.error)
@@ -225,7 +229,6 @@ export default function ScannerPage() {
             query: gmQuery.trim(),
             location: location.trim(),
             maxResults: parseInt(gmMaxResults),
-            auditWebsites: gmAuditWebsites,
           }),
         })
       } else {
@@ -265,17 +268,21 @@ export default function ScannerPage() {
         throw new Error((data.error as string || 'Erreur lors du scan') + detail)
       }
 
-      setScanResult(data.data as ScanResult)
+      const scanData = data.data as ScanResult
+      setScanResult(scanData)
       setScanStatus('completed')
 
-      const scanData = data.data as ScanResult
+      // Phase 2 : lancer les audits Speed Insights depuis le navigateur (sans bloquer)
+      if (gmAuditWebsites && activeSource === 'google_maps') {
+        runAuditPhase(scanData.companies)
+      }
       const completedScan: SearchScan = {
         ...newScan,
         status: 'completed',
         progress: 100,
         companies_found: scanData.processed,
         companies_without_site: scanData.without_site,
-        companies_needing_refonte: scanData.needing_refonte,
+        companies_needing_refonte: 0,
         completed_at: new Date().toISOString(),
       }
       setScans((prev) => prev.map((s) => (s.id === newScan.id ? completedScan : s)))
@@ -302,6 +309,55 @@ export default function ScannerPage() {
 
   const handleViewResults = () => {
     router.push('/leads')
+  }
+
+  // Phase 2 : audits Speed Insights séquentiels depuis le navigateur
+  const runAuditPhase = async (companies: ScanResult['companies']) => {
+    const MAX_AUDITS = isPro ? 10 : 5
+    const toAudit = companies.filter((c) => c.website && c.id).slice(0, MAX_AUDITS)
+    if (toAudit.length === 0) return
+
+    setAuditPhase(true)
+    setAuditProgress({ current: 0, total: toAudit.length })
+
+    for (let i = 0; i < toAudit.length; i++) {
+      const company = toAudit[i]
+      setAuditProgress({ current: i + 1, total: toAudit.length })
+
+      try {
+        const res = await fetch('/api/audit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: company.website, companyId: company.id }),
+        })
+        if (res.ok) {
+          const data = await res.json()
+          if (data.success && data.data) {
+            setScanResult((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    companies: prev.companies.map((c) =>
+                      c.id === company.id
+                        ? { ...c, prospect_score: data.data.prospect_score, priority: data.data.priority }
+                        : c
+                    ),
+                  }
+                : null
+            )
+          }
+        }
+      } catch (e) {
+        console.warn('Audit échoué pour', company.website, e)
+      }
+
+      // Pause entre les audits pour respecter les limites Vercel (30s max par appel)
+      if (i < toAudit.length - 1) {
+        await new Promise((r) => setTimeout(r, 2000))
+      }
+    }
+
+    setAuditPhase(false)
   }
 
   // ============================================
@@ -694,41 +750,72 @@ export default function ScannerPage() {
               </div>
 
               {/* Statistiques */}
-              <div className={`grid gap-4 text-center ${activeSource === 'google_maps' ? 'grid-cols-2 md:grid-cols-4' : 'grid-cols-3'}`}>
-                <div className="p-4 bg-white rounded-lg">
-                  <div className="flex items-center justify-center gap-2 mb-2">
-                    <Building2 className="h-5 w-5 text-zinc-400" />
-                  </div>
-                  <p className="text-3xl font-bold text-zinc-900">{scanResult.processed}</p>
-                  <p className="text-sm text-zinc-500">Entreprises traitées</p>
-                </div>
-
-                <div className="p-4 bg-white rounded-lg">
-                  <div className="flex items-center justify-center gap-2 mb-2">
-                    <Globe className="h-5 w-5 text-red-500" />
-                  </div>
-                  <p className="text-3xl font-bold text-red-600">{scanResult.without_site}</p>
-                  <p className="text-sm text-zinc-500">Sans site web 🔥</p>
-                </div>
-
-                <div className="p-4 bg-white rounded-lg">
-                  <div className="flex items-center justify-center gap-2 mb-2">
-                    <Wrench className="h-5 w-5 text-amber-500" />
-                  </div>
-                  <p className="text-3xl font-bold text-amber-600">{scanResult.needing_refonte}</p>
-                  <p className="text-sm text-zinc-500">Site à refaire</p>
-                </div>
-
-                {activeSource === 'google_maps' && scanResult.audited !== undefined && (
-                  <div className="p-4 bg-white rounded-lg">
-                    <div className="flex items-center justify-center gap-2 mb-2">
-                      <Zap className="h-5 w-5 text-blue-500" />
+              {(() => {
+                const needingRefonte = scanResult.companies.filter(
+                  (c) => c.has_website && c.priority === 'hot'
+                ).length
+                const auditedCount = scanResult.companies.filter(
+                  (c) => c.has_website && c.priority !== 'warm'
+                ).length
+                return (
+                  <div className={`grid gap-4 text-center ${activeSource === 'google_maps' ? 'grid-cols-2 md:grid-cols-4' : 'grid-cols-3'}`}>
+                    <div className="p-4 bg-white rounded-lg">
+                      <div className="flex items-center justify-center gap-2 mb-2">
+                        <Building2 className="h-5 w-5 text-zinc-400" />
+                      </div>
+                      <p className="text-3xl font-bold text-zinc-900">{scanResult.processed}</p>
+                      <p className="text-sm text-zinc-500">Entreprises traitées</p>
                     </div>
-                    <p className="text-3xl font-bold text-blue-600">{scanResult.audited}</p>
-                    <p className="text-sm text-zinc-500">Sites audités</p>
+
+                    <div className="p-4 bg-white rounded-lg">
+                      <div className="flex items-center justify-center gap-2 mb-2">
+                        <Globe className="h-5 w-5 text-red-500" />
+                      </div>
+                      <p className="text-3xl font-bold text-red-600">{scanResult.without_site}</p>
+                      <p className="text-sm text-zinc-500">Sans site web 🔥</p>
+                    </div>
+
+                    <div className="p-4 bg-white rounded-lg">
+                      <div className="flex items-center justify-center gap-2 mb-2">
+                        <Wrench className="h-5 w-5 text-amber-500" />
+                      </div>
+                      <p className="text-3xl font-bold text-amber-600">{needingRefonte}</p>
+                      <p className="text-sm text-zinc-500">Site à refaire</p>
+                    </div>
+
+                    {activeSource === 'google_maps' && (
+                      <div className="p-4 bg-white rounded-lg">
+                        <div className="flex items-center justify-center gap-2 mb-2">
+                          <Zap className="h-5 w-5 text-blue-500" />
+                        </div>
+                        <p className="text-3xl font-bold text-blue-600">{auditedCount}</p>
+                        <p className="text-sm text-zinc-500">Sites audités</p>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
+                )
+              })()}
+
+              {/* Bannière progression audit Phase 2 */}
+              {auditPhase && (
+                <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin flex-shrink-0" />
+                    <p className="text-sm font-medium text-blue-800">
+                      Analyse Speed Insights en cours... {auditProgress.current}/{auditProgress.total}
+                    </p>
+                  </div>
+                  <div className="h-1.5 bg-blue-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-blue-500 transition-all duration-700 ease-out"
+                      style={{ width: `${auditProgress.total > 0 ? (auditProgress.current / auditProgress.total) * 100 : 0}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-blue-600 mt-1">
+                    Les scores de prospection se mettent à jour en temps réel
+                  </p>
+                </div>
+              )}
 
               {/* Top résultats */}
               {scanResult.companies.length > 0 && (

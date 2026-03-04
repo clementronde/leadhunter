@@ -58,10 +58,11 @@ export async function POST(request: NextRequest) {
 
     // Sauvegarder l'audit et mettre à jour la company si companyId fourni
     if (companyId) {
-      await supabase.from('website_audits').upsert(
-        { ...result.data, company_id: companyId, url },
+      const { error: upsertError } = await supabase.from('website_audits').upsert(
+        { ...result.data, company_id: companyId, user_id: user.id, url },
         { onConflict: 'company_id' }
       )
+      if (upsertError) console.error('Audit upsert error:', upsertError.message)
       await supabase
         .from('companies')
         .update({ prospect_score: prospectScore, priority, updated_at: new Date().toISOString() })
