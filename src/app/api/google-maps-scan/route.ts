@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
 
     const maxResults = isProUser ? Math.min(requestedMax, 60) : Math.min(requestedMax, 10)
 
-    console.log(`🗺️ Scan Google Maps: "${query}" à "${location}" (max ${maxResults}) [user: ${user.id}]`)
+    console.log(`🗺️ Scan Google Maps: q=${query.length}c loc=${location.length}c max=${maxResults} [user: ${user.id}]`)
 
     // 1. Charger tous les place_ids déjà connus pour cet utilisateur
     const { data: existingRows } = await supabase

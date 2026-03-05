@@ -5,21 +5,35 @@ import { NextResponse, type NextRequest } from 'next/server'
  * Security headers appliqués à toutes les réponses
  */
 function applySecurityHeaders(response: NextResponse): NextResponse {
-  // Empêche le sniffing de Content-Type
   response.headers.set('X-Content-Type-Options', 'nosniff')
-  // Protection XSS navigateurs anciens
   response.headers.set('X-XSS-Protection', '1; mode=block')
-  // Empêche l'intégration dans une iframe (clickjacking)
   response.headers.set('X-Frame-Options', 'DENY')
-  // Limite les infos dans le Referer header
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
-  // Restreint les permissions navigateur
   response.headers.set(
     'Permissions-Policy',
     'camera=(), microphone=(), geolocation=(), interest-cohort=()'
   )
-  // Désactive le DNS prefetching
   response.headers.set('X-DNS-Prefetch-Control', 'off')
+  // Content-Security-Policy : limite les sources de scripts/styles/frames
+  response.headers.set(
+    'Content-Security-Policy',
+    [
+      "default-src 'self'",
+      // Scripts : self + Next.js inline scripts nécessaires
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com",
+      // Styles : self + inline (Tailwind)
+      "style-src 'self' 'unsafe-inline'",
+      // Images : self + Supabase storage + data URIs
+      `img-src 'self' data: blob: ${process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''}`,
+      // Connexions réseau autorisées
+      `connect-src 'self' ${process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''} https://api.stripe.com https://api.hunter.io`,
+      // Frames : Stripe checkout uniquement
+      "frame-src https://js.stripe.com https://hooks.stripe.com",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+    ].join('; ')
+  )
   return response
 }
 

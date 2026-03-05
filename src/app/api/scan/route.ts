@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
     const { codePostal, commune, activite, nombreResultats: requestedNombre = 50 } = parsed.data
     const nombreResultats = isProUser ? requestedNombre : Math.min(requestedNombre, 10)
 
-    console.log(`🔍 Recherche INSEE: ${commune || codePostal}, activite: ${activite || 'toutes'} [user: ${user.id}]`)
+    console.log(`🔍 Recherche INSEE: cp=${!!codePostal} commune=${!!commune} activite=${!!activite} n=${nombreResultats} [user: ${user.id}]`)
 
     // Récupérer les SIRETs déjà en DB pour cet utilisateur (déduplication)
     const { data: existingRows } = await supabase

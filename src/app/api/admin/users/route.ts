@@ -47,14 +47,15 @@ export async function GET() {
     .order('created_at', { ascending: false })
 
   if (profilesError) {
-    return NextResponse.json({ error: profilesError.message }, { status: 500 })
+    console.error('[admin/users] profiles error:', profilesError.message)
+    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 
-  // Fetch auth users to get emails
   const { data: authData, error: authError } = await supabaseAdmin.auth.admin.listUsers()
 
   if (authError) {
-    return NextResponse.json({ error: authError.message }, { status: 500 })
+    console.error('[admin/users] auth error:', authError.message)
+    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 
   const emailMap = new Map(authData.users.map((u) => [u.id, u.email]))

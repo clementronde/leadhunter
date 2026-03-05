@@ -1,9 +1,10 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { stripe } from '@/lib/stripe'
+import { rateLimit } from '@/lib/rate-limit'
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   const cookieStore = await cookies()
 
   const supabase = createServerClient(
@@ -26,10 +27,18 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
   }
 
-  // Fetch stripe_customer_id from profiles
+  // Rate limit : 5 accès/min (évite le spam vers Stripe)
+  const rl = rateLimit(`billing-portal:${user.id}`, { windowMs: 60_000, max: 5 })
+  if (!rl.success) {
+    return NextResponse.json(
+      { error: 'Trop de requêtes, réessayez dans une minute' },
+      { status: 429, headers: { 'Retry-After': String(Math.ceil((rl.reset - Date.now()) / 1000)) } }
+    )
+  }
+
   const { data: profile } = await supabase
     .from('profiles')
     .select('stripe_customer_id')
@@ -37,7 +46,7 @@ export async function POST(request: Request) {
     .single()
 
   if (!profile?.stripe_customer_id) {
-    return NextResponse.json({ error: 'No Stripe customer found' }, { status: 400 })
+    return NextResponse.json({ error: 'Aucun abonnement trouvé' }, { status: 400 })
   }
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') ||
@@ -50,8 +59,7 @@ export async function POST(request: Request) {
     })
     return NextResponse.json({ url: session.url })
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Stripe error'
-    console.error('[billing-portal]', message)
-    return NextResponse.json({ error: message }, { status: 500 })
+    console.error('[billing-portal]', err instanceof Error ? err.message : err)
+    return NextResponse.json({ error: 'Erreur de facturation' }, { status: 500 })
   }
 }
