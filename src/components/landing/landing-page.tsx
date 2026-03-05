@@ -58,6 +58,7 @@ function Navbar() {
         <nav className="hidden sm:flex items-center gap-6 text-sm text-zinc-400">
           <a href="#scanner" className="hover:text-white transition-colors">Fonctionnalités</a>
           <a href="#pricing" className="hover:text-white transition-colors">Tarifs</a>
+          <Link href="/pricing" className="hover:text-white transition-colors">Pricing</Link>
         </nav>
         <div className="flex items-center gap-3">
           <Link href="/login" className="text-sm text-zinc-400 hover:text-white transition-colors">

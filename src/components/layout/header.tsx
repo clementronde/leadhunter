@@ -3,7 +3,7 @@
 import { Bell, Search, Plus, Radar, X, ChevronRight, Zap } from 'lucide-react'
 import { Button } from '@/components/ui'
 import { useRouter } from 'next/navigation'
-import { useState, useEffect, useRef, KeyboardEvent } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import { getScoreColor } from '@/lib/utils'
@@ -27,7 +27,6 @@ interface HotLead {
 
 export function Header({ title, subtitle, action }: HeaderProps) {
   const router = useRouter()
-  const [searchValue, setSearchValue] = useState('')
   const [showNotifications, setShowNotifications] = useState(false)
   const [notifLeads, setNotifLeads] = useState<HotLead[]>([])
   const [notifCount, setNotifCount] = useState(0)
@@ -70,13 +69,6 @@ export function Header({ title, subtitle, action }: HeaderProps) {
     }
   }
 
-  const handleSearchKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && searchValue.trim()) {
-      router.push(`/leads?search=${encodeURIComponent(searchValue.trim())}`)
-      setSearchValue('')
-    }
-  }
-
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-white/[0.06] bg-[#09090b]/80 backdrop-blur-xl px-6">
       <div>
@@ -87,20 +79,17 @@ export function Header({ title, subtitle, action }: HeaderProps) {
       </div>
 
       <div className="flex items-center gap-4">
-        {/* Search */}
-        <div className="hidden md:block w-64">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 pointer-events-none" />
-            <input
-              type="text"
-              placeholder="Rechercher un lead... (Entrée)"
-              value={searchValue}
-              onChange={(e) => setSearchValue(e.target.value)}
-              onKeyDown={handleSearchKeyDown}
-              className="w-full h-9 pl-9 pr-3 text-sm bg-zinc-800/60 border border-white/[0.08] text-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 placeholder:text-zinc-500"
-            />
-          </div>
-        </div>
+        {/* Search — opens command palette */}
+        <button
+          onClick={() => window.dispatchEvent(new CustomEvent('open-cmd'))}
+          className="hidden md:flex items-center gap-2 w-64 h-9 pl-3 pr-2 text-sm bg-zinc-800/60 border border-white/[0.08] text-zinc-500 rounded-lg hover:border-white/20 hover:text-zinc-400 transition-colors"
+        >
+          <Search className="h-4 w-4 shrink-0" />
+          <span className="flex-1 text-left">Rechercher...</span>
+          <kbd className="flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-white/[0.08] text-[10px] font-mono bg-zinc-900/60">
+            ⌘K
+          </kbd>
+        </button>
 
         {/* Quick Scan Button */}
         <Button

@@ -3,10 +3,10 @@
 import { useEffect, useState, useCallback, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Header } from '@/components/layout'
-import { LeadsTable, LeadsFilters, LeadCard } from '@/components/leads'
+import { LeadsTable, LeadsFilters, LeadCard, CsvImport } from '@/components/leads'
 import { Card, Button, Skeleton, UpgradeModal, ProGate } from '@/components/ui'
 import { leadsApi } from '@/lib/api'
-import { exportLeadsToXLSX } from '@/lib/export'
+import { exportLeadsToXLSX, exportLeadsToCSV, FREE_CSV_LIMIT } from '@/lib/export'
 import { Company, LeadFilters, LeadStatus } from '@/types'
 import { usePlan } from '@/hooks/usePlan'
 import {
@@ -15,6 +15,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Download,
+  FileText,
+  Upload,
   Loader2,
   Mail,
   X,
@@ -22,6 +24,7 @@ import {
   Check,
   ExternalLink,
   Users,
+  Bell,
 } from 'lucide-react'
 
 // ============================================
@@ -197,6 +200,8 @@ function LeadsContent() {
   const { canExport, isPro } = usePlan()
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [showBulkContact, setShowBulkContact] = useState(false)
+  const [showCsvImport, setShowCsvImport] = useState(false)
+  const [csvBanner, setCsvBanner] = useState<{ exported: number; total: number } | null>(null)
 
   const [leads, setLeads] = useState<Company[]>([])
   const [loading, setLoading] = useState(true)
@@ -264,6 +269,14 @@ function LeadsContent() {
     loadLeads(newPage)
   }
 
+  const handleExportCSV = () => {
+    if (leads.length === 0) return
+    const result = exportLeadsToCSV(leads, 'leads-leadhunter', isPro)
+    if (!isPro && result.total > FREE_CSV_LIMIT) {
+      setCsvBanner(result)
+    }
+  }
+
   const handleExportXLSX = async () => {
     if (!canExport) {
       setShowUpgradeModal(true)
@@ -295,6 +308,29 @@ function LeadsContent() {
         />
       )}
 
+      {showCsvImport && (
+        <CsvImport
+          onImported={(count) => { if (count > 0) loadLeads(1) }}
+          onClose={() => setShowCsvImport(false)}
+        />
+      )}
+
+      {/* CSV free-tier banner */}
+      {csvBanner && (
+        <div className="flex items-center gap-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-sm">
+          <FileText className="h-4 w-4 text-amber-400 shrink-0" />
+          <span className="text-amber-300 flex-1">
+            <span className="font-semibold">{csvBanner.exported} leads exportés</span> sur {csvBanner.total} — passez en Pro pour tout exporter.
+          </span>
+          <a href="/upgrade" className="text-xs font-semibold text-amber-400 hover:text-amber-300 underline underline-offset-2">
+            Passer Pro
+          </a>
+          <button onClick={() => setCsvBanner(null)} className="text-amber-500 hover:text-amber-300">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
       {/* Filters */}
       <Card className="p-4">
         <LeadsFilters filters={filters} onChange={setFilters} onReset={() => setFilters({})} />
@@ -314,6 +350,20 @@ function LeadsContent() {
         </p>
 
         <div className="flex items-center gap-2">
+          {/* Follow-up filter */}
+          <button
+            onClick={() => setFilters((f) => ({ ...f, needs_followup: f.needs_followup ? undefined : true }))}
+            className={`flex items-center gap-1.5 text-sm font-medium rounded-lg px-3 py-1.5 border transition-colors ${
+              filters.needs_followup
+                ? 'bg-orange-500/20 border-orange-500/30 text-orange-400'
+                : 'border-white/[0.08] text-zinc-500 hover:text-amber-400'
+            }`}
+            title="Leads contactés il y a plus de 7 jours — à relancer"
+          >
+            <Bell className="h-4 w-4" />
+            À relancer
+          </button>
+
           {/* Bulk contact */}
           {isPro ? (
             <Button
@@ -336,6 +386,31 @@ function LeadsContent() {
               <span className="bg-amber-500/20 text-amber-400 text-[9px] font-bold px-1 py-0.5 rounded-full leading-none">Pro</span>
             </button>
           )}
+
+          {/* CSV import */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowCsvImport(true)}
+            className="flex items-center gap-2"
+            title="Importer des leads depuis un fichier CSV"
+          >
+            <Upload className="h-4 w-4" />
+            Importer CSV
+          </Button>
+
+          {/* CSV export — gratuit (limité) */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportCSV}
+            disabled={loading || leads.length === 0}
+            className="flex items-center gap-2"
+            title={isPro ? 'Exporter en CSV' : `Exporter les ${FREE_CSV_LIMIT} premiers leads en CSV (gratuit)`}
+          >
+            <FileText className="h-4 w-4" />
+            {isPro ? `CSV (${leads.length})` : `CSV (${Math.min(leads.length, FREE_CSV_LIMIT)})`}
+          </Button>
 
           <ProGate
             isPro={canExport}

@@ -60,20 +60,53 @@ export async function POST(request: NextRequest) {
 
     console.log(`🔍 Recherche INSEE: ${commune || codePostal}, activite: ${activite || 'toutes'} [user: ${user.id}]`)
 
-    const { total, etablissements } = await searchEtablissements({
-      codePostal,
-      commune,
-      activite,
-      nombreResultats
-    })
+    // Récupérer les SIRETs déjà en DB pour cet utilisateur (déduplication)
+    const { data: existingRows } = await supabase
+      .from('companies')
+      .select('siret')
+      .eq('user_id', user.id)
+      .not('siret', 'is', null)
 
-    console.log(`📊 ${total} etablissements trouves, traitement de ${etablissements.length}`)
+    const existingSirets = new Set((existingRows ?? []).map((r: { siret: string }) => r.siret))
+
+    // Paginer INSEE jusqu'à avoir `nombreResultats` nouveaux établissements
+    const batchSize = Math.min(Math.max(nombreResultats * 2, 20), 100)
+    const freshEtablissements: Awaited<ReturnType<typeof searchEtablissements>>['etablissements'] = []
+    let debut = 0
+    let totalAvailable = Infinity
+
+    while (freshEtablissements.length < nombreResultats && debut < totalAvailable) {
+      const { total, etablissements } = await searchEtablissements({
+        codePostal,
+        commune,
+        activite,
+        nombreResultats: batchSize,
+        debut,
+      })
+
+      totalAvailable = total
+      console.log(`📊 Batch @${debut}: ${etablissements.length}/${total} — déjà en DB: ${existingSirets.size}`)
+
+      for (const etab of etablissements) {
+        if (!existingSirets.has(etab.siret)) {
+          freshEtablissements.push(etab)
+          existingSirets.add(etab.siret) // éviter doublons dans ce scan
+          if (freshEtablissements.length >= nombreResultats) break
+        }
+      }
+
+      if (etablissements.length < batchSize) break // plus de résultats disponibles
+      debut += batchSize
+    }
+
+    const toProcess = freshEtablissements.slice(0, nombreResultats)
+    console.log(`✅ ${toProcess.length} nouveaux établissements à traiter`)
 
     const companies = []
     let withoutSite = 0
     let needingRefonte = 0
 
-    for (const etab of etablissements) {
+    for (const etab of toProcess) {
       const company = etablissementToCompany(etab)
 
       const website = await findWebsiteForCompany(company.name, company.city)
@@ -112,6 +145,7 @@ export async function POST(request: NextRequest) {
             address: company.address,
             city: company.city,
             postal_code: company.postal_code,
+            siret: company.siret,
             sector: company.sector,
             source: company.source,
             website: company.website,
@@ -145,7 +179,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        total_found: total,
+        total_found: totalAvailable,
         processed: companies.length,
         without_site: withoutSite,
         needing_refonte: needingRefonte,

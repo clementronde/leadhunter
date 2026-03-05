@@ -213,6 +213,7 @@ export interface LeadFilters {
   has_website?: boolean
   min_score?: number
   max_score?: number
+  needs_followup?: boolean
 }
 
 // ============================================

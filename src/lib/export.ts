@@ -45,6 +45,46 @@ function buildRows(leads: Company[]) {
   }))
 }
 
+export const FREE_CSV_LIMIT = 10
+
+/**
+ * Exporte les leads vers un fichier CSV téléchargeable
+ * Limité à FREE_CSV_LIMIT lignes pour les utilisateurs gratuits
+ */
+export function exportLeadsToCSV(
+  leads: Company[],
+  filename = 'leads-leadhunter',
+  isPro = false
+): { exported: number; total: number } {
+  const toExport = isPro ? leads : leads.slice(0, FREE_CSV_LIMIT)
+  const rows = buildRows(toExport)
+  if (rows.length === 0) return { exported: 0, total: leads.length }
+
+  const headers = Object.keys(rows[0])
+  const csvLines = [
+    headers.join(';'),
+    ...rows.map((row) =>
+      headers
+        .map((h) => {
+          const val = String((row as Record<string, unknown>)[h] ?? '')
+          return val.includes(';') || val.includes('"') || val.includes('\n')
+            ? `"${val.replace(/"/g, '""')}"` : val
+        })
+        .join(';')
+    ),
+  ]
+
+  const blob = new Blob(['\uFEFF' + csvLines.join('\n')], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${filename}-${new Date().toISOString().split('T')[0]}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+
+  return { exported: toExport.length, total: leads.length }
+}
+
 /**
  * Exporte les leads vers un fichier XLSX téléchargeable
  * Utilise un import dynamique pour éviter les problèmes SSR

@@ -184,6 +184,13 @@ function DashboardPage() {
   )
 }
 
+const QUICK_SCANS = [
+  { query: 'Restaurants', location: 'Paris', emoji: '🍽️' },
+  { query: 'Coiffeurs', location: 'Lyon', emoji: '✂️' },
+  { query: 'Plombiers', location: 'Bordeaux', emoji: '🔧' },
+  { query: 'Boulangeries', location: 'Marseille', emoji: '🥖' },
+]
+
 function OnboardingEmptyState() {
   return (
     <Card className="max-w-2xl mx-auto p-8 border-amber-500/20 bg-amber-500/[0.04]">
@@ -210,13 +217,34 @@ function OnboardingEmptyState() {
         ))}
       </div>
 
+      {/* Quick-start scan examples */}
+      <div className="mb-6">
+        <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-3 text-center">Démarrer rapidement</p>
+        <div className="grid grid-cols-2 gap-2">
+          {QUICK_SCANS.map(({ query, location, emoji }) => (
+            <a
+              key={query}
+              href={`/scanner?query=${encodeURIComponent(query)}&location=${encodeURIComponent(location)}`}
+              className="flex items-center gap-2.5 p-3 rounded-xl bg-zinc-800/40 border border-white/[0.06] hover:border-amber-500/30 hover:bg-zinc-700/40 transition-all group"
+            >
+              <span className="text-xl">{emoji}</span>
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-zinc-200 group-hover:text-white">{query}</p>
+                <p className="text-xs text-zinc-500">{location}</p>
+              </div>
+              <ArrowRight className="h-3.5 w-3.5 text-zinc-600 group-hover:text-amber-500 ml-auto shrink-0 transition-colors" />
+            </a>
+          ))}
+        </div>
+      </div>
+
       <div className="text-center">
         <a
           href="/scanner"
           className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold hover:opacity-90 transition-opacity"
         >
           <Radar className="h-4 w-4" />
-          Lancer mon premier scan
+          Scanner ma propre zone
           <ArrowRight className="h-4 w-4" />
         </a>
       </div>

@@ -21,7 +21,10 @@ import {
   Zap,
   Loader2,
   AlertTriangle,
+  Mail,
+  RotateCcw,
 } from 'lucide-react'
+import { loadTemplates, saveTemplates, DEFAULT_TEMPLATES, CustomTemplate, TemplateId } from '@/lib/email-templates'
 
 interface ApiKeyStatus {
   configured: boolean
@@ -46,6 +49,9 @@ export default function SettingsPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [templates, setTemplates] = useState<Record<TemplateId, CustomTemplate>>(() => loadTemplates())
+  const [templatesSaved, setTemplatesSaved] = useState(false)
+  const [editingTemplate, setEditingTemplate] = useState<TemplateId>('sans-site')
 
   // Check if Supabase env vars are present (NEXT_PUBLIC_ are available client-side)
   const supabaseConfigured =
@@ -283,6 +289,104 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
         )}
+
+        {/* Email Templates */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5" />
+              Templates email
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-zinc-500">
+              Personnalisez vos modèles d'email. Utilisez <code className="bg-zinc-800 px-1 rounded text-xs text-amber-400">{'{name}'}</code> pour le nom de l'établissement et <code className="bg-zinc-800 px-1 rounded text-xs text-amber-400">{'{website}'}</code> pour l'URL du site.
+            </p>
+
+            {/* Template selector tabs */}
+            <div className="flex gap-2 flex-wrap">
+              {(Object.entries(templates) as [TemplateId, CustomTemplate][]).map(([id, t]) => (
+                <button
+                  key={id}
+                  onClick={() => setEditingTemplate(id)}
+                  className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors border ${
+                    editingTemplate === id
+                      ? 'bg-amber-500 text-white border-amber-500'
+                      : 'bg-zinc-800/60 text-zinc-400 border-white/[0.08] hover:text-zinc-200'
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Template editor */}
+            <div className="space-y-3 p-4 bg-zinc-800/40 border border-white/[0.06] rounded-xl">
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-zinc-500">Libellé du template</label>
+                <input
+                  type="text"
+                  value={templates[editingTemplate].label}
+                  onChange={(e) => {
+                    const updated = { ...templates, [editingTemplate]: { ...templates[editingTemplate], label: e.target.value } }
+                    setTemplates(updated)
+                    setTemplatesSaved(false)
+                  }}
+                  className="w-full px-3 py-2 text-sm text-zinc-200 bg-zinc-900/60 border border-white/[0.08] rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-zinc-500">Objet de l'email</label>
+                <input
+                  type="text"
+                  value={templates[editingTemplate].subject}
+                  onChange={(e) => {
+                    const updated = { ...templates, [editingTemplate]: { ...templates[editingTemplate], subject: e.target.value } }
+                    setTemplates(updated)
+                    setTemplatesSaved(false)
+                  }}
+                  className="w-full px-3 py-2 text-sm text-zinc-200 bg-zinc-900/60 border border-white/[0.08] rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-zinc-500">Corps du message</label>
+                <textarea
+                  value={templates[editingTemplate].body}
+                  onChange={(e) => {
+                    const updated = { ...templates, [editingTemplate]: { ...templates[editingTemplate], body: e.target.value } }
+                    setTemplates(updated)
+                    setTemplatesSaved(false)
+                  }}
+                  rows={8}
+                  className="w-full px-3 py-2 text-sm text-zinc-200 bg-zinc-900/60 border border-white/[0.08] rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none font-mono leading-relaxed"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <Button
+                onClick={() => {
+                  saveTemplates(templates)
+                  setTemplatesSaved(true)
+                  setTimeout(() => setTemplatesSaved(false), 2000)
+                }}
+              >
+                {templatesSaved ? <CheckCircle className="h-4 w-4 text-emerald-400" /> : null}
+                {templatesSaved ? 'Sauvegardé !' : 'Sauvegarder les templates'}
+              </Button>
+              <button
+                onClick={() => {
+                  setTemplates(DEFAULT_TEMPLATES)
+                  setTemplatesSaved(false)
+                }}
+                className="flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
+              >
+                <RotateCcw className="h-4 w-4" />
+                Réinitialiser
+              </button>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Notifications */}
         <Card>

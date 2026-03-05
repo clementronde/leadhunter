@@ -43,6 +43,10 @@ export const leadsApi = {
     if (filters?.has_website !== undefined) {
       query = query.eq('has_website', filters.has_website)
     }
+    if (filters?.needs_followup) {
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+      query = query.eq('status', 'contacted').lt('last_contacted_at', sevenDaysAgo)
+    }
 
     const from = (page - 1) * perPage
     const to = from + perPage - 1
@@ -135,6 +139,18 @@ export const leadsApi = {
 
     if (error) throw error
     return data
+  },
+
+  async getAuditHistory(companyId: string): Promise<import('@/types').WebsiteAudit[]> {
+    const { data, error } = await supabase
+      .from('website_audits')
+      .select('*')
+      .eq('company_id', companyId)
+      .order('audited_at', { ascending: false })
+      .limit(10)
+
+    if (error) throw error
+    return data ?? []
   }
 }
 

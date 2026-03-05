@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Mail, CheckCircle } from 'lucide-react'
 import { Company, LeadStatus, CreateNoteInput } from '@/types'
+import { loadTemplates, applyTemplate, TemplateId } from '@/lib/email-templates'
 
 interface OutreachPanelProps {
   lead: Company
@@ -11,77 +12,16 @@ interface OutreachPanelProps {
   compact?: boolean
 }
 
-interface EmailTemplate {
-  id: string
-  label: string
-  subject: (name: string) => string
-  body: (name: string, website?: string | null) => string
-}
-
-const TEMPLATES: EmailTemplate[] = [
-  {
-    id: 'sans-site',
-    label: 'Sans site web',
-    subject: (name) => `Création de site web pour ${name}`,
-    body: (name) =>
-      `Bonjour,
-
-Je me permets de vous contacter au sujet de ${name}.
-
-J'ai remarqué que votre établissement n'a pas encore de site internet. Aujourd'hui, une présence en ligne est indispensable pour attirer de nouveaux clients et renforcer votre crédibilité.
-
-Je serais ravi(e) de vous proposer une solution clé en main, adaptée à votre activité et à votre budget.
-
-Seriez-vous disponible pour un échange rapide cette semaine ?
-
-Cordialement`,
-  },
-  {
-    id: 'refonte',
-    label: 'Refonte de site',
-    subject: (name) => `Modernisation de votre site web — ${name}`,
-    body: (name, website) =>
-      `Bonjour,
-
-Je me permets de vous contacter au sujet de votre site internet${website ? ` (${website.replace(/^https?:\/\//, '')})` : ''}.
-
-Après analyse, j'ai identifié plusieurs points d'amélioration qui pourraient significativement augmenter votre visibilité et votre taux de conversion : performances, compatibilité mobile, et SEO.
-
-Je serais heureux(se) de vous présenter nos solutions de refonte, adaptées aux dernières attentes des moteurs de recherche.
-
-Êtes-vous disponible pour un appel de 15 minutes cette semaine ?
-
-Cordialement`,
-  },
-  {
-    id: 'generique',
-    label: 'Contact général',
-    subject: (name) => `Proposition de collaboration — ${name}`,
-    body: (name) =>
-      `Bonjour,
-
-Je me permets de vous contacter concernant ${name}.
-
-Dans le cadre de mon activité de création et refonte de sites web, je travaille avec de nombreuses entreprises locales pour améliorer leur présence digitale.
-
-Je serais ravi(e) d'échanger avec vous sur vos besoins et de voir comment je pourrais vous accompagner.
-
-N'hésitez pas à me répondre ou à me rappeler.
-
-Cordialement`,
-  },
-]
-
 export function OutreachPanel({ lead, onStatusChange, onNoteAdded, compact }: OutreachPanelProps) {
-  const defaultTemplate = lead.has_website ? 'refonte' : 'sans-site'
-  const [selectedTemplate, setSelectedTemplate] = useState(defaultTemplate)
+  const defaultTemplate: TemplateId = lead.has_website ? 'refonte' : 'sans-site'
+  const [selectedTemplate, setSelectedTemplate] = useState<TemplateId>(defaultTemplate)
   const [noteText, setNoteText] = useState('')
   const [markingContacted, setMarkingContacted] = useState(false)
   const [contacted, setContacted] = useState(false)
 
-  const template = TEMPLATES.find((t) => t.id === selectedTemplate) ?? TEMPLATES[0]
-  const subject = template.subject(lead.name)
-  const body = template.body(lead.name, lead.website)
+  const templates = loadTemplates()
+  const template = templates[selectedTemplate]
+  const { subject, body } = applyTemplate(template, lead.name, lead.website)
 
   const mailtoHref = `mailto:${lead.email || ''}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
 
@@ -104,12 +44,12 @@ export function OutreachPanel({ lead, onStatusChange, onNoteAdded, compact }: Ou
       <div>
         {!compact && <p className="text-sm font-medium text-zinc-400 mb-2">Modèle d'email</p>}
         <div className="flex gap-2 flex-wrap">
-          {TEMPLATES.map((t) => (
+          {(Object.entries(templates) as [TemplateId, typeof template][]).map(([id, t]) => (
             <button
-              key={t.id}
-              onClick={() => setSelectedTemplate(t.id)}
+              key={id}
+              onClick={() => setSelectedTemplate(id)}
               className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors border ${
-                selectedTemplate === t.id
+                selectedTemplate === id
                   ? 'bg-amber-500 text-white border-amber-500'
                   : 'bg-zinc-800/60 text-zinc-400 border-white/[0.08] hover:border-amber-500/40 hover:text-zinc-200'
               }`}

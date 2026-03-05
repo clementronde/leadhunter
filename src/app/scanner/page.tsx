@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, useRef, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Header } from '@/components/layout'
 import {
   Card,
@@ -82,8 +82,9 @@ interface HealthStatus {
   }
 }
 
-export default function ScannerPage() {
+function ScannerContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { isPro, scanCountThisMonth, canScan, canAudit } = usePlan()
   const [upgradeModal, setUpgradeModal] = useState<'scan_limit' | 'export' | 'audit' | null>(null)
   const [activeSource, setActiveSource] = useState<ScanSource>('google_maps')
@@ -112,8 +113,8 @@ export default function ScannerPage() {
     scannerApi.getAll().then(setScans).catch(console.error)
   }, [])
 
-  // Champs communs
-  const [location, setLocation] = useState('')
+  // Champs communs (pré-remplis depuis URL params si présents)
+  const [location, setLocation] = useState(() => searchParams.get('location') || '')
 
   // Champs INSEE
   const [codePostal, setCodePostal] = useState('')
@@ -121,7 +122,7 @@ export default function ScannerPage() {
   const [nombreResultats, setNombreResultats] = useState('50')
 
   // Champs Google Maps
-  const [gmQuery, setGmQuery] = useState('')
+  const [gmQuery, setGmQuery] = useState(() => searchParams.get('query') || '')
   const [gmMaxResults, setGmMaxResults] = useState('20')
   const [gmAuditWebsites, setGmAuditWebsites] = useState(false)
   const [showSuggestions, setShowSuggestions] = useState(false)
@@ -981,5 +982,17 @@ export default function ScannerPage() {
         </Card>
       </div>
     </div>
+  )
+}
+
+export default function ScannerPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen bg-[#09090b]">
+        <div className="h-8 w-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <ScannerContent />
+    </Suspense>
   )
 }

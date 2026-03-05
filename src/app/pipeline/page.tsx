@@ -21,6 +21,8 @@ import {
   Phone,
   Mail,
   ExternalLink,
+  Clock,
+  TrendingUp,
 } from 'lucide-react'
 
 const PIPELINE_STAGES: LeadStatus[] = ['new', 'contacted', 'meeting', 'proposal', 'won', 'lost']
@@ -38,6 +40,7 @@ export default function PipelinePage() {
   const [leads, setLeads] = useState<Company[]>([])
   const [loading, setLoading] = useState(true)
   const [draggingId, setDraggingId] = useState<string | null>(null)
+  const [dragOverStatus, setDragOverStatus] = useState<LeadStatus | null>(null)
 
   useEffect(() => {
     async function loadLeads() {
@@ -64,7 +67,12 @@ export default function PipelinePage() {
 
   const handleDragEnd = () => setDraggingId(null)
 
-  const handleDragOver = (e: React.DragEvent) => e.preventDefault()
+  const handleDragOver = (e: React.DragEvent, status: LeadStatus) => {
+    e.preventDefault()
+    setDragOverStatus(status)
+  }
+
+  const handleDragLeave = () => setDragOverStatus(null)
 
   const handleDrop = async (e: React.DragEvent, newStatus: LeadStatus) => {
     e.preventDefault()
@@ -73,6 +81,7 @@ export default function PipelinePage() {
     setLeads(prev => prev.map(lead =>
       lead.id === leadId ? { ...lead, status: newStatus } : lead
     ))
+    setDragOverStatus(null)
     try {
       await leadsApi.updateStatus(leadId, newStatus)
     } catch {
@@ -80,6 +89,24 @@ export default function PipelinePage() {
       setLeads(response.data)
     }
     setDraggingId(null)
+  }
+
+  const getColumnStats = (stageLeads: Company[]) => {
+    const hotCount = stageLeads.filter(l => l.priority === 'hot').length
+    const avgScore = stageLeads.length > 0
+      ? Math.round(stageLeads.reduce((s, l) => s + (l.prospect_score ?? 0), 0) / stageLeads.length)
+      : null
+    return { hotCount, avgScore }
+  }
+
+  const formatLastContact = (date: string | null) => {
+    if (!date) return null
+    const diff = Math.floor((Date.now() - new Date(date).getTime()) / 86400000)
+    if (diff === 0) return "Aujourd'hui"
+    if (diff === 1) return 'Hier'
+    if (diff < 7) return `Il y a ${diff}j`
+    if (diff < 30) return `Il y a ${Math.floor(diff / 7)}sem`
+    return `Il y a ${Math.floor(diff / 30)}mois`
   }
 
   if (loading) {
@@ -114,17 +141,20 @@ export default function PipelinePage() {
         <div className="flex gap-4 overflow-x-auto pb-4">
           {PIPELINE_STAGES.map((status) => {
             const stageLeads = getLeadsByStatus(status)
+            const { hotCount, avgScore } = getColumnStats(stageLeads)
+            const isDropTarget = dragOverStatus === status && draggingId !== null
 
             return (
               <div
                 key={status}
                 className="flex-shrink-0 w-72"
-                onDragOver={handleDragOver}
+                onDragOver={(e) => handleDragOver(e, status)}
+                onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, status)}
               >
                 {/* Column header */}
                 <div className={`rounded-t-xl border border-b-0 border-white/[0.08] bg-zinc-900/60 p-3 ${stageAccents[status]} border-t-2`}>
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-2">
                       <h3 className="font-semibold text-white text-sm">
                         {statusLabels[status]}
@@ -141,11 +171,24 @@ export default function PipelinePage() {
                       <ExternalLink className="h-3.5 w-3.5" />
                     </Link>
                   </div>
+                  {stageLeads.length > 0 && (
+                    <div className="flex items-center gap-3 text-[10px] text-zinc-500">
+                      {avgScore !== null && (
+                        <span className="flex items-center gap-1">
+                          <TrendingUp className="h-2.5 w-2.5" />
+                          Moy. {avgScore}
+                        </span>
+                      )}
+                      {hotCount > 0 && (
+                        <span>🔥 {hotCount} chaud{hotCount > 1 ? 's' : ''}</span>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Column content */}
-                <div className={`rounded-b-xl border border-t-0 border-white/[0.08] bg-zinc-900/30 p-2 min-h-[500px] ${
-                  draggingId ? 'ring-1 ring-amber-500/20 ring-inset' : ''
+                <div className={`rounded-b-xl border border-t-0 border-white/[0.08] bg-zinc-900/30 p-2 min-h-[500px] transition-colors ${
+                  isDropTarget ? 'bg-amber-500/5 border-amber-500/30' : ''
                 }`}>
                   <div className="space-y-2">
                     {stageLeads.map((lead) => (
@@ -171,6 +214,25 @@ export default function PipelinePage() {
                           {lead.city}
                           {lead.sector && ` · ${sectorLabels[lead.sector]?.split(' ')[0]}`}
                         </p>
+
+                        {/* Audit score bar */}
+                        {lead.audit?.overall_score !== undefined && lead.audit.overall_score !== null && (
+                          <div className="mb-2">
+                            <div className="flex items-center justify-between text-[10px] text-zinc-500 mb-0.5">
+                              <span>Potentiel audit</span>
+                              <span className={getScoreColor(lead.audit.overall_score)}>{lead.audit.overall_score}/100</span>
+                            </div>
+                            <div className="h-1 rounded-full bg-zinc-800 overflow-hidden">
+                              <div
+                                className={`h-full rounded-full transition-all ${
+                                  lead.audit.overall_score >= 70 ? 'bg-emerald-500' :
+                                  lead.audit.overall_score >= 50 ? 'bg-amber-500' : 'bg-red-500'
+                                }`}
+                                style={{ width: `${lead.audit.overall_score}%` }}
+                              />
+                            </div>
+                          </div>
+                        )}
 
                         <div className="flex items-center justify-between pt-2 border-t border-white/[0.05]">
                           <div className="flex items-center gap-2">
@@ -205,6 +267,14 @@ export default function PipelinePage() {
                             </span>
                           </div>
                         </div>
+
+                        {/* Last contact */}
+                        {lead.last_contacted_at && (
+                          <div className="flex items-center gap-1 mt-1.5 text-[10px] text-zinc-600">
+                            <Clock className="h-2.5 w-2.5" />
+                            {formatLastContact(lead.last_contacted_at)}
+                          </div>
+                        )}
                       </div>
                     ))}
 

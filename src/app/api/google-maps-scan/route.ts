@@ -78,12 +78,23 @@ export async function POST(request: NextRequest) {
 
     console.log(`🗺️ Scan Google Maps: "${query}" à "${location}" (max ${maxResults}) [user: ${user.id}]`)
 
-    // 1. Text Search — collecte tous les place_ids (peu coûteux)
-    const rawPlaces: PlaceSearchResult[] = []
-    let pageToken: string | undefined = undefined
-    let fetchedCount = 0
+    // 1. Charger tous les place_ids déjà connus pour cet utilisateur
+    const { data: existingRows } = await supabase
+      .from('companies')
+      .select('google_place_id')
+      .eq('user_id', user.id)
+      .not('google_place_id', 'is', null)
 
-    while (fetchedCount < maxResults) {
+    const knownPlaceIds = new Set(
+      existingRows?.map((r) => r.google_place_id).filter(Boolean) ?? []
+    )
+
+    // 2. Text Search — paginer jusqu'à avoir maxResults NOUVELLES fiches
+    const newPlaces: PlaceSearchResult[] = []
+    let pageToken: string | undefined = undefined
+    let skippedCount = 0
+
+    while (newPlaces.length < maxResults) {
       const { places: pagePlaces, nextPageToken } = await searchGooglePlaces({
         query: query.trim(),
         location: location.trim(),
@@ -92,34 +103,22 @@ export async function POST(request: NextRequest) {
 
       if (pagePlaces.length === 0) break
 
-      const toAdd = pagePlaces
-        .slice(0, maxResults - fetchedCount)
-        .filter((p) => p.business_status !== 'CLOSED_PERMANENTLY')
+      for (const place of pagePlaces) {
+        if (place.business_status === 'CLOSED_PERMANENTLY') continue
+        if (knownPlaceIds.has(place.place_id)) {
+          skippedCount++
+          continue
+        }
+        knownPlaceIds.add(place.place_id) // éviter doublons dans ce scan
+        newPlaces.push(place)
+        if (newPlaces.length >= maxResults) break
+      }
 
-      rawPlaces.push(...toAdd)
-      fetchedCount += toAdd.length
-
-      if (!nextPageToken || fetchedCount >= maxResults) break
+      if (!nextPageToken || newPlaces.length >= maxResults) break
 
       await new Promise((resolve) => setTimeout(resolve, 2000))
       pageToken = nextPageToken
     }
-
-    console.log(`📍 ${rawPlaces.length} lieux trouvés`)
-
-    // 2. Filtrer les fiches déjà connues en base
-    const allPlaceIds = rawPlaces.map((p) => p.place_id)
-    const { data: existingRows } = await supabase
-      .from('companies')
-      .select('google_place_id')
-      .eq('user_id', user.id)
-      .in('google_place_id', allPlaceIds)
-
-    const knownPlaceIds = new Set(
-      existingRows?.map((r) => r.google_place_id).filter(Boolean) ?? []
-    )
-    const newPlaces = rawPlaces.filter((p) => !knownPlaceIds.has(p.place_id))
-    const skippedCount = rawPlaces.length - newPlaces.length
 
     console.log(`📊 ${newPlaces.length} nouvelles fiches, ${skippedCount} déjà en base`)
 
@@ -217,7 +216,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        total_found: rawPlaces.length,
+        total_found: newPlaces.length + skippedCount,
         processed: enrichedPlaces.length,
         skipped: skippedCount,
         without_site: withoutWebsite,

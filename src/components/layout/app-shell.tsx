@@ -1,9 +1,11 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { useAuth } from '@/components/auth/auth-provider'
 import { usePathname } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { Sidebar } from './sidebar'
+import { CommandPalette } from '@/components/ui/command-palette'
 import { useUIStore } from '@/lib/store'
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -11,8 +13,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const sidebarOpen = useUIStore((s) => s.sidebarOpen)
   const isLoginPage = pathname === '/login'
+  const [cmdOpen, setCmdOpen] = useState(false)
 
   const showSidebar = !!user && !isLoginPage
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        if (showSidebar) setCmdOpen((o) => !o)
+      }
+    }
+    const openHandler = () => { if (showSidebar) setCmdOpen(true) }
+    window.addEventListener('keydown', handler)
+    window.addEventListener('open-cmd', openHandler)
+    return () => {
+      window.removeEventListener('keydown', handler)
+      window.removeEventListener('open-cmd', openHandler)
+    }
+  }, [showSidebar])
 
   if (loading) {
     return (
@@ -40,6 +59,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <>
       <Sidebar />
+      <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} />
       <main className={`${sidebarOpen ? 'ml-64' : 'ml-20'} min-h-screen transition-all duration-300`}>
         <motion.div
           key={pathname}

@@ -24,7 +24,17 @@ import {
   ExternalLink,
   Mail,
   X,
+  Bell,
 } from 'lucide-react'
+
+const FOLLOWUP_DAYS = 7
+
+function needsFollowUp(lead: Company): boolean {
+  if (lead.status !== 'contacted') return false
+  if (!lead.last_contacted_at) return true
+  const diff = Date.now() - new Date(lead.last_contacted_at).getTime()
+  return diff > FOLLOWUP_DAYS * 24 * 60 * 60 * 1000
+}
 
 interface LeadsTableProps {
   leads: Company[]
@@ -112,12 +122,23 @@ export function LeadsTable({ leads, onStatusChange, sortBy, onSort }: LeadsTable
                     )}
                   </div>
                   <div className="min-w-0">
-                    <Link
-                      href={`/leads/${lead.id}`}
-                      className="font-medium text-zinc-200 hover:text-amber-400 transition-colors block truncate"
-                    >
-                      {lead.name}
-                    </Link>
+                    <div className="flex items-center gap-1.5">
+                      <Link
+                        href={`/leads/${lead.id}`}
+                        className="font-medium text-zinc-200 hover:text-amber-400 transition-colors truncate"
+                      >
+                        {lead.name}
+                      </Link>
+                      {needsFollowUp(lead) && (
+                        <span
+                          title="À relancer — contacté il y a plus de 7 jours"
+                          className="shrink-0 flex items-center gap-0.5 text-[10px] font-semibold text-orange-400 bg-orange-500/15 rounded-full px-1.5 py-0.5"
+                        >
+                          <Bell className="h-2.5 w-2.5" />
+                          Relancer
+                        </span>
+                      )}
+                    </div>
                     {lead.google_maps_url && (
                       <a
                         href={lead.google_maps_url}
