@@ -14,6 +14,9 @@
 
 html {
   scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 body {
@@ -22,27 +25,63 @@ body {
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
 
-/* Custom scrollbar */
+/* Custom scrollbar — ultra fine */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 4px;
+  height: 4px;
 }
-
 ::-webkit-scrollbar-track {
   background: transparent;
 }
-
 ::-webkit-scrollbar-thumb {
-  background: #3f3f46;
+  background: #27272a;
   border-radius: 9999px;
 }
-
 ::-webkit-scrollbar-thumb:hover {
-  background: #52525b;
+  background: #3f3f46;
 }
 
-/* Focus ring */
+/* Selection */
+::selection {
+  background: rgba(245, 158, 11, 0.18);
+  color: #fef3c7;
+}
+
+/* Focus ring — amber */
 *:focus-visible {
-  outline: 2px solid #f59e0b;
+  outline: 2px solid rgba(245, 158, 11, 0.7);
   outline-offset: 2px;
+}
+
+/* Ambient glow utilities */
+.glow-amber {
+  box-shadow: 0 0 24px rgba(251, 146, 60, 0.15), 0 0 48px rgba(251, 146, 60, 0.06);
+}
+.glow-amber-sm {
+  box-shadow: 0 0 12px rgba(251, 146, 60, 0.2);
+}
+
+/* Page transition */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up {
+  animation: fade-up 0.2s ease-out both;
+}
+
+/* Shimmer for loading states */
+@keyframes shimmer {
+  from { background-position: -200% center; }
+  to   { background-position: 200% center; }
+}
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    #18181b 25%,
+    #27272a 50%,
+    #18181b 75%
+  );
+  background-size: 200% auto;
+  animation: shimmer 1.8s linear infinite;
 }

@@ -1,6 +1,28 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+/**
+ * Security headers appliqués à toutes les réponses
+ */
+function applySecurityHeaders(response: NextResponse): NextResponse {
+  // Empêche le sniffing de Content-Type
+  response.headers.set('X-Content-Type-Options', 'nosniff')
+  // Protection XSS navigateurs anciens
+  response.headers.set('X-XSS-Protection', '1; mode=block')
+  // Empêche l'intégration dans une iframe (clickjacking)
+  response.headers.set('X-Frame-Options', 'DENY')
+  // Limite les infos dans le Referer header
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+  // Restreint les permissions navigateur
+  response.headers.set(
+    'Permissions-Policy',
+    'camera=(), microphone=(), geolocation=(), interest-cohort=()'
+  )
+  // Désactive le DNS prefetching
+  response.headers.set('X-DNS-Prefetch-Control', 'off')
+  return response
+}
+
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
@@ -25,26 +47,27 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  const isLoginPage = request.nextUrl.pathname === '/login'
-  const isRootPage = request.nextUrl.pathname === '/'
-  const isPricingPage = request.nextUrl.pathname === '/pricing'
-  const isAdminRoute = request.nextUrl.pathname.startsWith('/admin')
+  const pathname = request.nextUrl.pathname
+  const isLoginPage = pathname === '/login'
+  const isRootPage = pathname === '/'
+  const isPricingPage = pathname === '/pricing'
+  const isAdminRoute = pathname.startsWith('/admin')
 
-  // Not logged in and not on login/landing/pricing page -> redirect to login
+  // Non connecté → redirect login (sauf pages publiques)
   if (!user && !isLoginPage && !isRootPage && !isPricingPage) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
-    return NextResponse.redirect(url)
+    return applySecurityHeaders(NextResponse.redirect(url))
   }
 
-  // Logged in and on login page -> redirect to dashboard
+  // Connecté sur la page login → dashboard
   if (user && isLoginPage) {
     const url = request.nextUrl.clone()
     url.pathname = '/'
-    return NextResponse.redirect(url)
+    return applySecurityHeaders(NextResponse.redirect(url))
   }
 
-  // Admin route protection
+  // Protection des routes admin
   if (user && isAdminRoute) {
     const { data: profile } = await supabase
       .from('profiles')
@@ -55,21 +78,21 @@ export async function middleware(request: NextRequest) {
     if (profile?.role !== 'admin') {
       const url = request.nextUrl.clone()
       url.pathname = '/'
-      return NextResponse.redirect(url)
+      return applySecurityHeaders(NextResponse.redirect(url))
     }
   }
 
-  return supabaseResponse
+  return applySecurityHeaders(supabaseResponse)
 }
 
 export const config = {
   matcher: [
     /*
-     * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization)
+     * Toutes les routes sauf :
+     * - _next/static, _next/image (assets)
      * - favicon.ico
-     * - api routes (they handle their own auth)
+     * - api/ (les routes API gèrent leur propre auth)
+     * - auth/callback (OAuth callback)
      */
     '/((?!_next/static|_next/image|favicon.ico|api/|auth/callback).*)',
   ],

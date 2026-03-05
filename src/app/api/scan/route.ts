@@ -3,6 +3,17 @@ import { createServerClient } from '@supabase/ssr'
 import { searchEtablissements, etablissementToCompany } from '@/lib/insee'
 import { checkWebsiteExists, findWebsiteForCompany, analyzeWebsite, calculateProspectScoreFromAudit } from '@/lib/pagespeed'
 import { getPriorityFromScore } from '@/lib/utils'
+import { z } from 'zod'
+import { rateLimit } from '@/lib/rate-limit'
+
+const scanSchema = z.object({
+  codePostal: z.string().regex(/^\d{5}$/).optional(),
+  commune: z.string().min(1).max(100).optional(),
+  activite: z.string().max(100).optional(),
+  nombreResultats: z.number().int().min(1).max(100).optional(),
+}).refine((d) => d.codePostal || d.commune, {
+  message: 'codePostal ou commune requis',
+})
 
 export const maxDuration = 60
 
@@ -30,10 +41,18 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = createSupabaseFromRequest(request)
 
-    // Get authenticated user
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non authentifie' }, { status: 401 })
+      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+    }
+
+    // Rate limit : 5 scans/min max (protection burst)
+    const rl = rateLimit(`scan:${user.id}`, { windowMs: 60_000, max: 5 })
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: 'Trop de requêtes, réessayez dans une minute' },
+        { status: 429, headers: { 'Retry-After': String(Math.ceil((rl.reset - Date.now()) / 1000)) } }
+      )
     }
 
     const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).single()
@@ -47,16 +66,23 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Limite atteinte', code: 'SCAN_LIMIT_REACHED' }, { status: 403 })
     }
 
-    const body = await request.json()
-    const { codePostal, commune, activite, nombreResultats: requestedNombre = 50 } = body
-    const nombreResultats = isProUser ? requestedNombre : Math.min(requestedNombre, 10)
+    let body: unknown
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json({ error: 'Corps de requête invalide' }, { status: 400 })
+    }
 
-    if (!codePostal && !commune) {
+    const parsed = scanSchema.safeParse(body)
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: 'Code postal ou commune requis' },
+        { error: 'Données invalides', issues: parsed.error.flatten().fieldErrors },
         { status: 400 }
       )
     }
+
+    const { codePostal, commune, activite, nombreResultats: requestedNombre = 50 } = parsed.data
+    const nombreResultats = isProUser ? requestedNombre : Math.min(requestedNombre, 10)
 
     console.log(`🔍 Recherche INSEE: ${commune || codePostal}, activite: ${activite || 'toutes'} [user: ${user.id}]`)
 
@@ -190,16 +216,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Scan error:', error)
 
-    if (error instanceof Error && error.message.includes('INSEE credentials')) {
-      return NextResponse.json(
-        { error: 'API INSEE non configuree', details: 'Ajoutez INSEE_CLIENT_ID et INSEE_CLIENT_SECRET dans .env.local' },
-        { status: 500 }
-      )
+    console.error('Scan INSEE error:', error)
+    if (error instanceof Error && error.message.includes('INSEE')) {
+      return NextResponse.json({ error: 'API INSEE non configurée' }, { status: 500 })
     }
-
-    return NextResponse.json(
-      { error: 'Erreur lors du scan', details: error instanceof Error ? error.message : 'Unknown' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Erreur lors du scan' }, { status: 500 })
   }
 }

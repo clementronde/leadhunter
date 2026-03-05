@@ -3,29 +3,34 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { stripe } from '@/lib/stripe'
 
+// Chemins relatifs autorisés pour la redirection post-paiement
+const ALLOWED_RETURN_PATHS = ['/upgrade', '/settings', '/leads', '/']
+
 export async function POST(request: Request) {
   let returnPath = '/upgrade'
   try {
     const body = await request.json()
-    if (body?.returnPath) returnPath = body.returnPath
+    if (
+      body?.returnPath &&
+      typeof body.returnPath === 'string' &&
+      ALLOWED_RETURN_PATHS.includes(body.returnPath)
+    ) {
+      returnPath = body.returnPath
+    }
   } catch {
-    // no body or invalid JSON — use default
+    // corps absent ou JSON invalide — utiliser valeur par défaut
   }
 
-  // Derive app URL from request origin as fallback (works on Vercel without NEXT_PUBLIC_APP_URL)
   const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') ||
     new URL(request.url).origin
 
   const cookieStore = await cookies()
-
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() {
-          return cookieStore.getAll()
-        },
+        getAll() { return cookieStore.getAll() },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value, options }) =>
             cookieStore.set(name, value, options)
@@ -36,7 +41,6 @@ export async function POST(request: Request) {
   )
 
   const { data: { user } } = await supabase.auth.getUser()
-
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
@@ -44,12 +48,7 @@ export async function POST(request: Request) {
   try {
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
-      line_items: [
-        {
-          price: process.env.STRIPE_PRO_PRICE_ID!,
-          quantity: 1,
-        },
-      ],
+      line_items: [{ price: process.env.STRIPE_PRO_PRICE_ID!, quantity: 1 }],
       success_url: `${appUrl}${returnPath}?success=true`,
       cancel_url: `${appUrl}${returnPath}`,
       client_reference_id: user.id,
@@ -58,8 +57,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ url: session.url })
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Stripe error'
-    console.error('[checkout]', message)
-    return NextResponse.json({ error: message }, { status: 500 })
+    console.error('[checkout]', err instanceof Error ? err.message : err)
+    return NextResponse.json({ error: 'Erreur de paiement' }, { status: 500 })
   }
 }

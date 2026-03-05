@@ -36,7 +36,7 @@ const navigationGroups = [
   },
   {
     label: null,
-    items: [{ name: 'Parametres', href: '/settings', icon: Settings }],
+    items: [{ name: 'Paramètres', href: '/settings', icon: Settings }],
   },
 ]
 
@@ -50,18 +50,20 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        'fixed left-0 top-0 z-40 h-screen bg-zinc-950/90 backdrop-blur-xl border-r border-zinc-800/40 transition-all duration-300 ease-in-out',
-        sidebarOpen ? 'w-64' : 'w-20'
+        'fixed left-0 top-0 z-40 h-screen flex flex-col',
+        'bg-[#0a0a0c] border-r border-white/[0.06]',
+        'transition-all duration-300 ease-in-out',
+        sidebarOpen ? 'w-64' : 'w-[72px]'
       )}
     >
       {/* Logo */}
-      <div className="flex h-16 items-center justify-between px-4 border-b border-zinc-800/40">
-        <Link href="/" className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-orange-600">
-            <Target className="h-6 w-6 text-white" />
+      <div className="flex h-16 items-center justify-between px-4 border-b border-white/[0.05] shrink-0">
+        <Link href="/" className="flex items-center gap-3 min-w-0">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 shadow-lg shadow-amber-500/30">
+            <Target className="h-5 w-5 text-white" />
           </div>
           {sidebarOpen && (
-            <span className="text-xl font-bold text-white">
+            <span className="text-lg font-bold text-white truncate">
               Lead<span className="text-amber-500">Hunter</span>
             </span>
           )}
@@ -69,23 +71,27 @@ export function Sidebar() {
 
         <button
           onClick={toggleSidebar}
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:bg-white/5 hover:text-white transition-colors"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-zinc-600 hover:bg-white/[0.05] hover:text-zinc-400 transition-colors"
         >
-          {sidebarOpen ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
+          {sidebarOpen ? <ChevronLeft size={15} /> : <ChevronRight size={15} />}
         </button>
       </div>
 
       {/* Navigation */}
-      <nav className="flex flex-col gap-1 p-3 mt-4">
+      <nav className="flex-1 flex flex-col gap-0.5 p-3 pt-4 overflow-y-auto">
         {navigationGroups.map((group, gi) => (
-          <div key={gi} className={gi > 0 ? 'mt-2' : ''}>
+          <div key={gi} className={gi > 0 ? 'mt-4' : ''}>
             {group.label && sidebarOpen && (
-              <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-zinc-500">
+              <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-600">
                 {group.label}
               </p>
             )}
+            {!group.label && gi > 0 && !sidebarOpen && (
+              <div className="mx-3 mb-2 h-px bg-white/[0.05]" />
+            )}
             {group.items.map((item) => {
-              const isActive = pathname === item.href ||
+              const isActive =
+                pathname === item.href ||
                 (item.href !== '/' && pathname.startsWith(item.href))
 
               return (
@@ -93,21 +99,26 @@ export function Sidebar() {
                   key={item.name}
                   href={item.href}
                   className={cn(
-                    'relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
+                    'relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150',
                     isActive
-                      ? 'bg-amber-500/15 backdrop-blur-sm text-amber-500'
-                      : 'text-zinc-400 hover:bg-white/5 hover:text-white'
+                      ? 'bg-amber-500/[0.12] text-amber-400'
+                      : 'text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-200'
                   )}
                   title={!sidebarOpen ? item.name : undefined}
                 >
                   {isActive && (
                     <motion.div
                       layoutId="sidebar-active"
-                      className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-amber-500 rounded-full"
-                      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                      className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-amber-500 rounded-r-full"
+                      transition={{ type: 'spring', stiffness: 500, damping: 35 }}
                     />
                   )}
-                  <item.icon className={cn('h-5 w-5 flex-shrink-0', isActive && 'text-amber-500')} />
+                  <item.icon
+                    className={cn(
+                      'h-[18px] w-[18px] shrink-0',
+                      isActive ? 'text-amber-400' : 'text-zinc-600'
+                    )}
+                  />
                   {sidebarOpen && <span>{item.name}</span>}
                 </Link>
               )
@@ -117,9 +128,9 @@ export function Sidebar() {
 
         {/* Admin navigation */}
         {isAdmin && (
-          <div className="mt-2">
+          <div className="mt-4">
             {sidebarOpen && (
-              <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-zinc-500">
+              <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-600">
                 Admin
               </p>
             )}
@@ -129,21 +140,26 @@ export function Sidebar() {
                 <Link
                   href="/admin"
                   className={cn(
-                    'relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
+                    'relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150',
                     isActive
-                      ? 'bg-violet-500/15 backdrop-blur-sm text-violet-400'
-                      : 'text-zinc-400 hover:bg-white/5 hover:text-white'
+                      ? 'bg-violet-500/[0.12] text-violet-400'
+                      : 'text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-200'
                   )}
                   title={!sidebarOpen ? 'Administration' : undefined}
                 >
                   {isActive && (
                     <motion.div
                       layoutId="sidebar-active"
-                      className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-violet-500 rounded-full"
-                      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                      className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-violet-500 rounded-r-full"
+                      transition={{ type: 'spring', stiffness: 500, damping: 35 }}
                     />
                   )}
-                  <Shield className={cn('h-5 w-5 flex-shrink-0', isActive && 'text-violet-400')} />
+                  <Shield
+                    className={cn(
+                      'h-[18px] w-[18px] shrink-0',
+                      isActive ? 'text-violet-400' : 'text-zinc-600'
+                    )}
+                  />
                   {sidebarOpen && <span>Administration</span>}
                 </Link>
               )
@@ -152,60 +168,61 @@ export function Sidebar() {
         )}
       </nav>
 
-      {/* Footer with user info */}
-      <div className="absolute bottom-0 left-0 right-0 border-t border-zinc-800/40 p-4 space-y-3">
-        {/* Upgrade CTA for free users (not admin, sidebar open only) */}
+      {/* Footer */}
+      <div className="shrink-0 border-t border-white/[0.05] p-3 space-y-2">
+        {/* Upgrade CTA */}
         {!isPro && !isAdmin && sidebarOpen && (
           <button
             onClick={() => router.push('/upgrade')}
-            className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-semibold bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:opacity-90 transition-opacity"
+            className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-semibold bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:from-amber-400 hover:to-orange-500 shadow-lg shadow-amber-500/20 transition-all active:scale-[0.98]"
           >
             <Zap className="h-3.5 w-3.5" />
             Passer à Pro
           </button>
         )}
 
-        <div className={cn(
-          'flex items-center gap-3',
-          !sidebarOpen && 'justify-center'
-        )}>
-          {/* Avatar with plan badge */}
-          <div className="relative flex-shrink-0">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-500/20 text-amber-500 text-xs font-bold">
+        {/* User */}
+        <div
+          className={cn(
+            'flex items-center gap-3 rounded-xl p-2 hover:bg-white/[0.03] transition-colors',
+            !sidebarOpen && 'justify-center'
+          )}
+        >
+          {/* Avatar */}
+          <div className="relative shrink-0">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-amber-500/30 to-orange-600/20 text-amber-400 text-xs font-bold border border-amber-500/20">
               {user?.email?.charAt(0).toUpperCase() || '?'}
             </div>
-            {/* Plan/role badge on avatar when sidebar is closed */}
             {!sidebarOpen && (
               <span
                 className={cn(
-                  'absolute -bottom-1 -right-1 text-[9px] font-bold px-1 rounded-full border border-zinc-950',
+                  'absolute -bottom-1 -right-1 text-[8px] font-bold px-1 py-px rounded-full border border-[#0a0a0c]',
                   isAdmin
-                    ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white'
+                    ? 'bg-violet-600 text-white'
                     : isPro
                     ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white'
-                    : 'bg-zinc-700 text-zinc-300'
+                    : 'bg-zinc-700 text-zinc-400'
                 )}
               >
-                {isAdmin ? 'ADMIN' : isPro ? 'PRO' : 'FREE'}
+                {isAdmin ? 'ADM' : isPro ? 'PRO' : 'FREE'}
               </span>
             )}
           </div>
 
           {sidebarOpen && (
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <p className="text-sm font-medium text-white truncate">
-                  {user?.email || 'Utilisateur'}
+              <div className="flex items-center gap-1.5 mb-0.5">
+                <p className="text-xs font-medium text-zinc-300 truncate">
+                  {user?.email?.split('@')[0] || 'Utilisateur'}
                 </p>
-                {/* Plan/role badge next to email */}
                 <span
                   className={cn(
-                    'shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full',
+                    'shrink-0 text-[9px] font-bold px-1.5 py-px rounded-full',
                     isAdmin
-                      ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white'
+                      ? 'bg-violet-500/20 text-violet-400 border border-violet-500/20'
                       : isPro
-                      ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white'
-                      : 'bg-zinc-700 text-zinc-400'
+                      ? 'bg-amber-500/20 text-amber-400 border border-amber-500/20'
+                      : 'bg-zinc-700/60 text-zinc-500 border border-zinc-700'
                   )}
                 >
                   {isAdmin ? 'ADMIN' : isPro ? 'PRO' : 'FREE'}
@@ -213,20 +230,21 @@ export function Sidebar() {
               </div>
               <button
                 onClick={signOut}
-                className="flex items-center gap-1 text-xs text-zinc-500 hover:text-red-400 transition-colors"
+                className="flex items-center gap-1 text-[11px] text-zinc-600 hover:text-red-400 transition-colors"
               >
                 <LogOut className="h-3 w-3" />
-                Deconnexion
+                Déconnexion
               </button>
             </div>
           )}
+
           {!sidebarOpen && (
             <button
               onClick={signOut}
-              className="absolute -right-0 bottom-14 flex h-8 w-8 items-center justify-center"
-              title="Deconnexion"
+              title="Déconnexion"
+              className="absolute left-[72px] bottom-[14px] flex h-7 w-7 items-center justify-center rounded-lg text-zinc-600 hover:text-red-400 hover:bg-red-400/5 transition-colors"
             >
-              <LogOut className="h-4 w-4 text-zinc-500 hover:text-red-400 transition-colors" />
+              <LogOut className="h-3.5 w-3.5" />
             </button>
           )}
         </div>

@@ -59,6 +59,8 @@ export default function LeadDetailPage() {
   const [auditError, setAuditError] = useState<string | null>(null)
   const [generatingPdf, setGeneratingPdf] = useState(false)
   const [auditHistory, setAuditHistory] = useState<WebsiteAudit[]>([])
+  const [deleting, setDeleting] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   useEffect(() => {
     async function loadLead() {
@@ -79,6 +81,18 @@ export default function LeadDetailPage() {
       loadLead()
     }
   }, [params.id])
+
+  const handleDelete = async () => {
+    if (!lead) return
+    setDeleting(true)
+    try {
+      await leadsApi.delete(lead.id)
+      router.push('/leads')
+    } catch {
+      setDeleting(false)
+      setShowDeleteConfirm(false)
+    }
+  }
 
   const handleStatusChange = async (status: LeadStatus) => {
     if (!lead) return
@@ -228,14 +242,43 @@ export default function LeadDetailPage() {
       />
       
       <div className="p-6 space-y-6">
-        {/* Back link */}
-        <Link 
-          href="/leads" 
-          className="inline-flex items-center gap-2 text-sm text-zinc-500 hover:text-white transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Retour aux leads
-        </Link>
+        {/* Back link + delete */}
+        <div className="flex items-center justify-between">
+          <Link
+            href="/leads"
+            className="inline-flex items-center gap-1.5 text-sm text-zinc-500 hover:text-white transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Retour aux leads
+          </Link>
+
+          {!showDeleteConfirm ? (
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="flex items-center gap-1.5 text-xs text-zinc-600 hover:text-red-400 border border-white/[0.05] hover:border-red-500/20 rounded-lg px-2.5 py-1.5 transition-all"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Supprimer
+            </button>
+          ) : (
+            <div className="flex items-center gap-2 p-1.5 rounded-xl border border-red-500/20 bg-red-500/5">
+              <span className="text-xs text-red-400 px-1">Confirmer la suppression ?</span>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="text-xs font-medium text-white bg-red-600 hover:bg-red-500 rounded-lg px-3 py-1 transition-colors disabled:opacity-50"
+              >
+                {deleting ? 'Suppression...' : 'Oui, supprimer'}
+              </button>
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="text-xs text-zinc-500 hover:text-zinc-300 px-2 py-1 rounded-lg hover:bg-white/5 transition-colors"
+              >
+                Annuler
+              </button>
+            </div>
+          )}
+        </div>
         
         {/* Main info card */}
         <Card>

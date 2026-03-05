@@ -7,6 +7,14 @@ import {
   GooglePlaceEnriched,
   PlaceSearchResult,
 } from '@/lib/google-maps'
+import { z } from 'zod'
+import { rateLimit } from '@/lib/rate-limit'
+
+const scanSchema = z.object({
+  query: z.string().min(1).max(200),
+  location: z.string().min(1).max(200),
+  maxResults: z.number().int().min(1).max(60).optional(),
+})
 
 export const maxDuration = 60
 
@@ -36,7 +44,16 @@ export async function POST(request: NextRequest) {
 
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non authentifie' }, { status: 401 })
+      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+    }
+
+    // Rate limit : 5 scans/min max
+    const rl = rateLimit(`google-scan:${user.id}`, { windowMs: 60_000, max: 5 })
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: 'Trop de requêtes, réessayez dans une minute' },
+        { status: 429, headers: { 'Retry-After': String(Math.ceil((rl.reset - Date.now()) / 1000)) } }
+      )
     }
 
     const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).single()
@@ -50,28 +67,25 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Limite atteinte', code: 'SCAN_LIMIT_REACHED' }, { status: 403 })
     }
 
-    const body = await request.json()
-    const { query, location, maxResults: requestedMax = 20 } = body
+    let body: unknown
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json({ error: 'Corps de requête invalide' }, { status: 400 })
+    }
 
-    if (!query || !query.trim()) {
+    const parsed = scanSchema.safeParse(body)
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: 'Le champ "query" est requis (ex: restaurants, coiffeurs...)' },
+        { error: 'Données invalides', issues: parsed.error.flatten().fieldErrors },
         { status: 400 }
       )
     }
 
-    if (!location || !location.trim()) {
-      return NextResponse.json(
-        { error: 'Le champ "location" est requis (ex: Paris, Boulogne-Billancourt...)' },
-        { status: 400 }
-      )
-    }
+    const { query, location, maxResults: requestedMax = 20 } = parsed.data
 
     if (!process.env.GOOGLE_MAPS_API_KEY) {
-      return NextResponse.json(
-        { error: 'GOOGLE_MAPS_API_KEY non configuree', details: 'Ajoutez votre cle API Google Maps dans .env.local' },
-        { status: 500 }
-      )
+      return NextResponse.json({ error: 'Service non configuré' }, { status: 503 })
     }
 
     const maxResults = isProUser ? Math.min(requestedMax, 60) : Math.min(requestedMax, 10)
@@ -230,29 +244,14 @@ export async function POST(request: NextRequest) {
     console.error('Google Maps scan error:', error)
 
     if (error instanceof Error) {
-      if (error.message.includes('GOOGLE_MAPS_API_KEY')) {
-        return NextResponse.json(
-          { error: 'Cle API Google Maps manquante', details: error.message },
-          { status: 500 }
-        )
-      }
       if (error.message.includes('REQUEST_DENIED') || error.message.includes('invalide')) {
-        return NextResponse.json(
-          { error: 'Cle API Google Maps invalide ou non autorisee', details: 'Verifiez que votre cle API a bien acces a "Places API" dans Google Cloud Console' },
-          { status: 403 }
-        )
+        return NextResponse.json({ error: 'Clé API Google Maps invalide ou non autorisée' }, { status: 403 })
       }
       if (error.message.includes('OVER_QUERY_LIMIT')) {
-        return NextResponse.json(
-          { error: 'Quota Google Places API depasse', details: 'Verifiez votre facturation Google Cloud ou attendez la remise a zero du quota' },
-          { status: 429 }
-        )
+        return NextResponse.json({ error: 'Quota Google Places API dépassé' }, { status: 429 })
       }
     }
 
-    return NextResponse.json(
-      { error: 'Erreur lors du scan Google Maps', details: error instanceof Error ? error.message : 'Erreur inconnue' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Erreur lors du scan' }, { status: 500 })
   }
 }
