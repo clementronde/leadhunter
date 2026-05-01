@@ -1,9 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-/**
- * Security headers appliqués à toutes les réponses
- */
 function applySecurityHeaders(response: NextResponse): NextResponse {
   response.headers.set('X-Content-Type-Options', 'nosniff')
   response.headers.set('X-XSS-Protection', '1; mode=block')
@@ -14,20 +11,14 @@ function applySecurityHeaders(response: NextResponse): NextResponse {
     'camera=(), microphone=(), geolocation=(), interest-cohort=()'
   )
   response.headers.set('X-DNS-Prefetch-Control', 'off')
-  // Content-Security-Policy : limite les sources de scripts/styles/frames
   response.headers.set(
     'Content-Security-Policy',
     [
       "default-src 'self'",
-      // Scripts : self + Next.js inline scripts nécessaires
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com",
-      // Styles : self + inline (Tailwind)
       "style-src 'self' 'unsafe-inline'",
-      // Images : self + Supabase storage + data URIs
       `img-src 'self' data: blob: ${process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''}`,
-      // Connexions réseau autorisées
-      `connect-src 'self' ${process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''} https://api.stripe.com https://api.hunter.io`,
-      // Frames : Stripe checkout uniquement
+      `connect-src 'self' ${process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''} ${(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').replace('https://', 'wss://')} https://api.stripe.com https://api.hunter.io`,
       "frame-src https://js.stripe.com https://hooks.stripe.com",
       "object-src 'none'",
       "base-uri 'self'",
@@ -37,7 +28,7 @@ function applySecurityHeaders(response: NextResponse): NextResponse {
   return response
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -67,21 +58,18 @@ export async function middleware(request: NextRequest) {
   const isPricingPage = pathname === '/pricing'
   const isAdminRoute = pathname.startsWith('/admin')
 
-  // Non connecté → redirect login (sauf pages publiques)
   if (!user && !isLoginPage && !isRootPage && !isPricingPage) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return applySecurityHeaders(NextResponse.redirect(url))
   }
 
-  // Connecté sur la page login → dashboard
   if (user && isLoginPage) {
     const url = request.nextUrl.clone()
     url.pathname = '/'
     return applySecurityHeaders(NextResponse.redirect(url))
   }
 
-  // Protection des routes admin
   if (user && isAdminRoute) {
     const { data: profile } = await supabase
       .from('profiles')
@@ -101,13 +89,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Toutes les routes sauf :
-     * - _next/static, _next/image (assets)
-     * - favicon.ico
-     * - api/ (les routes API gèrent leur propre auth)
-     * - auth/callback (OAuth callback)
-     */
     '/((?!_next/static|_next/image|favicon.ico|api/|auth/callback).*)',
   ],
 }

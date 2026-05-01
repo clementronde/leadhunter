@@ -83,15 +83,15 @@ export default function SettingsPage() {
       }
 
       const headers = ['Nom', 'Ville', 'Code postal', 'Téléphone', 'Email', 'Site web', 'A un site', 'Secteur', 'Statut', 'Priorité', 'Score', 'Ajouté le']
-      const rows = data.map(c => [
+      const rows = data.map((c: Record<string, unknown>) => [
         c.name, c.city, c.postal_code, c.phone || '', c.email || '',
         c.website || '', c.has_website ? 'Oui' : 'Non',
         c.sector || '', c.status, c.priority, c.prospect_score,
-        new Date(c.created_at).toLocaleDateString('fr-FR')
+        new Date(c.created_at as string).toLocaleDateString('fr-FR')
       ])
 
       const csvContent = [headers, ...rows]
-        .map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))
+        .map(row => row.map((v: unknown) => `"${String(v).replace(/"/g, '""')}"`).join(','))
         .join('\n')
 
       const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' })

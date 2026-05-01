@@ -1,14 +1,13 @@
 import { createBrowserClient } from '@supabase/ssr'
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+// Fallback values prevent crashes during SSR/build when env vars are absent.
+// At runtime in the browser the real env vars are always present.
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://placeholder.supabase.co'
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? 'placeholder-anon-key'
 
-// Client browser pour les composants client (avec gestion auto des cookies)
 export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey)
 
-// Client server-side pour les API routes (utilise le service role ou anon key)
 export function createServerSupabaseClient() {
   return createClient(supabaseUrl, supabaseAnonKey)
 }
-
