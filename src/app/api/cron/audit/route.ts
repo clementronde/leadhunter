@@ -4,9 +4,10 @@ import { runAuditForCompany } from '@/lib/audit-runner'
 
 export const maxDuration = 180
 
-export async function POST(request: Request) {
+async function handleCron(request: Request) {
   const secret = process.env.CRON_SECRET
-  if (!secret || request.headers.get('authorization') !== `Bearer ${secret}`) {
+  const urlSecret = new URL(request.url).searchParams.get('secret')
+  if (!secret || (request.headers.get('authorization') !== `Bearer ${secret}` && urlSecret !== secret)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -67,4 +68,12 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json({ processed: results.length, results })
+}
+
+export async function POST(request: Request) {
+  return handleCron(request)
+}
+
+export async function GET(request: Request) {
+  return handleCron(request)
 }

@@ -9,7 +9,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- ============================================
 -- Table: companies (Leads)
 -- ============================================
-CREATE TABLE companies (
+CREATE TABLE IF NOT EXISTS companies (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   name VARCHAR(255) NOT NULL,
@@ -40,26 +40,44 @@ CREATE TABLE companies (
   -- CRM
   status VARCHAR(20) NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'contacted', 'meeting', 'proposal', 'won', 'lost')),
   last_contacted_at TIMESTAMPTZ,
+  do_not_contact BOOLEAN NOT NULL DEFAULT false,
+  opt_out_at TIMESTAMPTZ,
+  opt_out_reason TEXT,
 
   -- Metadata
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- ============================================
+-- Table: blocked_recipients
+-- Blacklist globale utilisateur pour eviter de recontacter un email
+-- ============================================
+CREATE TABLE IF NOT EXISTS blocked_recipients (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  email VARCHAR(255) NOT NULL,
+  reason TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(user_id, email)
+);
+
+CREATE INDEX IF NOT EXISTS idx_blocked_recipients_user_email ON blocked_recipients(user_id, email);
+
 -- Index pour les recherches frequentes
-CREATE INDEX idx_companies_user_id ON companies(user_id);
-CREATE INDEX idx_companies_city ON companies(city);
-CREATE INDEX idx_companies_postal_code ON companies(postal_code);
-CREATE INDEX idx_companies_status ON companies(status);
-CREATE INDEX idx_companies_priority ON companies(priority);
-CREATE INDEX idx_companies_has_website ON companies(has_website);
-CREATE INDEX idx_companies_prospect_score ON companies(prospect_score DESC);
-CREATE INDEX idx_companies_google_place_id ON companies(user_id, google_place_id);
+CREATE INDEX IF NOT EXISTS idx_companies_user_id ON companies(user_id);
+CREATE INDEX IF NOT EXISTS idx_companies_city ON companies(city);
+CREATE INDEX IF NOT EXISTS idx_companies_postal_code ON companies(postal_code);
+CREATE INDEX IF NOT EXISTS idx_companies_status ON companies(status);
+CREATE INDEX IF NOT EXISTS idx_companies_priority ON companies(priority);
+CREATE INDEX IF NOT EXISTS idx_companies_has_website ON companies(has_website);
+CREATE INDEX IF NOT EXISTS idx_companies_prospect_score ON companies(prospect_score DESC);
+CREATE INDEX IF NOT EXISTS idx_companies_google_place_id ON companies(user_id, google_place_id);
 
 -- ============================================
 -- Table: website_audits
 -- ============================================
-CREATE TABLE website_audits (
+CREATE TABLE IF NOT EXISTS website_audits (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
@@ -96,14 +114,14 @@ CREATE TABLE website_audits (
   UNIQUE(company_id)
 );
 
-CREATE INDEX idx_audits_user_id ON website_audits(user_id);
-CREATE INDEX idx_audits_company_id ON website_audits(company_id);
-CREATE INDEX idx_audits_overall_score ON website_audits(overall_score);
+CREATE INDEX IF NOT EXISTS idx_audits_user_id ON website_audits(user_id);
+CREATE INDEX IF NOT EXISTS idx_audits_company_id ON website_audits(company_id);
+CREATE INDEX IF NOT EXISTS idx_audits_overall_score ON website_audits(overall_score);
 
 -- ============================================
 -- Table: notes
 -- ============================================
-CREATE TABLE notes (
+CREATE TABLE IF NOT EXISTS notes (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
@@ -111,13 +129,13 @@ CREATE TABLE notes (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_notes_user_id ON notes(user_id);
-CREATE INDEX idx_notes_company_id ON notes(company_id);
+CREATE INDEX IF NOT EXISTS idx_notes_user_id ON notes(user_id);
+CREATE INDEX IF NOT EXISTS idx_notes_company_id ON notes(company_id);
 
 -- ============================================
 -- Table: search_scans
 -- ============================================
-CREATE TABLE search_scans (
+CREATE TABLE IF NOT EXISTS search_scans (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   query VARCHAR(255) NOT NULL,
@@ -141,14 +159,14 @@ CREATE TABLE search_scans (
   error_message TEXT
 );
 
-CREATE INDEX idx_scans_user_id ON search_scans(user_id);
-CREATE INDEX idx_scans_status ON search_scans(status);
+CREATE INDEX IF NOT EXISTS idx_scans_user_id ON search_scans(user_id);
+CREATE INDEX IF NOT EXISTS idx_scans_status ON search_scans(status);
 
 -- ============================================
 -- Table: outreach_settings
 -- Profil d'envoi professionnel par utilisateur
 -- ============================================
-CREATE TABLE outreach_settings (
+CREATE TABLE IF NOT EXISTS outreach_settings (
   user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   sender_name VARCHAR(120),
   sender_email VARCHAR(255),
@@ -161,13 +179,13 @@ CREATE TABLE outreach_settings (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_outreach_settings_sender_email ON outreach_settings(sender_email);
+CREATE INDEX IF NOT EXISTS idx_outreach_settings_sender_email ON outreach_settings(sender_email);
 
 -- ============================================
 -- Table: email_messages
 -- Historique, envois et programmation email
 -- ============================================
-CREATE TABLE email_messages (
+CREATE TABLE IF NOT EXISTS email_messages (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   company_id UUID REFERENCES companies(id) ON DELETE SET NULL,
@@ -187,6 +205,11 @@ CREATE TABLE email_messages (
   error_message TEXT,
   provider VARCHAR(50),
   provider_message_id TEXT,
+  provider_event TEXT,
+  opened_at TIMESTAMPTZ,
+  clicked_at TIMESTAMPTZ,
+  bounced_at TIMESTAMPTZ,
+  complained_at TIMESTAMPTZ,
 
   followup_of UUID REFERENCES email_messages(id) ON DELETE SET NULL,
   followup_delay_days INTEGER,
@@ -195,16 +218,17 @@ CREATE TABLE email_messages (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_email_messages_user_id ON email_messages(user_id);
-CREATE INDEX idx_email_messages_company_id ON email_messages(company_id);
-CREATE INDEX idx_email_messages_status ON email_messages(status);
-CREATE INDEX idx_email_messages_scheduled_at ON email_messages(scheduled_at);
+CREATE INDEX IF NOT EXISTS idx_email_messages_user_id ON email_messages(user_id);
+CREATE INDEX IF NOT EXISTS idx_email_messages_company_id ON email_messages(company_id);
+CREATE INDEX IF NOT EXISTS idx_email_messages_status ON email_messages(status);
+CREATE INDEX IF NOT EXISTS idx_email_messages_scheduled_at ON email_messages(scheduled_at);
+CREATE INDEX IF NOT EXISTS idx_email_messages_provider_message_id ON email_messages(provider_message_id);
 
 -- ============================================
 -- Table: email_campaigns
 -- Campagnes simples pour envois groupés et relances
 -- ============================================
-CREATE TABLE email_campaigns (
+CREATE TABLE IF NOT EXISTS email_campaigns (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   name VARCHAR(180) NOT NULL,
@@ -221,18 +245,25 @@ CREATE TABLE email_campaigns (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_email_campaigns_user_id ON email_campaigns(user_id);
-CREATE INDEX idx_email_campaigns_status ON email_campaigns(status);
+CREATE INDEX IF NOT EXISTS idx_email_campaigns_user_id ON email_campaigns(user_id);
+CREATE INDEX IF NOT EXISTS idx_email_campaigns_status ON email_campaigns(status);
 
-ALTER TABLE email_messages
-  ADD CONSTRAINT email_messages_campaign_id_fkey
-  FOREIGN KEY (campaign_id) REFERENCES email_campaigns(id) ON DELETE SET NULL;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'email_messages_campaign_id_fkey'
+  ) THEN
+    ALTER TABLE email_messages
+      ADD CONSTRAINT email_messages_campaign_id_fkey
+      FOREIGN KEY (campaign_id) REFERENCES email_campaigns(id) ON DELETE SET NULL;
+  END IF;
+END $$;
 
 -- ============================================
 -- Table: admin_city_scans
 -- Agregations Google Places multi-categories reservees admin
 -- ============================================
-CREATE TABLE admin_city_scans (
+CREATE TABLE IF NOT EXISTS admin_city_scans (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   city VARCHAR(160) NOT NULL,
@@ -251,14 +282,14 @@ CREATE TABLE admin_city_scans (
   completed_at TIMESTAMPTZ
 );
 
-CREATE INDEX idx_admin_city_scans_user_id ON admin_city_scans(user_id);
-CREATE INDEX idx_admin_city_scans_status ON admin_city_scans(status);
+CREATE INDEX IF NOT EXISTS idx_admin_city_scans_user_id ON admin_city_scans(user_id);
+CREATE INDEX IF NOT EXISTS idx_admin_city_scans_status ON admin_city_scans(status);
 
 -- ============================================
 -- Table: audit_jobs
 -- Queue serveur pour audits PageSpeed
 -- ============================================
-CREATE TABLE audit_jobs (
+CREATE TABLE IF NOT EXISTS audit_jobs (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
@@ -273,9 +304,9 @@ CREATE TABLE audit_jobs (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_audit_jobs_user_id ON audit_jobs(user_id);
-CREATE INDEX idx_audit_jobs_status ON audit_jobs(status);
-CREATE INDEX idx_audit_jobs_company_id ON audit_jobs(company_id);
+CREATE INDEX IF NOT EXISTS idx_audit_jobs_user_id ON audit_jobs(user_id);
+CREATE INDEX IF NOT EXISTS idx_audit_jobs_status ON audit_jobs(status);
+CREATE INDEX IF NOT EXISTS idx_audit_jobs_company_id ON audit_jobs(company_id);
 
 -- ============================================
 -- Triggers pour updated_at
@@ -288,6 +319,7 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
+DROP TRIGGER IF EXISTS update_companies_updated_at ON companies;
 CREATE TRIGGER update_companies_updated_at
   BEFORE UPDATE ON companies
   FOR EACH ROW
@@ -305,31 +337,39 @@ ALTER TABLE email_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE email_campaigns ENABLE ROW LEVEL SECURITY;
 ALTER TABLE admin_city_scans ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_jobs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE blocked_recipients ENABLE ROW LEVEL SECURITY;
 
 -- Policies : chaque utilisateur ne voit que ses propres donnees
-CREATE POLICY "Users see own companies" ON companies
-  FOR ALL USING (auth.uid() = user_id);
-
-CREATE POLICY "Users see own audits" ON website_audits
-  FOR ALL USING (auth.uid() = user_id);
-
-CREATE POLICY "Users see own notes" ON notes
-  FOR ALL USING (auth.uid() = user_id);
-
-CREATE POLICY "Users see own scans" ON search_scans
-  FOR ALL USING (auth.uid() = user_id);
-
-CREATE POLICY "Users see own outreach settings" ON outreach_settings
-  FOR ALL USING (auth.uid() = user_id);
-
-CREATE POLICY "Users see own email messages" ON email_messages
-  FOR ALL USING (auth.uid() = user_id);
-
-CREATE POLICY "Users see own email campaigns" ON email_campaigns
-  FOR ALL USING (auth.uid() = user_id);
-
-CREATE POLICY "Users see own admin city scans" ON admin_city_scans
-  FOR ALL USING (auth.uid() = user_id);
-
-CREATE POLICY "Users see own audit jobs" ON audit_jobs
-  FOR ALL USING (auth.uid() = user_id);
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'companies' AND policyname = 'Users see own companies') THEN
+    CREATE POLICY "Users see own companies" ON companies FOR ALL USING (auth.uid() = user_id);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'website_audits' AND policyname = 'Users see own audits') THEN
+    CREATE POLICY "Users see own audits" ON website_audits FOR ALL USING (auth.uid() = user_id);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'notes' AND policyname = 'Users see own notes') THEN
+    CREATE POLICY "Users see own notes" ON notes FOR ALL USING (auth.uid() = user_id);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'search_scans' AND policyname = 'Users see own scans') THEN
+    CREATE POLICY "Users see own scans" ON search_scans FOR ALL USING (auth.uid() = user_id);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'outreach_settings' AND policyname = 'Users see own outreach settings') THEN
+    CREATE POLICY "Users see own outreach settings" ON outreach_settings FOR ALL USING (auth.uid() = user_id);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'email_messages' AND policyname = 'Users see own email messages') THEN
+    CREATE POLICY "Users see own email messages" ON email_messages FOR ALL USING (auth.uid() = user_id);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'email_campaigns' AND policyname = 'Users see own email campaigns') THEN
+    CREATE POLICY "Users see own email campaigns" ON email_campaigns FOR ALL USING (auth.uid() = user_id);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'admin_city_scans' AND policyname = 'Users see own admin city scans') THEN
+    CREATE POLICY "Users see own admin city scans" ON admin_city_scans FOR ALL USING (auth.uid() = user_id);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'audit_jobs' AND policyname = 'Users see own audit jobs') THEN
+    CREATE POLICY "Users see own audit jobs" ON audit_jobs FOR ALL USING (auth.uid() = user_id);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'blocked_recipients' AND policyname = 'Users see own blocked recipients') THEN
+    CREATE POLICY "Users see own blocked recipients" ON blocked_recipients FOR ALL USING (auth.uid() = user_id);
+  END IF;
+END $$;

@@ -34,9 +34,15 @@ interface ApiKeyStatus {
 
 interface HealthData {
   keys: {
-    GOOGLE_MAPS_API_KEY: ApiKeyStatus
-    PAGESPEED_API_KEY: ApiKeyStatus
-    INSEE_API_KEY: ApiKeyStatus
+    GOOGLE_MAPS_API_KEY: ApiKeyStatus | boolean
+    PAGESPEED_API_KEY: ApiKeyStatus | boolean
+    INSEE_API_KEY: ApiKeyStatus | boolean
+    HUNTER_API_KEY?: boolean
+    RESEND_API_KEY?: boolean
+    RESEND_WEBHOOK_SECRET?: boolean
+    CRON_SECRET?: boolean
+    SUPABASE_SERVICE_ROLE_KEY?: boolean
+    STRIPE_SECRET_KEY?: boolean
   }
 }
 
@@ -317,6 +323,28 @@ export default function SettingsPage() {
                   Vérification des clés...
                 </div>
               )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Configuration assistant */}
+        {isAdmin && health && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CheckCircle className="h-5 w-5 text-emerald-400" />
+                Assistant de configuration
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-3 md:grid-cols-2">
+                <ConfigRow label="Google Places" ok={isKeyConfigured(health.keys.GOOGLE_MAPS_API_KEY)} envVar="GOOGLE_MAPS_API_KEY" />
+                <ConfigRow label="Hunter email finder" ok={!!health.keys.HUNTER_API_KEY} envVar="HUNTER_API_KEY" />
+                <ConfigRow label="Resend envoi email" ok={!!health.keys.RESEND_API_KEY} envVar="RESEND_API_KEY" />
+                <ConfigRow label="Webhook Resend" ok={!!health.keys.RESEND_WEBHOOK_SECRET} envVar="RESEND_WEBHOOK_SECRET" optional />
+                <ConfigRow label="Cron sécurisé" ok={!!health.keys.CRON_SECRET} envVar="CRON_SECRET" />
+                <ConfigRow label="Supabase service role" ok={!!health.keys.SUPABASE_SERVICE_ROLE_KEY} envVar="SUPABASE_SERVICE_ROLE_KEY" />
+              </div>
             </CardContent>
           </Card>
         )}
@@ -609,16 +637,19 @@ function ApiKeyRow({
 }: {
   name: string
   description: string
-  status: ApiKeyStatus
+  status: ApiKeyStatus | boolean
   docsUrl: string
   envVar: string
 }) {
+  const configured = isKeyConfigured(status)
+  const preview = typeof status === 'object' ? status.preview : null
+
   return (
     <div className={`flex items-center justify-between p-4 rounded-xl border ${
-      status.configured ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-zinc-800/40 border-white/[0.06]'
+      configured ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-zinc-800/40 border-white/[0.06]'
     }`}>
       <div className="flex items-center gap-3">
-        {status.configured ? (
+        {configured ? (
           <CheckCircle className="h-5 w-5 text-emerald-400 flex-shrink-0" />
         ) : (
           <XCircle className="h-5 w-5 text-zinc-600 flex-shrink-0" />
@@ -626,8 +657,8 @@ function ApiKeyRow({
         <div>
           <p className="font-medium text-zinc-200">{name}</p>
           <p className="text-sm text-zinc-500">
-            {status.configured
-              ? <span className="font-mono text-xs text-emerald-400">{status.preview}</span>
+            {configured
+              ? <span className="font-mono text-xs text-emerald-400">{preview ?? 'Configuré'}</span>
               : <span>{description} — ajoutez <code className="bg-zinc-800 px-1 rounded text-xs">{envVar}</code> dans .env.local</span>
             }
           </p>
@@ -644,6 +675,45 @@ function ApiKeyRow({
       </a>
     </div>
   )
+}
+
+function ConfigRow({
+  label,
+  ok,
+  envVar,
+  optional,
+}: {
+  label: string
+  ok: boolean
+  envVar: string
+  optional?: boolean
+}) {
+  return (
+    <div className={`flex items-center gap-3 rounded-xl border px-4 py-3 ${
+      ok
+        ? 'border-emerald-500/20 bg-emerald-500/10'
+        : optional
+        ? 'border-amber-500/20 bg-amber-500/10'
+        : 'border-red-500/20 bg-red-500/10'
+    }`}>
+      {ok ? (
+        <CheckCircle className="h-4 w-4 text-emerald-400" />
+      ) : (
+        <XCircle className={`h-4 w-4 ${optional ? 'text-amber-400' : 'text-red-400'}`} />
+      )}
+      <div>
+        <p className="text-sm font-medium text-zinc-200">{label}</p>
+        <p className="text-xs text-zinc-500">
+          {ok ? 'OK' : optional ? 'Optionnel' : 'Manquant'} · <code className="text-zinc-400">{envVar}</code>
+        </p>
+      </div>
+    </div>
+  )
+}
+
+function isKeyConfigured(status: ApiKeyStatus | boolean | undefined): boolean {
+  if (typeof status === 'boolean') return status
+  return !!status?.configured
 }
 
 function OutreachInput({

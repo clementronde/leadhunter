@@ -7,8 +7,9 @@ import { LeadsTable, LeadsFilters, LeadCard, CsvImport } from '@/components/lead
 import { Card, Button, Skeleton, UpgradeModal, ProGate } from '@/components/ui'
 import { leadsApi } from '@/lib/api'
 import { exportLeadsToXLSX, exportLeadsToCSV, FREE_CSV_LIMIT } from '@/lib/export'
-import { Company, LeadFilters, LeadStatus } from '@/types'
+import { Company, LeadFilters, LeadStatus, OutreachSettings } from '@/types'
 import { usePlan } from '@/hooks/usePlan'
+import { applyTemplate, CustomTemplate, loadTemplates, TemplateId } from '@/lib/email-templates'
 import {
   LayoutGrid,
   List,
@@ -28,6 +29,7 @@ import {
   AtSign,
   Gauge,
   Play,
+  Send,
 } from 'lucide-react'
 
 // ============================================
@@ -42,7 +44,7 @@ function BulkContactModal({ filters, onClose }: { filters: LeadFilters; onClose:
 
   useEffect(() => {
     leadsApi.getAll(filters, 1, 200).then((res) => {
-      setLeads(res.data.filter((l) => l.email))
+      setLeads(res.data.filter((l) => l.email && !l.do_not_contact))
       setLoading(false)
     })
   }, [])
@@ -195,6 +197,181 @@ function BulkContactModal({ filters, onClose }: { filters: LeadFilters; onClose:
   )
 }
 
+function CampaignModal({ filters, onClose }: { filters: LeadFilters; onClose: () => void }) {
+  const [leads, setLeads] = useState<Company[]>([])
+  const [loading, setLoading] = useState(true)
+  const [selectedTemplate, setSelectedTemplate] = useState<TemplateId>('sans-site')
+  const [scheduledAt, setScheduledAt] = useState('')
+  const [followupsEnabled, setFollowupsEnabled] = useState(true)
+  const [creating, setCreating] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [settings, setSettings] = useState<OutreachSettings | null>(null)
+  const templates = loadTemplates()
+
+  useEffect(() => {
+    Promise.all([
+      leadsApi.getAll(filters, 1, 100),
+      fetch('/api/outreach/settings').then((r) => r.json()).catch(() => ({ settings: null })),
+    ])
+      .then(([res, settingsData]) => {
+        setLeads(res.data.filter((lead) => lead.email && !lead.do_not_contact))
+        setSettings(settingsData.settings ?? null)
+      })
+      .catch(() => setError('Erreur chargement campagne'))
+      .finally(() => setLoading(false))
+  }, [filters])
+
+  const renderedMessages = leads.map((lead) => {
+    const templateId = lead.has_website ? selectedTemplate : 'sans-site'
+    const template = templates[templateId]
+    const rendered = applyTemplate(template, lead, undefined, settings)
+    return { lead, templateId, ...rendered }
+  })
+
+  const handleCreateCampaign = async () => {
+    if (renderedMessages.length === 0) return
+    setCreating(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/outreach/campaigns', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: `Campagne ${new Date().toLocaleDateString('fr-FR')}`,
+          scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : null,
+          followupDelays: followupsEnabled ? [3, 7] : [],
+          messages: renderedMessages.map((message) => ({
+            companyId: message.lead.id,
+            recipientEmail: message.lead.email,
+            subject: message.subject,
+            body: message.body,
+            templateId: message.templateId,
+          })),
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erreur création campagne')
+      onClose()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur création campagne')
+    } finally {
+      setCreating(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-zinc-900/50 backdrop-blur-sm" />
+      <div
+        className="relative flex max-h-[88vh] w-full max-w-4xl flex-col rounded-2xl border border-white/[0.08] bg-zinc-900/95 shadow-2xl shadow-black/60"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b border-white/[0.06] px-6 py-4">
+          <div className="flex items-center gap-3">
+            <Send className="h-5 w-5 text-blue-400" />
+            <div>
+              <h2 className="font-semibold text-white">Prévisualiser la campagne</h2>
+              <p className="text-sm text-zinc-500">{renderedMessages.length} destinataire{renderedMessages.length > 1 ? 's' : ''} avec email</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="rounded-lg p-1.5 text-zinc-500 hover:bg-white/5 hover:text-white">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="grid min-h-0 flex-1 gap-0 md:grid-cols-[280px_1fr]">
+          <div className="space-y-4 border-b border-white/[0.06] p-5 md:border-b-0 md:border-r">
+            <div>
+              <p className="mb-2 text-xs font-medium text-zinc-500">Template pour leads avec site</p>
+              <div className="flex flex-wrap gap-2">
+                {(Object.entries(templates) as [TemplateId, CustomTemplate][]).map(([id, template]) => (
+                  <button
+                    key={id}
+                    onClick={() => setSelectedTemplate(id)}
+                    className={`rounded-full border px-3 py-1.5 text-xs font-medium ${
+                      selectedTemplate === id
+                        ? 'border-amber-500 bg-amber-500 text-white'
+                        : 'border-white/[0.08] bg-zinc-800/60 text-zinc-400'
+                    }`}
+                  >
+                    {template.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <label className="block">
+              <span className="mb-1 block text-xs font-medium text-zinc-500">Programmer</span>
+              <input
+                type="datetime-local"
+                value={scheduledAt}
+                onChange={(e) => setScheduledAt(e.target.value)}
+                className="w-full rounded-lg border border-white/[0.08] bg-zinc-800/60 px-3 py-2 text-sm text-zinc-300 focus:outline-none focus:ring-2 focus:ring-amber-500"
+              />
+            </label>
+
+            <label className="flex items-center justify-between rounded-lg border border-white/[0.06] bg-zinc-800/40 px-3 py-2 text-xs text-zinc-400">
+              Relances J+3 et J+7
+              <input
+                type="checkbox"
+                checked={followupsEnabled}
+                onChange={(e) => setFollowupsEnabled(e.target.checked)}
+                className="h-4 w-4 accent-amber-500"
+              />
+            </label>
+
+            {error && <p className="text-sm text-red-400">{error}</p>}
+
+            <Button onClick={handleCreateCampaign} disabled={creating || loading || renderedMessages.length === 0} className="w-full">
+              {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              {creating ? 'Création...' : 'Créer la campagne'}
+            </Button>
+          </div>
+
+          <div className="min-h-0 overflow-y-auto p-5">
+            {loading ? (
+              <div className="p-10 text-center text-sm text-zinc-400">
+                <Loader2 className="mx-auto mb-2 h-5 w-5 animate-spin" />
+                Chargement des leads...
+              </div>
+            ) : renderedMessages.length === 0 ? (
+              <div className="p-10 text-center text-sm text-zinc-500">Aucun lead avec email dans les filtres actifs.</div>
+            ) : (
+              <div className="space-y-4">
+                {renderedMessages.slice(0, 10).map((message) => (
+                  <div key={message.lead.id} className="rounded-xl border border-white/[0.06] bg-zinc-800/40 p-4">
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <div>
+                        <p className="font-medium text-zinc-200">{message.lead.name}</p>
+                        <p className="text-xs text-zinc-500">{message.lead.email} · {message.lead.city}</p>
+                      </div>
+                      <span className="rounded-full bg-zinc-900 px-2 py-1 text-[10px] font-medium text-zinc-400">
+                        {templates[message.templateId].label}
+                      </span>
+                    </div>
+                    <p className="mb-2 text-xs text-zinc-400"><span className="font-medium text-zinc-300">Objet:</span> {message.subject}</p>
+                    <textarea
+                      readOnly
+                      value={message.body}
+                      rows={5}
+                      className="w-full resize-none rounded-lg border border-white/[0.06] bg-zinc-900/70 p-3 text-xs leading-relaxed text-zinc-400"
+                    />
+                  </div>
+                ))}
+                {renderedMessages.length > 10 && (
+                  <p className="text-center text-xs text-zinc-500">
+                    + {renderedMessages.length - 10} autres messages seront créés avec le même modèle.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 interface DueEmailMessage {
   id: string
   recipient_email: string
@@ -300,6 +477,7 @@ function LeadsContent() {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [showBulkContact, setShowBulkContact] = useState(false)
   const [showDueEmails, setShowDueEmails] = useState(false)
+  const [showCampaign, setShowCampaign] = useState(false)
   const [showCsvImport, setShowCsvImport] = useState(false)
   const [csvBanner, setCsvBanner] = useState<{ exported: number; total: number } | null>(null)
 
@@ -484,6 +662,8 @@ function LeadsContent() {
 
       {showDueEmails && <DueEmailsModal onClose={() => setShowDueEmails(false)} />}
 
+      {showCampaign && <CampaignModal filters={filters} onClose={() => setShowCampaign(false)} />}
+
       {showCsvImport && (
         <CsvImport
           onImported={(count) => { if (count > 0) loadLeads(1) }}
@@ -562,6 +742,28 @@ function LeadsContent() {
             À envoyer
           </button>
 
+          {canExport ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowCampaign(true)}
+              disabled={loading}
+              className="flex items-center gap-2"
+            >
+              <Send className="h-4 w-4" />
+              Campagne
+            </Button>
+          ) : (
+            <button
+              onClick={() => setShowUpgradeModal(true)}
+              className="flex items-center gap-1.5 text-sm font-medium text-zinc-500 hover:text-amber-400 border border-white/[0.08] rounded-lg px-3 py-1.5 transition-colors"
+            >
+              <Send className="h-4 w-4" />
+              Campagne
+              <span className="bg-amber-500/20 text-amber-400 text-[9px] font-bold px-1 py-0.5 rounded-full leading-none">Pro</span>
+            </button>
+          )}
+
           <Button
             variant="outline"
             size="sm"
@@ -599,7 +801,7 @@ function LeadsContent() {
           </Button>
 
           {/* Bulk contact */}
-          {isPro ? (
+          {canExport ? (
             <Button
               variant="outline"
               size="sm"

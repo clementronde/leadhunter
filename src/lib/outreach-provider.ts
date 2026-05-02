@@ -51,3 +51,11 @@ export function formatSender(name: string | null | undefined, email: string): st
   if (!trimmedName) return email
   return `${trimmedName.replace(/[<>]/g, '')} <${email}>`
 }
+
+export function appendOptOutFooter(body: string, messageId: string, origin: string): string {
+  const url = `${origin.replace(/\/$/, '')}/api/outreach/opt-out?message=${encodeURIComponent(messageId)}`
+  return `${body.trim()}
+
+--
+Vous ne souhaitez plus recevoir de messages ? Se désinscrire : ${url}`
+}

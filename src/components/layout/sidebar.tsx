@@ -19,6 +19,7 @@ import {
   LogOut,
   Zap,
   Shield,
+  Send,
 } from 'lucide-react'
 
 const navigationGroups = [
@@ -30,6 +31,7 @@ const navigationGroups = [
     label: 'Prospection',
     items: [
       { name: 'Leads', href: '/leads', icon: Users },
+      { name: 'Campagnes', href: '/campaigns', icon: Send },
       { name: 'Scanner', href: '/scanner', icon: Radar },
       { name: 'Pipeline', href: '/pipeline', icon: Kanban },
     ],

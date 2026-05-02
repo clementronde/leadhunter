@@ -35,6 +35,10 @@ export async function GET(request: NextRequest) {
       PAGESPEED_API_KEY: !!process.env.PAGESPEED_API_KEY,
       INSEE_API_KEY: !!process.env.INSEE_API_KEY,
       HUNTER_API_KEY: !!process.env.HUNTER_API_KEY,
+      RESEND_API_KEY: !!process.env.RESEND_API_KEY,
+      RESEND_WEBHOOK_SECRET: !!process.env.RESEND_WEBHOOK_SECRET,
+      CRON_SECRET: !!process.env.CRON_SECRET,
+      SUPABASE_SERVICE_ROLE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
       STRIPE_SECRET_KEY: !!process.env.STRIPE_SECRET_KEY,
     },
   })

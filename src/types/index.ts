@@ -64,6 +64,9 @@ export interface Company {
   status: LeadStatus
   notes: Note[]
   last_contacted_at: string | null
+  do_not_contact?: boolean
+  opt_out_at?: string | null
+  opt_out_reason?: string | null
   
   // Metadata
   created_at: string
@@ -114,6 +117,11 @@ export interface EmailMessage {
   error_message: string | null
   provider: string | null
   provider_message_id: string | null
+  provider_event?: string | null
+  opened_at?: string | null
+  clicked_at?: string | null
+  bounced_at?: string | null
+  complained_at?: string | null
   followup_of: string | null
   followup_delay_days: number | null
   created_at: string

@@ -95,12 +95,14 @@ export async function POST(request: NextRequest) {
     // 1. Charger tous les place_ids déjà connus pour cet utilisateur
     const { data: existingRows } = await supabase
       .from('companies')
-      .select('google_place_id')
+      .select('google_place_id, name, phone, city')
       .eq('user_id', user.id)
-      .not('google_place_id', 'is', null)
 
     const knownPlaceIds = new Set(
       existingRows?.map((r) => r.google_place_id).filter(Boolean) ?? []
+    )
+    const knownBusinessKeys = new Set(
+      existingRows?.map((r) => businessKey(r.name, r.phone, r.city)).filter(Boolean) ?? []
     )
 
     // 2. Text Search — paginer jusqu'à avoir maxResults NOUVELLES fiches
@@ -166,6 +168,13 @@ export async function POST(request: NextRequest) {
 
     for (const place of enrichedPlaces) {
       const company = googlePlaceToCompany(place)
+      const duplicateBusinessKey = businessKey(company.name, company.phone, company.city)
+      if (duplicateBusinessKey && knownBusinessKeys.has(duplicateBusinessKey)) {
+        skippedCount++
+        continue
+      }
+      if (duplicateBusinessKey) knownBusinessKeys.add(duplicateBusinessKey)
+
       const companyWithMeta = {
         ...company,
         google_place_id: place.place_id,
@@ -254,4 +263,20 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ error: 'Erreur lors du scan' }, { status: 500 })
   }
+}
+
+function businessKey(name?: string | null, phone?: string | null, city?: string | null): string | null {
+  const cleanName = normalizeText(name)
+  const cleanCity = normalizeText(city)
+  const cleanPhone = phone?.replace(/\D/g, '').slice(-9) ?? ''
+  if (!cleanName || !cleanCity) return null
+  return `${cleanName}:${cleanPhone || 'no-phone'}:${cleanCity}`
+}
+
+function normalizeText(value?: string | null): string {
+  return (value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '')
 }

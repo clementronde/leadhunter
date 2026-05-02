@@ -9,7 +9,8 @@ import {
   Note,
   CreateNoteInput,
   PaginatedResponse,
-  LeadStatus
+  LeadStatus,
+  Sector
 } from '@/types'
 
 // ============================================
@@ -127,7 +128,21 @@ export const leadsApi = {
     if (status === 'contacted' || status === 'meeting' || status === 'proposal') {
       updates.last_contacted_at = new Date().toISOString()
     }
-    return this.update(id, updates)
+    const updated = await this.update(id, updates)
+
+    if (['meeting', 'proposal', 'won', 'lost'].includes(status)) {
+      await supabase
+        .from('email_messages')
+        .update({
+          status: 'cancelled',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('company_id', id)
+        .eq('status', 'scheduled')
+        .not('followup_of', 'is', null)
+    }
+
+    return updated
   },
 
   async addNote(input: CreateNoteInput): Promise<Note> {
@@ -193,7 +208,7 @@ export const statsApi = {
     })
 
     const topSectors = Object.entries(sectorCounts)
-      .map(([sector, count]) => ({ sector: sector as any, count }))
+      .map(([sector, count]) => ({ sector: sector as Sector, count }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 5)
 
@@ -251,7 +266,7 @@ export const scannerApi = {
     const scan: Omit<SearchScan, 'id'> = {
       query,
       location,
-      sector_filter: sectorFilter as any || null,
+      sector_filter: (sectorFilter as Sector | undefined) || null,
       status: 'pending',
       progress: 0,
       companies_found: 0,

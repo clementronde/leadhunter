@@ -1,12 +1,14 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import { formatSender, sendEmail } from '@/lib/outreach-provider'
+import { appendOptOutFooter, formatSender, sendEmail } from '@/lib/outreach-provider'
+import { assertCanContactEmail, assertDailySendLimit } from '@/lib/outreach-guards'
 
 export const maxDuration = 120
 
-export async function POST(request: Request) {
+async function handleCron(request: Request) {
   const secret = process.env.CRON_SECRET
-  if (!secret || request.headers.get('authorization') !== `Bearer ${secret}`) {
+  const urlSecret = new URL(request.url).searchParams.get('secret')
+  if (!secret || (request.headers.get('authorization') !== `Bearer ${secret}` && urlSecret !== secret)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -47,12 +49,32 @@ export async function POST(request: Request) {
     }
 
     try {
+      await assertCanContactEmail({ supabase: supabaseAdmin, userId: message.user_id, email: message.recipient_email })
+      await assertDailySendLimit({ supabase: supabaseAdmin, userId: message.user_id })
+
+      if (message.company_id) {
+        const { data: company } = await supabaseAdmin
+          .from('companies')
+          .select('do_not_contact')
+          .eq('id', message.company_id)
+          .maybeSingle()
+        if (company?.do_not_contact) {
+          await supabaseAdmin.from('email_messages').update({ status: 'cancelled' }).eq('id', message.id)
+          results.push({ id: message.id, status: 'cancelled', error: 'Lead opt-out' })
+          continue
+        }
+      }
+
       await supabaseAdmin.from('email_messages').update({ status: 'sending' }).eq('id', message.id)
       const sent = await sendEmail({
         from: formatSender(settings?.sender_name || settings?.agency_name, senderEmail),
         to: message.recipient_email,
         subject: message.subject,
-        body: message.body,
+        body: appendOptOutFooter(
+          message.body,
+          message.id,
+          process.env.NEXT_PUBLIC_APP_URL || new URL(request.url).origin
+        ),
         replyTo: settings?.reply_to || senderEmail,
       })
 
@@ -77,6 +99,7 @@ export async function POST(request: Request) {
           })
           .eq('id', message.company_id)
       }
+      if (message.campaign_id) await syncCampaignStats(message.campaign_id)
 
       results.push({ id: message.id, status: 'sent' })
     } catch (err) {
@@ -90,9 +113,41 @@ export async function POST(request: Request) {
           updated_at: new Date().toISOString(),
         })
         .eq('id', message.id)
+      if (message.campaign_id) await syncCampaignStats(message.campaign_id)
       results.push({ id: message.id, status: 'failed', error: errorMessage })
     }
   }
 
   return NextResponse.json({ processed: results.length, results })
+}
+
+async function syncCampaignStats(campaignId: string) {
+  const { data: messages } = await supabaseAdmin
+    .from('email_messages')
+    .select('status')
+    .eq('campaign_id', campaignId)
+    .is('followup_of', null)
+
+  const all = messages ?? []
+  const sentCount = all.filter((message) => message.status === 'sent').length
+  const failedCount = all.filter((message) => message.status === 'failed').length
+  const pendingCount = all.filter((message) => ['scheduled', 'sending'].includes(message.status)).length
+
+  await supabaseAdmin
+    .from('email_campaigns')
+    .update({
+      sent_count: sentCount,
+      failed_count: failedCount,
+      status: pendingCount === 0 ? 'completed' : 'running',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', campaignId)
+}
+
+export async function POST(request: Request) {
+  return handleCron(request)
+}
+
+export async function GET(request: Request) {
+  return handleCron(request)
 }

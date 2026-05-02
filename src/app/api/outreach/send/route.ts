@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { requireUser } from '@/lib/server-auth'
-import { formatSender, sendEmail } from '@/lib/outreach-provider'
+import { appendOptOutFooter, formatSender, sendEmail } from '@/lib/outreach-provider'
+import { assertCanContactEmail, assertDailySendLimit, normalizeEmail } from '@/lib/outreach-guards'
 
 const sendSchema = z.object({
   companyId: z.string().uuid(),
@@ -40,6 +41,27 @@ export async function POST(request: Request) {
   const scheduledDate = input.scheduledAt ? new Date(input.scheduledAt) : null
   const isFutureSchedule = scheduledDate && scheduledDate.getTime() > Date.now() + 60_000
 
+  const { data: company } = await supabase
+    .from('companies')
+    .select('id, do_not_contact')
+    .eq('id', input.companyId)
+    .eq('user_id', user.id)
+    .single()
+
+  if (!company) {
+    return NextResponse.json({ error: 'Lead introuvable' }, { status: 404 })
+  }
+  if (company.do_not_contact) {
+    return NextResponse.json({ error: 'Ce lead est marqué comme ne pas contacter' }, { status: 409 })
+  }
+
+  try {
+    await assertCanContactEmail({ supabase, userId: user.id, email: input.recipientEmail })
+    if (!isFutureSchedule) await assertDailySendLimit({ supabase, userId: user.id })
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Envoi bloqué' }, { status: 409 })
+  }
+
   const { data: settings, error: settingsError } = await supabase
     .from('outreach_settings')
     .select('*')
@@ -58,7 +80,7 @@ export async function POST(request: Request) {
   const baseMessage = {
     user_id: user.id,
     company_id: input.companyId,
-    recipient_email: input.recipientEmail,
+    recipient_email: normalizeEmail(input.recipientEmail),
     sender_email: senderEmail,
     subject: input.subject,
     body: input.body,
@@ -105,7 +127,7 @@ export async function POST(request: Request) {
       from: formatSender(settings?.sender_name || settings?.agency_name, senderEmail),
       to: input.recipientEmail,
       subject: input.subject,
-      body: input.body,
+      body: appendOptOutFooter(input.body, inserted.id, new URL(request.url).origin),
       replyTo: settings?.reply_to || senderEmail,
     })
 

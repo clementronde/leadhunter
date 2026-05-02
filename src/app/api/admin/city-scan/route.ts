@@ -158,12 +158,14 @@ export async function POST(request: Request) {
 
   const { data: existingRows } = await supabase
     .from('companies')
-    .select('google_place_id')
+    .select('google_place_id, name, phone, city')
     .eq('user_id', user.id)
-    .not('google_place_id', 'is', null)
 
   const knownPlaceIds = new Set(
     existingRows?.map((row) => row.google_place_id).filter(Boolean) ?? []
+  )
+  const knownBusinessKeys = new Set(
+    existingRows?.map((row) => businessKey(row.name, row.phone, row.city)).filter(Boolean) ?? []
   )
 
   try {
@@ -213,6 +215,14 @@ export async function POST(request: Request) {
           if (result.status !== 'fulfilled') continue
           const place = result.value
           const company = googlePlaceToCompany(place)
+          const duplicateBusinessKey = businessKey(company.name, company.phone, company.city || city)
+          if (duplicateBusinessKey && knownBusinessKeys.has(duplicateBusinessKey)) {
+            duplicates++
+            categoryDuplicates++
+            continue
+          }
+          if (duplicateBusinessKey) knownBusinessKeys.add(duplicateBusinessKey)
+
           if (company.has_website) withSite++
           else withoutSite++
 
@@ -310,4 +320,20 @@ function estimateCost(textSearchCalls: number, detailsCalls: number): number {
   return Number(
     (textSearchCalls * COST_PER_TEXT_SEARCH_EUR + detailsCalls * COST_PER_PLACE_DETAILS_EUR).toFixed(2)
   )
+}
+
+function businessKey(name?: string | null, phone?: string | null, city?: string | null): string | null {
+  const cleanName = normalizeText(name)
+  const cleanCity = normalizeText(city)
+  const cleanPhone = phone?.replace(/\D/g, '').slice(-9) ?? ''
+  if (!cleanName || !cleanCity) return null
+  return `${cleanName}:${cleanPhone || 'no-phone'}:${cleanCity}`
+}
+
+function normalizeText(value?: string | null): string {
+  return (value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '')
 }
