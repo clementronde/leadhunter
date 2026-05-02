@@ -21,3 +21,8 @@ export const supabaseAdmin = new Proxy({} as SupabaseClient, {
     return (getAdmin() as unknown as Record<string | symbol, unknown>)[prop]
   }
 })
+
+// Appel direct pour éviter la perte de contexte `this` à travers le Proxy
+export async function adminListUsers() {
+  return getAdmin().auth.admin.listUsers()
+}

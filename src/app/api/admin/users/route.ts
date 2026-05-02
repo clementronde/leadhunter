@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
-import { supabaseAdmin } from '@/lib/supabase-admin'
+import { supabaseAdmin, adminListUsers } from '@/lib/supabase-admin'
 
 export async function GET() {
   const cookieStore = await cookies()
@@ -51,7 +51,7 @@ export async function GET() {
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 
-  const { data: authData, error: authError } = await supabaseAdmin.auth.admin.listUsers()
+  const { data: authData, error: authError } = await adminListUsers()
 
   if (authError) {
     console.error('[admin/users] auth error:', authError.message)
