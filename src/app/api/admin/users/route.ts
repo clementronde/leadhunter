@@ -43,8 +43,8 @@ export async function GET() {
   // Fetch all profiles using service role (bypass RLS)
   const { data: profiles, error: profilesError } = await supabaseAdmin
     .from('profiles')
-    .select('id, plan, role, created_at')
-    .order('created_at', { ascending: false })
+    .select('id, plan, role, updated_at')
+    .order('updated_at', { ascending: false })
 
   if (profilesError) {
     console.error('[admin/users] profiles error:', profilesError.message)
@@ -58,14 +58,14 @@ export async function GET() {
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 
-  const emailMap = new Map(authData.users.map((u) => [u.id, u.email]))
+  const authUserMap = new Map(authData.users.map((u) => [u.id, { email: u.email, created_at: u.created_at }]))
 
   const users = (profiles ?? []).map((p) => ({
     id: p.id,
-    email: emailMap.get(p.id) ?? null,
+    email: authUserMap.get(p.id)?.email ?? null,
     plan: p.plan,
     role: p.role,
-    created_at: p.created_at,
+    created_at: authUserMap.get(p.id)?.created_at ?? p.updated_at,
   }))
 
   return NextResponse.json({ users })
