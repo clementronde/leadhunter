@@ -160,6 +160,7 @@ export async function POST(request: Request) {
     .from('companies')
     .select('google_place_id, name, phone, city')
     .eq('user_id', user.id)
+    .limit(10000)
 
   const knownPlaceIds = new Set(
     existingRows?.map((row) => row.google_place_id).filter(Boolean) ?? []
