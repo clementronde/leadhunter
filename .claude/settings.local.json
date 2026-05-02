@@ -5,7 +5,8 @@
       "Bash(npx tsc:*)",
       "Bash(npm run:*)",
       "Bash(ls:*)",
-      "Bash(./node_modules/.bin/tsc:*)"
+      "Bash(./node_modules/.bin/tsc:*)",
+      "WebSearch"
     ]
   }
 }

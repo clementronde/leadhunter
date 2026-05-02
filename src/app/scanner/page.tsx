@@ -85,7 +85,7 @@ interface HealthStatus {
 function ScannerContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { isPro, scanCountThisMonth, canScan, canAudit } = usePlan()
+  const { isPro, isAdmin, scanCountThisMonth, canScan, canAudit } = usePlan()
   const [upgradeModal, setUpgradeModal] = useState<'scan_limit' | 'export' | 'audit' | null>(null)
   const [activeSource, setActiveSource] = useState<ScanSource>('google_maps')
   const [health, setHealth] = useState<HealthStatus | null>(null)
@@ -165,7 +165,8 @@ function ScannerContent() {
     { value: '200', label: '200 entreprises' },
   ]
 
-  const gmMaxOptions = isPro
+  const hasFullAccess = isPro || isAdmin
+  const gmMaxOptions = hasFullAccess
     ? [
         { value: '10', label: '10 lieux' },
         { value: '20', label: '20 lieux' },
@@ -273,9 +274,9 @@ function ScannerContent() {
       setScanResult(scanData)
       setScanStatus('completed')
 
-      // Phase 2 : lancer les audits Speed Insights depuis le navigateur (sans bloquer)
+      // Phase 2 : ajouter les audits Speed Insights à la queue serveur
       if (gmAuditWebsites && activeSource === 'google_maps') {
-        runAuditPhase(scanData.companies)
+        queueAuditPhase(scanData.companies)
       }
       const completedScan: SearchScan = {
         ...newScan,
@@ -312,8 +313,8 @@ function ScannerContent() {
     router.push('/leads')
   }
 
-  // Phase 2 : audits Speed Insights séquentiels depuis le navigateur
-  const runAuditPhase = async (companies: ScanResult['companies']) => {
+  // Phase 2 : audits Speed Insights en queue serveur
+  const queueAuditPhase = async (companies: ScanResult['companies']) => {
     const MAX_AUDITS = isPro ? 10 : 5
     const toAudit = companies.filter((c) => c.website && c.id).slice(0, MAX_AUDITS)
     if (toAudit.length === 0) return
@@ -321,51 +322,18 @@ function ScannerContent() {
     setAuditPhase(true)
     setAuditProgress({ current: 0, total: toAudit.length })
 
-    for (let i = 0; i < toAudit.length; i++) {
-      const company = toAudit[i]
-      setAuditProgress({ current: i + 1, total: toAudit.length })
-
-      let auditOk = false
-      for (let attempt = 1; attempt <= 3 && !auditOk; attempt++) {
-        try {
-          if (attempt > 1) await new Promise((r) => setTimeout(r, 3000 * (attempt - 1)))
-          const res = await fetch('/api/audit', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url: company.website, companyId: company.id }),
-          })
-          const text = await res.text()
-          let parsed: Record<string, unknown>
-          try { parsed = JSON.parse(text) } catch { continue }
-
-          if (res.ok && parsed.success && parsed.data) {
-            const d = parsed.data as { prospect_score: number; priority: string }
-            setScanResult((prev) =>
-              prev
-                ? {
-                    ...prev,
-                    companies: prev.companies.map((c) =>
-                      c.id === company.id
-                        ? { ...c, prospect_score: d.prospect_score, priority: d.priority as Company['priority'] }
-                        : c
-                    ),
-                  }
-                : null
-            )
-            auditOk = true
-          }
-        } catch (e) {
-          console.warn(`Audit tentative ${attempt}/3 échouée pour`, company.website, e)
-        }
-      }
-
-      // Pause entre les audits pour respecter les limites Vercel (30s max par appel)
-      if (i < toAudit.length - 1) {
-        await new Promise((r) => setTimeout(r, 2000))
-      }
+    try {
+      const res = await fetch('/api/audit/queue', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ companyIds: toAudit.map((company) => company.id) }),
+      })
+      if (res.ok) setAuditProgress({ current: toAudit.length, total: toAudit.length })
+    } catch (e) {
+      console.warn('Queue audit échouée', e)
+    } finally {
+      setAuditPhase(false)
     }
-
-    setAuditPhase(false)
   }
 
   // ============================================
@@ -494,7 +462,7 @@ function ScannerContent() {
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                   <div className="space-y-2" ref={suggestionRef}>
                     <label className="text-sm font-medium text-zinc-400">
-                      Type d'entreprise *
+                      Type d&apos;entreprise *
                     </label>
                     <div className="relative">
                       <Input
@@ -810,7 +778,7 @@ function ScannerContent() {
                   <div className="flex items-center gap-3 mb-2">
                     <div className="h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin flex-shrink-0" />
                     <p className="text-sm font-medium text-blue-300">
-                      Analyse Speed Insights en cours... {auditProgress.current}/{auditProgress.total}
+                      Ajout à la queue d&apos;audits... {auditProgress.current}/{auditProgress.total}
                     </p>
                   </div>
                   <div className="h-1.5 bg-blue-500/20 rounded-full overflow-hidden">
@@ -820,7 +788,7 @@ function ScannerContent() {
                     />
                   </div>
                   <p className="text-xs text-blue-400 mt-1">
-                    Les scores de prospection se mettent à jour en temps réel
+                    Les audits seront traités côté serveur depuis la page Leads ou par cron.
                   </p>
                 </div>
               )}

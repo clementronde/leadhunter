@@ -25,6 +25,9 @@ import {
   ExternalLink,
   Users,
   Bell,
+  AtSign,
+  Gauge,
+  Play,
 } from 'lucide-react'
 
 // ============================================
@@ -192,20 +195,121 @@ function BulkContactModal({ filters, onClose }: { filters: LeadFilters; onClose:
   )
 }
 
+interface DueEmailMessage {
+  id: string
+  recipient_email: string
+  subject: string
+  scheduled_at: string
+  companies?: { name?: string | null } | null
+}
+
+function DueEmailsModal({ onClose }: { onClose: () => void }) {
+  const [messages, setMessages] = useState<DueEmailMessage[]>([])
+  const [loading, setLoading] = useState(true)
+  const [processing, setProcessing] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const load = useCallback(() => {
+    setLoading(true)
+    fetch('/api/outreach/due')
+      .then((r) => r.json())
+      .then((data) => setMessages(data.messages ?? []))
+      .catch(() => setError('Erreur réseau'))
+      .finally(() => setLoading(false))
+  }, [])
+
+  useEffect(() => {
+    load()
+  }, [load])
+
+  const handleProcess = async () => {
+    setProcessing(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/outreach/due', { method: 'POST' })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erreur envoi')
+      load()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur envoi')
+    } finally {
+      setProcessing(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-zinc-900/50 backdrop-blur-sm" />
+      <div
+        className="relative w-full max-w-2xl rounded-2xl border border-white/[0.08] bg-zinc-900/95 shadow-2xl shadow-black/60"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b border-white/[0.06] px-6 py-4">
+          <div className="flex items-center gap-3">
+            <Bell className="h-5 w-5 text-amber-400" />
+            <div>
+              <h2 className="font-semibold text-white">Emails à envoyer aujourd&apos;hui</h2>
+              <p className="text-sm text-zinc-500">{messages.length} email{messages.length > 1 ? 's' : ''} programmé{messages.length > 1 ? 's' : ''}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="rounded-lg p-1.5 text-zinc-500 hover:bg-white/5 hover:text-white">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="max-h-[55vh] overflow-y-auto divide-y divide-white/[0.04]">
+          {loading ? (
+            <div className="p-10 text-center text-sm text-zinc-400">
+              <Loader2 className="mx-auto mb-2 h-5 w-5 animate-spin" />
+              Chargement...
+            </div>
+          ) : messages.length === 0 ? (
+            <div className="p-10 text-center text-sm text-zinc-500">Aucun email dû aujourd&apos;hui.</div>
+          ) : (
+            messages.map((message) => (
+              <div key={message.id} className="px-6 py-4">
+                <p className="font-medium text-zinc-200">{message.subject}</p>
+                <p className="mt-1 text-xs text-zinc-500">
+                  {message.recipient_email} · {message.companies?.name ?? 'Lead'} · {new Date(message.scheduled_at).toLocaleString('fr-FR')}
+                </p>
+              </div>
+            ))
+          )}
+        </div>
+
+        {error && <p className="px-6 pt-3 text-sm text-red-400">{error}</p>}
+
+        <div className="flex justify-end gap-2 border-t border-white/[0.06] px-6 py-4">
+          <Button variant="outline" onClick={onClose}>Fermer</Button>
+          <Button onClick={handleProcess} disabled={processing || messages.length === 0}>
+            {processing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+            Envoyer les emails dus
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ============================================
 // Leads Content
 // ============================================
 function LeadsContent() {
   const searchParams = useSearchParams()
-  const { canExport, isPro } = usePlan()
+  const { canExport, canAudit, isPro } = usePlan()
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [showBulkContact, setShowBulkContact] = useState(false)
+  const [showDueEmails, setShowDueEmails] = useState(false)
   const [showCsvImport, setShowCsvImport] = useState(false)
   const [csvBanner, setCsvBanner] = useState<{ exported: number; total: number } | null>(null)
 
   const [leads, setLeads] = useState<Company[]>([])
   const [loading, setLoading] = useState(true)
   const [exporting, setExporting] = useState(false)
+  const [bulkEnriching, setBulkEnriching] = useState(false)
+  const [queueingAudits, setQueueingAudits] = useState(false)
+  const [processingAudits, setProcessingAudits] = useState(false)
+  const [actionBanner, setActionBanner] = useState<{ tone: 'success' | 'error'; message: string } | null>(null)
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table')
   const [pagination, setPagination] = useState({
     page: 1,
@@ -293,6 +397,76 @@ function LeadsContent() {
     }
   }
 
+  const handleBulkEnrichEmails = async () => {
+    setBulkEnriching(true)
+    setActionBanner(null)
+    try {
+      const res = await fetch('/api/enrich-email/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ limit: 25 }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erreur enrichissement')
+      setActionBanner({
+        tone: 'success',
+        message: `${data.found} email${data.found > 1 ? 's' : ''} trouvé${data.found > 1 ? 's' : ''} sur ${data.processed} leads traités.`,
+      })
+      loadLeads(pagination.page)
+    } catch (err) {
+      setActionBanner({ tone: 'error', message: err instanceof Error ? err.message : 'Erreur enrichissement' })
+    } finally {
+      setBulkEnriching(false)
+    }
+  }
+
+  const handleQueueAudits = async () => {
+    if (!canAudit) {
+      setShowUpgradeModal(true)
+      return
+    }
+    setQueueingAudits(true)
+    setActionBanner(null)
+    try {
+      const res = await fetch('/api/audit/queue', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ companyIds: leads.filter((lead) => lead.website).map((lead) => lead.id) }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erreur queue audit')
+      setActionBanner({ tone: 'success', message: `${data.created} audit${data.created > 1 ? 's' : ''} ajouté${data.created > 1 ? 's' : ''} à la queue.` })
+    } catch (err) {
+      setActionBanner({ tone: 'error', message: err instanceof Error ? err.message : 'Erreur queue audit' })
+    } finally {
+      setQueueingAudits(false)
+    }
+  }
+
+  const handleProcessAudits = async () => {
+    if (!canAudit) {
+      setShowUpgradeModal(true)
+      return
+    }
+    setProcessingAudits(true)
+    setActionBanner(null)
+    try {
+      const res = await fetch('/api/audit/queue', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ limit: 3 }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erreur traitement audit')
+      setActionBanner({ tone: 'success', message: `${data.processed} audit${data.processed > 1 ? 's' : ''} traité${data.processed > 1 ? 's' : ''}.` })
+      loadLeads(pagination.page)
+    } catch (err) {
+      setActionBanner({ tone: 'error', message: err instanceof Error ? err.message : 'Erreur traitement audit' })
+    } finally {
+      setProcessingAudits(false)
+    }
+  }
+
   return (
     <div className="p-6 space-y-6">
       <UpgradeModal
@@ -307,6 +481,8 @@ function LeadsContent() {
           onClose={() => setShowBulkContact(false)}
         />
       )}
+
+      {showDueEmails && <DueEmailsModal onClose={() => setShowDueEmails(false)} />}
 
       {showCsvImport && (
         <CsvImport
@@ -326,6 +502,20 @@ function LeadsContent() {
             Passer Pro
           </a>
           <button onClick={() => setCsvBanner(null)} className="text-amber-500 hover:text-amber-300">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
+      {actionBanner && (
+        <div className={`flex items-center gap-3 p-3 rounded-xl border text-sm ${
+          actionBanner.tone === 'success'
+            ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300'
+            : 'bg-red-500/10 border-red-500/20 text-red-300'
+        }`}>
+          <Check className="h-4 w-4 shrink-0" />
+          <span className="flex-1">{actionBanner.message}</span>
+          <button onClick={() => setActionBanner(null)} className="opacity-70 hover:opacity-100">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -363,6 +553,50 @@ function LeadsContent() {
             <Bell className="h-4 w-4" />
             À relancer
           </button>
+
+          <button
+            onClick={() => setShowDueEmails(true)}
+            className="flex items-center gap-1.5 text-sm font-medium text-zinc-500 hover:text-amber-400 border border-white/[0.08] rounded-lg px-3 py-1.5 transition-colors"
+          >
+            <Mail className="h-4 w-4" />
+            À envoyer
+          </button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleBulkEnrichEmails}
+            disabled={bulkEnriching || loading}
+            className="flex items-center gap-2"
+            title="Trouver les emails des leads avec site web"
+          >
+            {bulkEnriching ? <Loader2 className="h-4 w-4 animate-spin" /> : <AtSign className="h-4 w-4" />}
+            Emails
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleQueueAudits}
+            disabled={queueingAudits || loading || leads.every((lead) => !lead.website)}
+            className="flex items-center gap-2"
+            title="Ajouter les sites visibles à la queue d'audit"
+          >
+            {queueingAudits ? <Loader2 className="h-4 w-4 animate-spin" /> : <Gauge className="h-4 w-4" />}
+            Queue audits
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleProcessAudits}
+            disabled={processingAudits}
+            className="flex items-center gap-2"
+            title="Traiter 3 audits en attente"
+          >
+            {processingAudits ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+            Traiter audits
+          </Button>
 
           {/* Bulk contact */}
           {isPro ? (
@@ -510,7 +744,7 @@ function LeadsContent() {
               <>
                 <p className="text-zinc-400 text-lg mb-2">Aucun lead</p>
                 <p className="text-zinc-500 text-sm mb-4">
-                  Vous n'avez pas encore de prospects. Lancez un scan pour en trouver.
+                  Vous n&apos;avez pas encore de prospects. Lancez un scan pour en trouver.
                 </p>
                 <a
                   href="/scanner"

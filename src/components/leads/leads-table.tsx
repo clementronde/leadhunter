@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Badge, Button, UpgradeModal } from '@/components/ui'
 import { OutreachPanel } from './outreach-panel'
 import { leadsApi } from '@/lib/api'
+import { buildPersonalizedReason } from '@/lib/email-templates'
 import { usePlan } from '@/hooks/usePlan'
 import { Company, LeadStatus, CreateNoteInput } from '@/types'
 import {
@@ -72,6 +73,7 @@ export function LeadsTable({ leads, onStatusChange, sortBy, onSort }: LeadsTable
     { key: 'google_rating', label: 'Note Google', sortable: true },
     { key: 'sector', label: 'Secteur', sortable: true },
     { key: 'prospect_score', label: 'Score', sortable: true },
+    { key: 'reason', label: 'Potentiel', sortable: false },
     { key: 'priority', label: 'Priorité', sortable: true },
     { key: 'status', label: 'Statut', sortable: true },
     { key: 'contact', label: 'Contact', sortable: false },
@@ -218,6 +220,13 @@ export function LeadsTable({ leads, onStatusChange, sortBy, onSort }: LeadsTable
                     />
                   </div>
                 </div>
+              </td>
+
+              {/* Priorité */}
+              <td className="px-4 py-4">
+                <p className="max-w-[220px] text-xs text-zinc-500 line-clamp-2">
+                  {buildPersonalizedReason(lead)}
+                </p>
               </td>
 
               {/* Priorité */}

@@ -145,6 +145,139 @@ CREATE INDEX idx_scans_user_id ON search_scans(user_id);
 CREATE INDEX idx_scans_status ON search_scans(status);
 
 -- ============================================
+-- Table: outreach_settings
+-- Profil d'envoi professionnel par utilisateur
+-- ============================================
+CREATE TABLE outreach_settings (
+  user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  sender_name VARCHAR(120),
+  sender_email VARCHAR(255),
+  agency_name VARCHAR(160),
+  agency_website TEXT,
+  agency_phone VARCHAR(50),
+  signature TEXT,
+  reply_to VARCHAR(255),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_outreach_settings_sender_email ON outreach_settings(sender_email);
+
+-- ============================================
+-- Table: email_messages
+-- Historique, envois et programmation email
+-- ============================================
+CREATE TABLE email_messages (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  company_id UUID REFERENCES companies(id) ON DELETE SET NULL,
+  campaign_id UUID,
+
+  recipient_email VARCHAR(255) NOT NULL,
+  sender_email VARCHAR(255),
+  subject TEXT NOT NULL,
+  body TEXT NOT NULL,
+  template_id VARCHAR(50),
+
+  status VARCHAR(20) NOT NULL DEFAULT 'draft'
+    CHECK (status IN ('draft', 'scheduled', 'sending', 'sent', 'failed', 'cancelled')),
+  scheduled_at TIMESTAMPTZ,
+  sent_at TIMESTAMPTZ,
+  failed_at TIMESTAMPTZ,
+  error_message TEXT,
+  provider VARCHAR(50),
+  provider_message_id TEXT,
+
+  followup_of UUID REFERENCES email_messages(id) ON DELETE SET NULL,
+  followup_delay_days INTEGER,
+
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_email_messages_user_id ON email_messages(user_id);
+CREATE INDEX idx_email_messages_company_id ON email_messages(company_id);
+CREATE INDEX idx_email_messages_status ON email_messages(status);
+CREATE INDEX idx_email_messages_scheduled_at ON email_messages(scheduled_at);
+
+-- ============================================
+-- Table: email_campaigns
+-- Campagnes simples pour envois groupés et relances
+-- ============================================
+CREATE TABLE email_campaigns (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  name VARCHAR(180) NOT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'draft'
+    CHECK (status IN ('draft', 'scheduled', 'running', 'completed', 'paused', 'cancelled', 'failed')),
+  template_id VARCHAR(50),
+  filters JSONB NOT NULL DEFAULT '{}',
+  scheduled_at TIMESTAMPTZ,
+  followup_delays INTEGER[] NOT NULL DEFAULT ARRAY[3,7],
+  total_recipients INTEGER NOT NULL DEFAULT 0,
+  sent_count INTEGER NOT NULL DEFAULT 0,
+  failed_count INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_email_campaigns_user_id ON email_campaigns(user_id);
+CREATE INDEX idx_email_campaigns_status ON email_campaigns(status);
+
+ALTER TABLE email_messages
+  ADD CONSTRAINT email_messages_campaign_id_fkey
+  FOREIGN KEY (campaign_id) REFERENCES email_campaigns(id) ON DELETE SET NULL;
+
+-- ============================================
+-- Table: admin_city_scans
+-- Agregations Google Places multi-categories reservees admin
+-- ============================================
+CREATE TABLE admin_city_scans (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  city VARCHAR(160) NOT NULL,
+  categories TEXT[] NOT NULL DEFAULT '{}',
+  max_per_category INTEGER NOT NULL DEFAULT 60,
+  status VARCHAR(20) NOT NULL DEFAULT 'pending'
+    CHECK (status IN ('pending', 'running', 'completed', 'failed', 'cancelled')),
+  progress INTEGER NOT NULL DEFAULT 0 CHECK (progress >= 0 AND progress <= 100),
+  places_found INTEGER NOT NULL DEFAULT 0,
+  companies_created INTEGER NOT NULL DEFAULT 0,
+  duplicates_skipped INTEGER NOT NULL DEFAULT 0,
+  estimated_api_cost_eur NUMERIC(8,2) NOT NULL DEFAULT 0,
+  category_results JSONB NOT NULL DEFAULT '[]',
+  error_message TEXT,
+  started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  completed_at TIMESTAMPTZ
+);
+
+CREATE INDEX idx_admin_city_scans_user_id ON admin_city_scans(user_id);
+CREATE INDEX idx_admin_city_scans_status ON admin_city_scans(status);
+
+-- ============================================
+-- Table: audit_jobs
+-- Queue serveur pour audits PageSpeed
+-- ============================================
+CREATE TABLE audit_jobs (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+  url TEXT NOT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'pending'
+    CHECK (status IN ('pending', 'running', 'completed', 'failed', 'cancelled')),
+  attempts INTEGER NOT NULL DEFAULT 0,
+  error_message TEXT,
+  started_at TIMESTAMPTZ,
+  completed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_audit_jobs_user_id ON audit_jobs(user_id);
+CREATE INDEX idx_audit_jobs_status ON audit_jobs(status);
+CREATE INDEX idx_audit_jobs_company_id ON audit_jobs(company_id);
+
+-- ============================================
 -- Triggers pour updated_at
 -- ============================================
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -167,6 +300,11 @@ ALTER TABLE companies ENABLE ROW LEVEL SECURITY;
 ALTER TABLE website_audits ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE search_scans ENABLE ROW LEVEL SECURITY;
+ALTER TABLE outreach_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE email_messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE email_campaigns ENABLE ROW LEVEL SECURITY;
+ALTER TABLE admin_city_scans ENABLE ROW LEVEL SECURITY;
+ALTER TABLE audit_jobs ENABLE ROW LEVEL SECURITY;
 
 -- Policies : chaque utilisateur ne voit que ses propres donnees
 CREATE POLICY "Users see own companies" ON companies
@@ -179,4 +317,19 @@ CREATE POLICY "Users see own notes" ON notes
   FOR ALL USING (auth.uid() = user_id);
 
 CREATE POLICY "Users see own scans" ON search_scans
+  FOR ALL USING (auth.uid() = user_id);
+
+CREATE POLICY "Users see own outreach settings" ON outreach_settings
+  FOR ALL USING (auth.uid() = user_id);
+
+CREATE POLICY "Users see own email messages" ON email_messages
+  FOR ALL USING (auth.uid() = user_id);
+
+CREATE POLICY "Users see own email campaigns" ON email_campaigns
+  FOR ALL USING (auth.uid() = user_id);
+
+CREATE POLICY "Users see own admin city scans" ON admin_city_scans
+  FOR ALL USING (auth.uid() = user_id);
+
+CREATE POLICY "Users see own audit jobs" ON audit_jobs
   FOR ALL USING (auth.uid() = user_id);

@@ -54,6 +54,7 @@ export interface Company {
   google_rating?: number | null         // Note Google (1-5)
   google_reviews_count?: number | null  // Nombre d'avis Google
   google_maps_url?: string | null       // Lien vers la fiche Google Maps
+  google_place_id?: string | null       // Identifiant Google Places
 
   // Scoring (0-100)
   prospect_score: number
@@ -70,6 +71,118 @@ export interface Company {
   
   // Relations
   audit?: WebsiteAudit | null
+}
+
+// ============================================
+// Profil d'envoi professionnel
+// ============================================
+export interface OutreachSettings {
+  user_id: string
+  sender_name: string | null
+  sender_email: string | null
+  agency_name: string | null
+  agency_website: string | null
+  agency_phone: string | null
+  signature: string | null
+  reply_to: string | null
+  created_at?: string
+  updated_at?: string
+}
+
+export type EmailMessageStatus =
+  | 'draft'
+  | 'scheduled'
+  | 'sending'
+  | 'sent'
+  | 'failed'
+  | 'cancelled'
+
+export interface EmailMessage {
+  id: string
+  user_id: string
+  company_id: string | null
+  campaign_id: string | null
+  recipient_email: string
+  sender_email: string | null
+  subject: string
+  body: string
+  template_id: string | null
+  status: EmailMessageStatus
+  scheduled_at: string | null
+  sent_at: string | null
+  failed_at: string | null
+  error_message: string | null
+  provider: string | null
+  provider_message_id: string | null
+  followup_of: string | null
+  followup_delay_days: number | null
+  created_at: string
+  updated_at: string
+}
+
+export type EmailCampaignStatus =
+  | 'draft'
+  | 'scheduled'
+  | 'running'
+  | 'completed'
+  | 'paused'
+  | 'cancelled'
+  | 'failed'
+
+export interface EmailCampaign {
+  id: string
+  user_id: string
+  name: string
+  status: EmailCampaignStatus
+  template_id: string | null
+  filters: Record<string, unknown>
+  scheduled_at: string | null
+  followup_delays: number[]
+  total_recipients: number
+  sent_count: number
+  failed_count: number
+  created_at: string
+  updated_at: string
+}
+
+export interface AdminCityScan {
+  id: string
+  user_id: string
+  city: string
+  categories: string[]
+  max_per_category: number
+  status: ScanStatus | 'cancelled'
+  progress: number
+  places_found: number
+  companies_created: number
+  duplicates_skipped: number
+  estimated_api_cost_eur: number
+  category_results: {
+    category: string
+    found: number
+    created: number
+    duplicates: number
+    without_site: number
+    with_site: number
+    error?: string
+  }[]
+  error_message: string | null
+  started_at: string
+  completed_at: string | null
+}
+
+export interface AuditJob {
+  id: string
+  user_id: string
+  company_id: string
+  url: string
+  status: ScanStatus | 'cancelled'
+  attempts: number
+  error_message: string | null
+  started_at: string | null
+  completed_at: string | null
+  created_at: string
+  updated_at: string
 }
 
 // ============================================

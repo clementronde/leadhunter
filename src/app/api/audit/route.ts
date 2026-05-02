@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
-import { analyzeWebsite, calculateProspectScoreFromAudit } from '@/lib/pagespeed'
-import { getPriorityFromScore } from '@/lib/utils'
+import { runAuditForCompany } from '@/lib/audit-runner'
 import { z } from 'zod'
 
 export const maxDuration = 60
@@ -74,39 +73,25 @@ export async function POST(request: NextRequest) {
 
     console.log(`🔍 Audit: ${url} [user: ${user.id}]`)
 
-    const result = await analyzeWebsite(url)
-
-    if (!result.success || !result.data) {
-      return NextResponse.json(
-        { success: false, error: result.error || 'Échec de l\'audit' },
-        { status: 400 }
-      )
+    if (!companyId) {
+      return NextResponse.json({ error: 'companyId requis' }, { status: 400 })
     }
 
-    const prospectScore = calculateProspectScoreFromAudit(result.data)
-    const priority = getPriorityFromScore(prospectScore)
+    const result = await runAuditForCompany({
+      supabase,
+      userId: user.id,
+      companyId,
+      url,
+    })
 
-    if (companyId) {
-      const { error: upsertError } = await supabase.from('website_audits').upsert(
-        { ...result.data, company_id: companyId, user_id: user.id, url },
-        { onConflict: 'company_id' }
-      )
-      if (upsertError) console.error('Audit upsert error:', upsertError.message)
-      await supabase
-        .from('companies')
-        .update({ prospect_score: prospectScore, priority, updated_at: new Date().toISOString() })
-        .eq('id', companyId)
-        .eq('user_id', user.id)
-    }
-
-    console.log(`✅ Audit terminé: score ${result.data.overall_score} [user: ${user.id}]`)
+    console.log(`✅ Audit terminé: score ${result.audit.overall_score} [user: ${user.id}]`)
 
     return NextResponse.json({
       success: true,
       data: {
-        audit: { ...result.data, company_id: companyId || null },
-        prospect_score: prospectScore,
-        priority,
+        audit: { ...result.audit, company_id: companyId },
+        prospect_score: result.prospect_score,
+        priority: result.priority,
       },
     })
 

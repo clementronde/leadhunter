@@ -55,9 +55,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).single()
-    const isProUser = profile?.plan === 'pro'
-    if (!isProUser) {
+    const { data: profile } = await supabase.from('profiles').select('plan, role').eq('id', user.id).single()
+    const hasFullAccess = profile?.plan === 'pro' || profile?.role === 'admin'
+    if (!hasFullAccess) {
       const startOfMonth = new Date(); startOfMonth.setDate(1); startOfMonth.setHours(0, 0, 0, 0)
       const { count } = await supabase.from('search_scans')
         .select('id', { count: 'exact', head: true })
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { codePostal, commune, activite, nombreResultats: requestedNombre = 50 } = parsed.data
-    const nombreResultats = isProUser ? requestedNombre : Math.min(requestedNombre, 10)
+    const nombreResultats = hasFullAccess ? requestedNombre : Math.min(requestedNombre, 10)
 
     console.log(`🔍 Recherche INSEE: cp=${!!codePostal} commune=${!!commune} activite=${!!activite} n=${nombreResultats} [user: ${user.id}]`)
 

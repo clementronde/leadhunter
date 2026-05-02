@@ -8,7 +8,7 @@ export const FREE_SCAN_LIMIT = 3
 export const FREE_RESULTS_LIMIT = 10
 
 export function usePlan() {
-  const { user, isPro } = useAuth()
+  const { user, isPro, isAdmin } = useAuth()
   const [scanCountThisMonth, setScanCountThisMonth] = useState(0)
 
   useEffect(() => {
@@ -27,12 +27,15 @@ export function usePlan() {
       })
   }, [user])
 
+  const hasFullAccess = isPro || isAdmin
+
   return {
     isPro,
+    isAdmin,
     scanCountThisMonth,
-    canScan: isPro || scanCountThisMonth < FREE_SCAN_LIMIT,
-    canExport: isPro,
-    canAudit: isPro,
+    canScan: hasFullAccess || scanCountThisMonth < FREE_SCAN_LIMIT,
+    canExport: hasFullAccess,
+    canAudit: hasFullAccess,
     FREE_SCAN_LIMIT,
     FREE_RESULTS_LIMIT,
   }

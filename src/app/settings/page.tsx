@@ -25,6 +25,7 @@ import {
   RotateCcw,
 } from 'lucide-react'
 import { loadTemplates, saveTemplates, DEFAULT_TEMPLATES, CustomTemplate, TemplateId } from '@/lib/email-templates'
+import { OutreachSettings } from '@/types'
 
 interface ApiKeyStatus {
   configured: boolean
@@ -52,6 +53,10 @@ export default function SettingsPage() {
   const [templates, setTemplates] = useState<Record<TemplateId, CustomTemplate>>(() => loadTemplates())
   const [templatesSaved, setTemplatesSaved] = useState(false)
   const [editingTemplate, setEditingTemplate] = useState<TemplateId>('sans-site')
+  const [outreachSettings, setOutreachSettings] = useState<Partial<OutreachSettings>>({})
+  const [savingOutreach, setSavingOutreach] = useState(false)
+  const [outreachSaved, setOutreachSaved] = useState(false)
+  const [outreachError, setOutreachError] = useState<string | null>(null)
 
   // Check if Supabase env vars are present (NEXT_PUBLIC_ are available client-side)
   const supabaseConfigured =
@@ -67,7 +72,33 @@ export default function SettingsPage() {
       .then((r) => r.json())
       .then(setHealth)
       .catch(() => {})
+
+    fetch('/api/outreach/settings')
+      .then((r) => r.json())
+      .then((data) => setOutreachSettings(data.settings ?? {}))
+      .catch(() => {})
   }, [])
+
+  const handleSaveOutreach = async () => {
+    setSavingOutreach(true)
+    setOutreachError(null)
+    try {
+      const res = await fetch('/api/outreach/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(outreachSettings),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erreur sauvegarde')
+      setOutreachSettings(data.settings)
+      setOutreachSaved(true)
+      setTimeout(() => setOutreachSaved(false), 2000)
+    } catch (err) {
+      setOutreachError(err instanceof Error ? err.message : 'Erreur sauvegarde')
+    } finally {
+      setSavingOutreach(false)
+    }
+  }
 
   const handleExportCSV = async () => {
     setExporting(true)
@@ -236,7 +267,7 @@ export default function SettingsPage() {
                         supabase.com <ExternalLink className="h-3 w-3 inline" />
                       </a>
                     </li>
-                    <li>Copiez l'URL et la clé anon depuis Settings → API</li>
+                    <li>Copiez l&apos;URL et la clé anon depuis Settings → API</li>
                     <li>Ajoutez-les dans votre <code className="bg-zinc-800 px-1 rounded">.env.local</code></li>
                     <li>Exécutez le schéma SQL (<code className="bg-zinc-800 px-1 rounded">supabase-schema.sql</code>)</li>
                   </ol>
@@ -290,6 +321,81 @@ export default function SettingsPage() {
           </Card>
         )}
 
+        {/* Outreach profile */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5" />
+              Profil d&apos;envoi professionnel
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-zinc-500">
+              Ces informations alimentent les variables <code className="bg-zinc-800 px-1 rounded text-xs text-amber-400">{'{agency_name}'}</code>, <code className="bg-zinc-800 px-1 rounded text-xs text-amber-400">{'{agency_website}'}</code>, <code className="bg-zinc-800 px-1 rounded text-xs text-amber-400">{'{sender_name}'}</code> et <code className="bg-zinc-800 px-1 rounded text-xs text-amber-400">{'{signature}'}</code>.
+            </p>
+
+            <div className="grid gap-3 md:grid-cols-2">
+              <OutreachInput
+                label="Nom expéditeur"
+                value={outreachSettings.sender_name}
+                placeholder="Ex: Clément"
+                onChange={(value) => setOutreachSettings((s) => ({ ...s, sender_name: value }))}
+              />
+              <OutreachInput
+                label="Email pro d'expédition"
+                value={outreachSettings.sender_email}
+                placeholder="bonjour@agence.fr"
+                type="email"
+                onChange={(value) => setOutreachSettings((s) => ({ ...s, sender_email: value }))}
+              />
+              <OutreachInput
+                label="Nom de l'agence"
+                value={outreachSettings.agency_name}
+                placeholder="Artichaud Studio"
+                onChange={(value) => setOutreachSettings((s) => ({ ...s, agency_name: value }))}
+              />
+              <OutreachInput
+                label="Site web agence"
+                value={outreachSettings.agency_website}
+                placeholder="https://agence.fr"
+                type="url"
+                onChange={(value) => setOutreachSettings((s) => ({ ...s, agency_website: value }))}
+              />
+              <OutreachInput
+                label="Téléphone"
+                value={outreachSettings.agency_phone}
+                placeholder="+33 6 00 00 00 00"
+                onChange={(value) => setOutreachSettings((s) => ({ ...s, agency_phone: value }))}
+              />
+              <OutreachInput
+                label="Reply-to"
+                value={outreachSettings.reply_to}
+                placeholder="reponses@agence.fr"
+                type="email"
+                onChange={(value) => setOutreachSettings((s) => ({ ...s, reply_to: value }))}
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-zinc-500">Signature</label>
+              <textarea
+                value={outreachSettings.signature ?? ''}
+                onChange={(e) => setOutreachSettings((s) => ({ ...s, signature: e.target.value }))}
+                rows={5}
+                placeholder={'Clément\nArtichaud Studio\nhttps://agence.fr'}
+                className="w-full px-3 py-2 text-sm text-zinc-200 bg-zinc-900/60 border border-white/[0.08] rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"
+              />
+            </div>
+
+            {outreachError && <p className="text-sm text-red-400">{outreachError}</p>}
+
+            <Button onClick={handleSaveOutreach} disabled={savingOutreach}>
+              {savingOutreach ? <Loader2 className="h-4 w-4 animate-spin" /> : outreachSaved ? <CheckCircle className="h-4 w-4 text-emerald-400" /> : null}
+              {savingOutreach ? 'Sauvegarde...' : outreachSaved ? 'Profil sauvegardé !' : 'Sauvegarder le profil'}
+            </Button>
+          </CardContent>
+        </Card>
+
         {/* Email Templates */}
         <Card>
           <CardHeader>
@@ -300,7 +406,7 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-zinc-500">
-              Personnalisez vos modèles d'email. Utilisez <code className="bg-zinc-800 px-1 rounded text-xs text-amber-400">{'{name}'}</code> pour le nom de l'établissement et <code className="bg-zinc-800 px-1 rounded text-xs text-amber-400">{'{website}'}</code> pour l'URL du site.
+              Personnalisez vos modèles d&apos;email. Utilisez <code className="bg-zinc-800 px-1 rounded text-xs text-amber-400">{'{name}'}</code> pour le nom de l&apos;établissement et <code className="bg-zinc-800 px-1 rounded text-xs text-amber-400">{'{website}'}</code> pour l&apos;URL du site.
             </p>
 
             {/* Template selector tabs */}
@@ -336,7 +442,7 @@ export default function SettingsPage() {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium text-zinc-500">Objet de l'email</label>
+                <label className="text-xs font-medium text-zinc-500">Objet de l&apos;email</label>
                 <input
                   type="text"
                   value={templates[editingTemplate].subject}
@@ -536,6 +642,33 @@ function ApiKeyRow({
       >
         <ExternalLink className="h-4 w-4" />
       </a>
+    </div>
+  )
+}
+
+function OutreachInput({
+  label,
+  value,
+  placeholder,
+  type = 'text',
+  onChange,
+}: {
+  label: string
+  value?: string | null
+  placeholder?: string
+  type?: string
+  onChange: (value: string) => void
+}) {
+  return (
+    <div className="space-y-1">
+      <label className="text-xs font-medium text-zinc-500">{label}</label>
+      <input
+        type={type}
+        value={value ?? ''}
+        placeholder={placeholder}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full px-3 py-2 text-sm text-zinc-200 bg-zinc-900/60 border border-white/[0.08] rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+      />
     </div>
   )
 }

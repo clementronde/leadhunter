@@ -56,9 +56,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).single()
-    const isProUser = profile?.plan === 'pro'
-    if (!isProUser) {
+    const { data: profile } = await supabase.from('profiles').select('plan, role').eq('id', user.id).single()
+    const hasFullAccess = profile?.plan === 'pro' || profile?.role === 'admin'
+    if (!hasFullAccess) {
       const startOfMonth = new Date(); startOfMonth.setDate(1); startOfMonth.setHours(0, 0, 0, 0)
       const { count } = await supabase.from('search_scans')
         .select('id', { count: 'exact', head: true })
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Service non configuré' }, { status: 503 })
     }
 
-    const maxResults = isProUser ? Math.min(requestedMax, 60) : Math.min(requestedMax, 10)
+    const maxResults = hasFullAccess ? Math.min(requestedMax, 60) : Math.min(requestedMax, 10)
 
     console.log(`🗺️ Scan Google Maps: q=${query.length}c loc=${location.length}c max=${maxResults} [user: ${user.id}]`)
 
