@@ -20,6 +20,8 @@ import {
   Zap,
   Shield,
   Send,
+  Inbox,
+  Combine,
 } from 'lucide-react'
 
 const navigationGroups = [
@@ -32,8 +34,10 @@ const navigationGroups = [
     items: [
       { name: 'Leads', href: '/leads', icon: Users },
       { name: 'Campagnes', href: '/campaigns', icon: Send },
+      { name: 'Inbox', href: '/inbox', icon: Inbox },
       { name: 'Scanner', href: '/scanner', icon: Radar },
       { name: 'Pipeline', href: '/pipeline', icon: Kanban },
+      { name: 'Doublons', href: '/duplicates', icon: Combine },
     ],
   },
   {

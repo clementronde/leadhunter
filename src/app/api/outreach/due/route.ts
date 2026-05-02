@@ -136,7 +136,13 @@ export async function POST(request: Request) {
     }
   }
 
-  return NextResponse.json({ processed: results.length, results })
+  return NextResponse.json({
+    processed: results.length,
+    sent: results.filter((result) => result.status === 'sent').length,
+    failed: results.filter((result) => result.status === 'failed').length,
+    cancelled: results.filter((result) => result.status === 'cancelled').length,
+    results,
+  })
 }
 
 async function syncCampaignStats(

@@ -67,6 +67,7 @@ export interface Company {
   do_not_contact?: boolean
   opt_out_at?: string | null
   opt_out_reason?: string | null
+  audit_share_token?: string | null
   
   // Metadata
   created_at: string

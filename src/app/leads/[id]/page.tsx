@@ -7,7 +7,7 @@ import { Header } from '@/components/layout'
 import { Card, CardHeader, CardTitle, CardContent, Badge, Button, Input, Skeleton } from '@/components/ui'
 import { OutreachPanel } from '@/components/leads'
 import { leadsApi } from '@/lib/api'
-import { Company, LeadStatus, Note, WebsiteAudit } from '@/types'
+import { Company, LeadStatus, WebsiteAudit } from '@/types'
 import {
   priorityLabels,
   priorityColors,
@@ -39,7 +39,6 @@ import {
   Info,
   Send,
   Trash2,
-  Edit,
   FileDown,
   TrendingUp,
   TrendingDown,
@@ -219,7 +218,7 @@ export default function LeadDetailPage() {
           <Card className="p-12 text-center">
             <Building2 className="h-16 w-16 mx-auto mb-4 text-zinc-300" />
             <h2 className="text-xl font-semibold mb-2">Lead introuvable</h2>
-            <p className="text-zinc-500 mb-6">Ce lead n'existe pas ou a été supprimé.</p>
+            <p className="text-zinc-500 mb-6">Ce lead n&apos;existe pas ou a été supprimé.</p>
             <Link href="/leads">
               <Button>
                 <ArrowLeft className="h-4 w-4" />
@@ -387,18 +386,31 @@ export default function LeadDetailPage() {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>Audit du site web</CardTitle>
-                  <button
-                    onClick={async () => {
-                      if (!lead) return
-                      setGeneratingPdf(true)
-                      try { await generateAuditPDF(lead) } finally { setGeneratingPdf(false) }
-                    }}
-                    disabled={generatingPdf}
-                    className="flex items-center gap-1.5 text-xs font-medium text-zinc-400 hover:text-amber-400 border border-white/[0.08] rounded-lg px-2.5 py-1.5 transition-colors disabled:opacity-50"
-                  >
-                    <FileDown className="h-3.5 w-3.5" />
-                    {generatingPdf ? 'Génération...' : 'Télécharger PDF'}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {lead.audit_share_token && (
+                      <a
+                        href={`/audit/${lead.audit_share_token}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 text-xs font-medium text-blue-400 hover:text-blue-300 border border-blue-500/20 rounded-lg px-2.5 py-1.5 transition-colors"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                        Rapport public
+                      </a>
+                    )}
+                    <button
+                      onClick={async () => {
+                        if (!lead) return
+                        setGeneratingPdf(true)
+                        try { await generateAuditPDF(lead) } finally { setGeneratingPdf(false) }
+                      }}
+                      disabled={generatingPdf}
+                      className="flex items-center gap-1.5 text-xs font-medium text-zinc-400 hover:text-amber-400 border border-white/[0.08] rounded-lg px-2.5 py-1.5 transition-colors disabled:opacity-50"
+                    >
+                      <FileDown className="h-3.5 w-3.5" />
+                      {generatingPdf ? 'Génération...' : 'Télécharger PDF'}
+                    </button>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   {/* Lighthouse scores */}
@@ -491,7 +503,7 @@ export default function LeadDetailPage() {
                 <Gauge className="h-12 w-12 mx-auto mb-4 text-zinc-300" />
                 <h3 className="font-semibold mb-2">Aucun audit disponible</h3>
                 <p className="text-sm text-zinc-500 mb-4">
-                  Ce site n'a pas encore été analysé.
+                  Ce site n&apos;a pas encore été analysé.
                 </p>
                 {auditError && (
                   <p className="text-sm text-red-600 mb-3">{auditError}</p>
@@ -505,7 +517,7 @@ export default function LeadDetailPage() {
                 <Globe2 className="h-12 w-12 mx-auto mb-4 text-amber-500" />
                 <h3 className="font-semibold text-amber-300 mb-2">Pas de site web</h3>
                 <p className="text-sm text-amber-400">
-                  Cette entreprise n'a pas de site internet. C'est un prospect idéal pour une création de site !
+                  Cette entreprise n&apos;a pas de site internet. C&apos;est un prospect idéal pour une création de site !
                 </p>
               </Card>
             )}

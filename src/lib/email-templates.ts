@@ -29,6 +29,8 @@ Je serais ravi(e) de vous proposer une solution clé en main, adaptée à votre 
 
 {personalized_reason}
 
+{sector_pain}
+
 Seriez-vous disponible pour un échange rapide cette semaine ?
 
 Cordialement,
@@ -45,6 +47,8 @@ Je me permets de vous contacter au sujet de votre site internet ({website}).
 Après analyse, j'ai identifié plusieurs points d'amélioration qui pourraient significativement augmenter votre visibilité et votre taux de conversion : performances, compatibilité mobile, et SEO.
 
 {personalized_reason}
+
+{sector_outcome}
 
 Je serais heureux(se) de vous présenter nos solutions de refonte, adaptées aux dernières attentes des moteurs de recherche.
 
@@ -72,6 +76,37 @@ N'hésitez pas à me répondre ou à me rappeler.
 Cordialement,
 
 {signature}`,
+  },
+}
+
+const SECTOR_COPY: Partial<Record<NonNullable<Company['sector']>, { pain: string; outcome: string }>> = {
+  restaurant: {
+    pain: "Pour un restaurant, les recherches locales se jouent souvent sur mobile, avec le menu, les horaires et la réservation accessibles en quelques secondes.",
+    outcome: "Un site clair peut transformer davantage de recherches Google en réservations.",
+  },
+  beauty: {
+    pain: "Dans la beauté, les clients veulent voir les prestations, les tarifs et prendre rendez-vous rapidement depuis leur téléphone.",
+    outcome: "Un parcours plus fluide peut augmenter les demandes de rendez-vous.",
+  },
+  construction: {
+    pain: "Pour les artisans, un site rassurant avec réalisations, avis et zone d'intervention aide beaucoup avant un premier appel.",
+    outcome: "Une présence web plus solide peut générer des demandes plus qualifiées.",
+  },
+  health: {
+    pain: "Dans la santé, la clarté des informations pratiques et la confiance sont essentielles avant la prise de contact.",
+    outcome: "Un site moderne peut rassurer les patients et réduire les appels répétitifs.",
+  },
+  real_estate: {
+    pain: "Dans l'immobilier, la première impression digitale compte énormément pour inspirer confiance aux vendeurs comme aux acheteurs.",
+    outcome: "Un site mieux structuré peut renforcer votre image locale et capter plus de mandats.",
+  },
+  automotive: {
+    pain: "Dans l'automobile, les clients comparent vite les services, avis et disponibilités avant de téléphoner.",
+    outcome: "Un site plus clair peut faciliter la prise de rendez-vous atelier ou vente.",
+  },
+  retail: {
+    pain: "Pour un commerce local, afficher clairement produits, horaires et accès peut faire la différence face aux grandes plateformes.",
+    outcome: "Une présence web plus complète peut générer plus de visites en magasin.",
   },
 }
 
@@ -169,6 +204,8 @@ export function buildTemplateVariables(
     google_rating: lead?.google_rating?.toString() ?? '',
     google_reviews_count: lead?.google_reviews_count?.toString() ?? '',
     prospect_score: lead?.prospect_score?.toString() ?? '',
+    sector_pain: lead?.sector ? SECTOR_COPY[lead.sector]?.pain ?? '' : '',
+    sector_outcome: lead?.sector ? SECTOR_COPY[lead.sector]?.outcome ?? '' : '',
     agency_name: settings?.agency_name ?? '',
     agency_website: settings?.agency_website ?? '',
     agency_phone: settings?.agency_phone ?? '',

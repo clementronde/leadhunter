@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { leadsApi } from '@/lib/api'
 import { Company } from '@/types'
@@ -11,6 +11,9 @@ import {
   Radar,
   Kanban,
   Settings,
+  Send,
+  Inbox,
+  Combine,
   Globe2,
   Globe,
   X,
@@ -20,8 +23,11 @@ import {
 const NAV_ITEMS = [
   { label: 'Dashboard', href: '/', icon: LayoutDashboard, description: 'Vue d\'ensemble' },
   { label: 'Leads', href: '/leads', icon: Users, description: 'Gérer vos prospects' },
+  { label: 'Campagnes', href: '/campaigns', icon: Send, description: 'Emails et relances' },
+  { label: 'Inbox', href: '/inbox', icon: Inbox, description: 'À envoyer et erreurs' },
   { label: 'Scanner', href: '/scanner', icon: Radar, description: 'Lancer un scan' },
   { label: 'Pipeline', href: '/pipeline', icon: Kanban, description: 'Pipeline CRM' },
+  { label: 'Doublons', href: '/duplicates', icon: Combine, description: 'Fusionner les fiches proches' },
   { label: 'Paramètres', href: '/settings', icon: Settings, description: 'Configuration' },
 ]
 
@@ -38,31 +44,41 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
   const [selectedIndex, setSelectedIndex] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const filteredNav = query
-    ? NAV_ITEMS.filter(
+  const filteredNav = useMemo(() => (
+    query
+      ? NAV_ITEMS.filter(
         (n) =>
           n.label.toLowerCase().includes(query.toLowerCase()) ||
           n.description.toLowerCase().includes(query.toLowerCase())
       )
-    : NAV_ITEMS
+      : NAV_ITEMS
+  ), [query])
 
-  const allResults = [
+  const allResults = useMemo(() => [
     ...filteredNav.map((n) => ({ type: 'nav' as const, ...n })),
     ...leads.map((l) => ({ type: 'lead' as const, label: l.name, href: `/leads/${l.id}`, description: `${l.city} · ${l.has_website ? 'Avec site' : 'Sans site'}`, has_website: l.has_website })),
-  ]
+  ], [filteredNav, leads])
 
   useEffect(() => {
     if (open) {
-      setTimeout(() => inputRef.current?.focus(), 50)
-      setQuery('')
-      setLeads([])
-      setSelectedIndex(0)
+      setTimeout(() => {
+        inputRef.current?.focus()
+        setQuery('')
+        setLeads([])
+        setSelectedIndex(0)
+      }, 50)
     }
   }, [open])
 
   useEffect(() => {
-    setSelectedIndex(0)
-    if (!query.trim()) { setLeads([]); return }
+    const reset = setTimeout(() => setSelectedIndex(0), 0)
+    if (!query.trim()) {
+      const clear = setTimeout(() => setLeads([]), 0)
+      return () => {
+        clearTimeout(reset)
+        clearTimeout(clear)
+      }
+    }
     const timeout = setTimeout(async () => {
       setLoadingLeads(true)
       try {
@@ -71,7 +87,10 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
       } catch {}
       setLoadingLeads(false)
     }, 250)
-    return () => clearTimeout(timeout)
+    return () => {
+      clearTimeout(reset)
+      clearTimeout(timeout)
+    }
   }, [query])
 
   const navigate = useCallback((href: string) => {

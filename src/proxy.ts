@@ -56,9 +56,10 @@ export async function proxy(request: NextRequest) {
   const isLoginPage = pathname === '/login'
   const isRootPage = pathname === '/'
   const isPricingPage = pathname === '/pricing'
+  const isPublicAuditPage = pathname.startsWith('/audit/')
   const isAdminRoute = pathname.startsWith('/admin')
 
-  if (!user && !isLoginPage && !isRootPage && !isPricingPage) {
+  if (!user && !isLoginPage && !isRootPage && !isPricingPage && !isPublicAuditPage) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return applySecurityHeaders(NextResponse.redirect(url))

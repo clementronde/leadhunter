@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS companies (
   do_not_contact BOOLEAN NOT NULL DEFAULT false,
   opt_out_at TIMESTAMPTZ,
   opt_out_reason TEXT,
+  audit_share_token UUID DEFAULT uuid_generate_v4(),
 
   -- Metadata
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -73,6 +74,7 @@ CREATE INDEX IF NOT EXISTS idx_companies_priority ON companies(priority);
 CREATE INDEX IF NOT EXISTS idx_companies_has_website ON companies(has_website);
 CREATE INDEX IF NOT EXISTS idx_companies_prospect_score ON companies(prospect_score DESC);
 CREATE INDEX IF NOT EXISTS idx_companies_google_place_id ON companies(user_id, google_place_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_companies_audit_share_token ON companies(audit_share_token);
 
 -- ============================================
 -- Table: website_audits

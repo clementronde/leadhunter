@@ -63,6 +63,11 @@ export default function SettingsPage() {
   const [savingOutreach, setSavingOutreach] = useState(false)
   const [outreachSaved, setOutreachSaved] = useState(false)
   const [outreachError, setOutreachError] = useState<string | null>(null)
+  const [deliverability, setDeliverability] = useState<{
+    domain: string
+    checks: { mx: boolean; spf: boolean; dmarc: boolean; resend_hint: boolean }
+  } | null>(null)
+  const [checkingDeliverability, setCheckingDeliverability] = useState(false)
 
   // Check if Supabase env vars are present (NEXT_PUBLIC_ are available client-side)
   const supabaseConfigured =
@@ -168,6 +173,17 @@ export default function SettingsPage() {
       console.error('Portal error:', err)
     } finally {
       setPortalLoading(false)
+    }
+  }
+
+  const handleCheckDeliverability = async () => {
+    setCheckingDeliverability(true)
+    try {
+      const res = await fetch('/api/deliverability')
+      const data = await res.json()
+      setDeliverability(res.ok ? data : null)
+    } finally {
+      setCheckingDeliverability(false)
     }
   }
 
@@ -339,11 +355,11 @@ export default function SettingsPage() {
             <CardContent>
               <div className="grid gap-3 md:grid-cols-2">
                 <ConfigRow label="Google Places" ok={isKeyConfigured(health.keys.GOOGLE_MAPS_API_KEY)} envVar="GOOGLE_MAPS_API_KEY" />
-                <ConfigRow label="Hunter email finder" ok={!!health.keys.HUNTER_API_KEY} envVar="HUNTER_API_KEY" />
-                <ConfigRow label="Resend envoi email" ok={!!health.keys.RESEND_API_KEY} envVar="RESEND_API_KEY" />
-                <ConfigRow label="Webhook Resend" ok={!!health.keys.RESEND_WEBHOOK_SECRET} envVar="RESEND_WEBHOOK_SECRET" optional />
-                <ConfigRow label="Cron sécurisé" ok={!!health.keys.CRON_SECRET} envVar="CRON_SECRET" />
-                <ConfigRow label="Supabase service role" ok={!!health.keys.SUPABASE_SERVICE_ROLE_KEY} envVar="SUPABASE_SERVICE_ROLE_KEY" />
+                <ConfigRow label="Hunter email finder" ok={isKeyConfigured(health.keys.HUNTER_API_KEY)} envVar="HUNTER_API_KEY" />
+                <ConfigRow label="Resend envoi email" ok={isKeyConfigured(health.keys.RESEND_API_KEY)} envVar="RESEND_API_KEY" />
+                <ConfigRow label="Webhook Resend" ok={isKeyConfigured(health.keys.RESEND_WEBHOOK_SECRET)} envVar="RESEND_WEBHOOK_SECRET" optional />
+                <ConfigRow label="Cron sécurisé" ok={isKeyConfigured(health.keys.CRON_SECRET)} envVar="CRON_SECRET" />
+                <ConfigRow label="Supabase service role" ok={isKeyConfigured(health.keys.SUPABASE_SERVICE_ROLE_KEY)} envVar="SUPABASE_SERVICE_ROLE_KEY" />
               </div>
             </CardContent>
           </Card>
@@ -421,6 +437,27 @@ export default function SettingsPage() {
               {savingOutreach ? <Loader2 className="h-4 w-4 animate-spin" /> : outreachSaved ? <CheckCircle className="h-4 w-4 text-emerald-400" /> : null}
               {savingOutreach ? 'Sauvegarde...' : outreachSaved ? 'Profil sauvegardé !' : 'Sauvegarder le profil'}
             </Button>
+
+            <div className="rounded-xl border border-white/[0.06] bg-zinc-800/40 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="font-medium text-zinc-200">Délivrabilité domaine</p>
+                  <p className="text-sm text-zinc-500">Vérifie MX, SPF, DMARC et indice Resend.</p>
+                </div>
+                <Button variant="outline" onClick={handleCheckDeliverability} disabled={checkingDeliverability}>
+                  {checkingDeliverability ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
+                  Vérifier
+                </Button>
+              </div>
+              {deliverability && (
+                <div className="mt-4 grid gap-2 sm:grid-cols-4">
+                  <ConfigRow label="MX" ok={deliverability.checks.mx} envVar={deliverability.domain} />
+                  <ConfigRow label="SPF" ok={deliverability.checks.spf} envVar="TXT v=spf1" />
+                  <ConfigRow label="DMARC" ok={deliverability.checks.dmarc} envVar="_dmarc" />
+                  <ConfigRow label="Resend" ok={deliverability.checks.resend_hint} envVar="DKIM/TXT" optional />
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
 

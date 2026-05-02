@@ -6,7 +6,14 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 ALTER TABLE companies
   ADD COLUMN IF NOT EXISTS do_not_contact BOOLEAN NOT NULL DEFAULT false,
   ADD COLUMN IF NOT EXISTS opt_out_at TIMESTAMPTZ,
-  ADD COLUMN IF NOT EXISTS opt_out_reason TEXT;
+  ADD COLUMN IF NOT EXISTS opt_out_reason TEXT,
+  ADD COLUMN IF NOT EXISTS audit_share_token UUID DEFAULT uuid_generate_v4();
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_companies_audit_share_token ON companies(audit_share_token);
+
+UPDATE companies
+SET audit_share_token = uuid_generate_v4()
+WHERE audit_share_token IS NULL;
 
 CREATE TABLE IF NOT EXISTS blocked_recipients (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
