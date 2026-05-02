@@ -6,7 +6,11 @@
       "Bash(npm run:*)",
       "Bash(ls:*)",
       "Bash(./node_modules/.bin/tsc:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(python3 *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)"
     ]
   }
 }
