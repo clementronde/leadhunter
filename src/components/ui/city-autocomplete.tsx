@@ -31,8 +31,14 @@ export function CityAutocomplete({
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const wrapperRef = useRef<HTMLDivElement>(null)
+  const justSelectedRef = useRef(false)
 
   useEffect(() => {
+    if (justSelectedRef.current) {
+      justSelectedRef.current = false
+      return
+    }
+
     if (value.trim().length < 2) {
       const timeout = setTimeout(() => {
         setSuggestions([])
@@ -78,6 +84,7 @@ export function CityAutocomplete({
   }, [])
 
   const selectCity = (city: CitySuggestion) => {
+    justSelectedRef.current = true
     onChange(city.name)
     setOpen(false)
   }
