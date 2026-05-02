@@ -13,6 +13,7 @@ import {
   Select,
   Badge,
   UpgradeModal,
+  CityAutocomplete,
 } from '@/components/ui'
 import { usePlan, FREE_SCAN_LIMIT, FREE_RESULTS_LIMIT } from '@/hooks/usePlan'
 import { Sector, SearchScan, Company } from '@/types'
@@ -497,11 +498,10 @@ function ScannerContent() {
                     <label className="text-sm font-medium text-zinc-400">
                       Ville / Zone *
                     </label>
-                    <Input
+                    <CityAutocomplete
                       placeholder="Ex: Boulogne-Billancourt, Paris 15..."
                       value={location}
-                      onChange={(e) => setLocation(e.target.value)}
-                      icon={<MapPin className="h-4 w-4" />}
+                      onChange={setLocation}
                     />
                   </div>
 
@@ -569,11 +569,10 @@ function ScannerContent() {
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-zinc-400">Ville</label>
-                    <Input
+                    <CityAutocomplete
                       placeholder="Ex: Boulogne-Billancourt"
                       value={location}
-                      onChange={(e) => setLocation(e.target.value)}
-                      icon={<MapPin className="h-4 w-4" />}
+                      onChange={setLocation}
                     />
                   </div>
 

@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
 import { Header } from '@/components/layout'
-import { Card, CardHeader, CardTitle, CardContent, Button, Input } from '@/components/ui'
+import { Card, CardHeader, CardTitle, CardContent, Button, CityAutocomplete } from '@/components/ui'
 import { AdminCityScan } from '@/types'
 import { Building2, Euro, History, Loader2, MapPin, Play, Shield, Users, Crown, UserCheck } from 'lucide-react'
 
@@ -132,11 +132,10 @@ export default function AdminPage() {
           </CardHeader>
           <CardContent className="space-y-5">
             <div className="grid gap-3 lg:grid-cols-[1fr_180px_auto]">
-              <Input
+              <CityAutocomplete
                 value={city}
-                onChange={(e) => setCity(e.target.value)}
+                onChange={setCity}
                 placeholder="Ville à couvrir, ex: Lyon, Nantes, Paris 15"
-                icon={<MapPin className="h-4 w-4" />}
               />
               <select
                 value={maxPerCategory}

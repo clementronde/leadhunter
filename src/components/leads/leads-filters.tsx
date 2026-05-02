@@ -1,9 +1,9 @@
 'use client'
 
-import { Input, Select, Button } from '@/components/ui'
+import { Input, Select, Button, CityAutocomplete } from '@/components/ui'
 import { LeadFilters, LeadStatus, Priority, Sector } from '@/types'
 import { statusLabels, priorityLabels, sectorLabels } from '@/lib/utils'
-import { Search, X, Filter, SlidersHorizontal } from 'lucide-react'
+import { Search, X, SlidersHorizontal } from 'lucide-react'
 import { useState } from 'react'
 
 interface LeadsFiltersProps {
@@ -115,10 +115,10 @@ export function LeadsFilters({ filters, onChange, onReset }: LeadsFiltersProps) 
           {/* City */}
           <div className="space-y-1">
             <label className="text-xs font-medium text-zinc-500">Ville</label>
-            <Input
+            <CityAutocomplete
               placeholder="Ex: Boulogne-Billancourt"
               value={filters.city || ''}
-              onChange={(e) => onChange({ ...filters, city: e.target.value || undefined })}
+              onChange={(city) => onChange({ ...filters, city: city || undefined })}
               className="w-48"
             />
           </div>
