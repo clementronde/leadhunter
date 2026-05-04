@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Header } from '@/components/layout'
 import { LeadsTable, LeadsFilters, LeadCard, CsvImport } from '@/components/leads'
 import { Card, Button, Skeleton, UpgradeModal, ProGate } from '@/components/ui'
@@ -30,6 +30,7 @@ import {
   Gauge,
   Play,
   Send,
+  Radar,
 } from 'lucide-react'
 
 // ============================================
@@ -621,6 +622,9 @@ function LeadsContent() {
     }
   }
 
+  const knownEmails = leads.filter((lead) => !!lead.email).length
+  const leadsWithWebsite = leads.filter((lead) => !!lead.website).length
+
   const handleProcessAudits = async () => {
     if (!canAudit) {
       setShowUpgradeModal(true)
@@ -700,6 +704,24 @@ function LeadsContent() {
           </button>
         </div>
       )}
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Card className="p-4 border-white/[0.06] bg-zinc-900/70">
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-zinc-500">Total</p>
+          <p className="mt-4 text-3xl font-semibold text-white">{loading ? '...' : pagination.total}</p>
+          <p className="mt-2 text-sm text-zinc-400">Leads affichés selon vos filtres</p>
+        </Card>
+        <Card className="p-4 border-white/[0.06] bg-zinc-900/70">
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-zinc-500">Emails</p>
+          <p className="mt-4 text-3xl font-semibold text-white">{loading ? '...' : knownEmails}</p>
+          <p className="mt-2 text-sm text-zinc-400">Leads avec une adresse email connue</p>
+        </Card>
+        <Card className="p-4 border-white/[0.06] bg-zinc-900/70">
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-zinc-500">Sites web</p>
+          <p className="mt-4 text-3xl font-semibold text-white">{loading ? '...' : leadsWithWebsite}</p>
+          <p className="mt-2 text-sm text-zinc-400">Leads avec un site web pour enrichissement</p>
+        </Card>
+      </div>
 
       {/* Filters */}
       <Card className="p-4">
@@ -1024,14 +1046,17 @@ function LeadsContent() {
 }
 
 export default function LeadsPage() {
+  const router = useRouter()
+
   return (
     <div className="min-h-screen">
       <Header
         title="Leads"
-        subtitle="Gerez vos prospects et exportez vos donnees"
+        subtitle="Gérez vos prospects, trouvez les emails et passez à l'action"
         action={{
-          label: 'Ajouter',
-          onClick: () => console.log('Add lead'),
+          label: 'Scanner',
+          onClick: () => router.push('/scanner'),
+          icon: <Radar className="h-4 w-4" />,
         }}
       />
 

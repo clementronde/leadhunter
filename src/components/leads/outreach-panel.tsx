@@ -5,6 +5,7 @@ import { CalendarClock, CheckCircle, Loader2, Mail, Send } from 'lucide-react'
 import { Company, LeadStatus, CreateNoteInput, OutreachSettings } from '@/types'
 import { loadTemplates, applyTemplate, TemplateId } from '@/lib/email-templates'
 import { usePlan } from '@/hooks/usePlan'
+import { Button } from '@/components/ui'
 
 interface OutreachPanelProps {
   lead: Company
@@ -25,6 +26,9 @@ export function OutreachPanel({ lead, onStatusChange, onNoteAdded, compact }: Ou
   const [sendError, setSendError] = useState<string | null>(null)
   const [scheduledAt, setScheduledAt] = useState('')
   const [followupsEnabled, setFollowupsEnabled] = useState(true)
+  const [enrichedEmail, setEnrichedEmail] = useState<string | null>(null)
+  const [enrichingEmail, setEnrichingEmail] = useState(false)
+  const [enrichError, setEnrichError] = useState<string | null>(null)
 
   const { isPro, isAdmin } = usePlan()
   const hasFullAccess = isPro || isAdmin
@@ -32,8 +36,8 @@ export function OutreachPanel({ lead, onStatusChange, onNoteAdded, compact }: Ou
   const templates = loadTemplates()
   const template = templates[selectedTemplate]
   const { subject, body } = applyTemplate(template, lead, undefined, settings)
-
-  const mailtoHref = `mailto:${lead.email || ''}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+  const leadEmail = lead.email || enrichedEmail
+  const mailtoHref = `mailto:${leadEmail || ''}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
 
   useEffect(() => {
     fetch('/api/outreach/settings')
@@ -52,6 +56,28 @@ export function OutreachPanel({ lead, onStatusChange, onNoteAdded, compact }: Ou
       setContacted(true)
     } finally {
       setMarkingContacted(false)
+    }
+  }
+
+  const handleEnrichEmail = async () => {
+    if (!lead.website) return
+    setEnrichError(null)
+    setEnrichingEmail(true)
+    try {
+      const res = await fetch('/api/enrich-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ domain: lead.website, companyId: lead.id }),
+      })
+      const data = await res.json()
+      if (!res.ok || !data.email) {
+        throw new Error(data.error || data.message || 'Aucun email trouvé')
+      }
+      setEnrichedEmail(data.email)
+    } catch (err) {
+      setEnrichError(err instanceof Error ? err.message : 'Erreur enrichissement')
+    } finally {
+      setEnrichingEmail(false)
     }
   }
 
@@ -90,6 +116,28 @@ export function OutreachPanel({ lead, onStatusChange, onNoteAdded, compact }: Ou
 
   return (
     <div className={compact ? 'space-y-3' : 'space-y-4'}>
+      <div className="rounded-2xl border border-white/[0.08] bg-zinc-900/70 p-4">
+        <div className="flex items-center justify-between gap-3 text-sm">
+          <div>
+            <p className="font-semibold text-white">Contact par email</p>
+            <p className="text-xs text-zinc-500">
+              {leadEmail
+                ? 'Adresse trouvée, vous pouvez envoyer directement depuis LeadHunter.'
+                : lead.website
+                ? 'Aucun email destinataire connu. Essayez de le trouver automatiquement.'
+                : 'Aucun email destinataire disponible pour ce lead.'}
+            </p>
+          </div>
+          <span
+            className={`rounded-full px-2 py-1 text-[11px] font-semibold ${
+              leadEmail ? 'bg-emerald-500/15 text-emerald-300' : 'bg-amber-500/15 text-amber-300'
+            }`}
+          >
+            {leadEmail ? 'EMAIL OK' : 'EMAIL MANQUANT'}
+          </span>
+        </div>
+      </div>
+
       {/* Template selector */}
       <div>
         {!compact && <p className="text-sm font-medium text-zinc-400 mb-2">Modèle d&apos;email</p>}
@@ -124,9 +172,9 @@ export function OutreachPanel({ lead, onStatusChange, onNoteAdded, compact }: Ou
         />
       </div>
 
-      {/* Open in mail client */}
-      {lead.email ? (
-        <div className="space-y-2">
+      {/* Contact actions */}
+      {leadEmail ? (
+        <div className="space-y-3">
           {hasFullAccess ? (
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto]">
               <label className="relative">
@@ -138,14 +186,14 @@ export function OutreachPanel({ lead, onStatusChange, onNoteAdded, compact }: Ou
                   className="w-full rounded-lg border border-white/[0.08] bg-zinc-800/60 py-2.5 pl-9 pr-3 text-sm text-zinc-300 focus:outline-none focus:ring-2 focus:ring-amber-500"
                 />
               </label>
-              <button
+              <Button
                 onClick={handleSend}
                 disabled={sending}
-                className="flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
+                className="w-full sm:w-auto"
               >
                 {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : scheduledAt ? <CalendarClock className="h-4 w-4" /> : <Send className="h-4 w-4" />}
                 {sending ? 'Traitement...' : scheduledAt ? 'Programmer' : 'Envoyer'}
-              </button>
+              </Button>
             </div>
           ) : (
             <a
@@ -198,8 +246,33 @@ export function OutreachPanel({ lead, onStatusChange, onNoteAdded, compact }: Ou
           )}
         </div>
       ) : (
-        <div className="text-xs text-zinc-500 bg-zinc-800/40 border border-white/[0.08] rounded-lg p-3">
-          Pas d&apos;email connu — copiez le texte pour un envoi manuel.
+        <div className="space-y-3">
+          <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-zinc-100">
+            <p className="font-medium text-white">Aucun email destinataire détecté</p>
+            <p className="mt-1 text-xs text-zinc-300">
+              Ce lead n&apos;a pas d&apos;email connu. Sans adresse, vous ne pouvez pas envoyer directement depuis l&apos;application.
+            </p>
+          </div>
+          {lead.website ? (
+            <div className="flex flex-col gap-2">
+              <Button
+                onClick={handleEnrichEmail}
+                disabled={enrichingEmail}
+                variant="secondary"
+              >
+                {enrichingEmail ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                {enrichingEmail ? 'Recherche en cours...' : 'Trouver l’email depuis le site'}
+              </Button>
+              {enrichError && <p className="text-xs text-red-300">{enrichError}</p>}
+              <p className="text-xs text-zinc-500">
+                S&apos;il existe, l&apos;email du lead sera automatiquement ajouté pour vous permettre d&apos;envoyer le message.
+              </p>
+            </div>
+          ) : (
+            <p className="text-xs text-zinc-400">
+              Ajoutez manuellement l&apos;email du lead dans la fiche si vous le connaissez, ou utilisez un autre canal de contact.
+            </p>
+          )}
         </div>
       )}
 

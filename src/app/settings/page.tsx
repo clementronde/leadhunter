@@ -247,6 +247,34 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5" />
+              Checklist email
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-zinc-500">
+              Pour envoyer des emails depuis LeadHunter, suivez ces étapes :
+            </p>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="rounded-2xl border border-white/[0.08] bg-zinc-900/70 p-4">
+                <p className="text-xs uppercase tracking-[0.24em] text-zinc-500">1. Profil</p>
+                <p className="mt-3 text-sm text-zinc-200">Renseignez un email expéditeur pro, un nom d'agence et une signature.</p>
+              </div>
+              <div className="rounded-2xl border border-white/[0.08] bg-zinc-900/70 p-4">
+                <p className="text-xs uppercase tracking-[0.24em] text-zinc-500">2. Domaine</p>
+                <p className="mt-3 text-sm text-zinc-200">Vérifiez MX, SPF, DMARC et la configuration Resend pour votre domaine.</p>
+              </div>
+              <div className="rounded-2xl border border-white/[0.08] bg-zinc-900/70 p-4">
+                <p className="text-xs uppercase tracking-[0.24em] text-zinc-500">3. Templates</p>
+                <p className="mt-3 text-sm text-zinc-200">Personnalisez vos modèles avant d'envoyer vos premiers emails.</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Database connection — admin only */}
         {isAdmin && (
           <Card>

@@ -74,12 +74,12 @@ export function Header({ title, subtitle, action }: HeaderProps) {
   const isOnScanner = pathname === '/scanner'
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-white/[0.05] bg-[#09090b]/95 backdrop-blur-xl px-5">
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-white/[0.05] bg-[#09090b]/95 backdrop-blur-xl px-5">
       {/* Left: title */}
       <div className="min-w-0 flex-1 mr-4">
-        <h1 className="text-base font-semibold text-white truncate">{title}</h1>
+        <h1 className="text-base sm:text-lg font-semibold text-white truncate">{title}</h1>
         {subtitle && (
-          <p className="text-xs text-zinc-500 truncate">{subtitle}</p>
+          <p className="text-xs sm:text-sm text-zinc-500 truncate">{subtitle}</p>
         )}
       </div>
 
@@ -88,6 +88,7 @@ export function Header({ title, subtitle, action }: HeaderProps) {
         {/* Search — opens command palette */}
         <button
           onClick={() => window.dispatchEvent(new CustomEvent('open-cmd'))}
+          aria-label="Ouvrir la recherche"
           className="hidden md:flex items-center gap-2 w-52 h-8 pl-2.5 pr-2 text-xs bg-zinc-900 border border-white/[0.07] text-zinc-500 rounded-lg hover:border-white/[0.14] hover:text-zinc-400 transition-all"
         >
           <Search className="h-3.5 w-3.5 shrink-0" />
