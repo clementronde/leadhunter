@@ -3,8 +3,8 @@ import { z } from 'zod'
 import { requireUser } from '@/lib/server-auth'
 
 const mergeSchema = z.object({
-  keepId: z.string().uuid(),
-  mergeIds: z.array(z.string().uuid()).min(1).max(20),
+  keepId: z.string().min(1),
+  mergeIds: z.array(z.string().min(1)).min(1).max(20),
 })
 
 type DuplicateLead = {
@@ -85,10 +85,19 @@ export async function PATCH(request: Request) {
   const { supabase, user, response } = await requireUser()
   if (response || !user) return response
 
-  const body = await request.json().catch(() => null)
+  let body: unknown
+  try {
+    body = await request.json()
+  } catch {
+    return NextResponse.json({ error: 'Corps de requête invalide' }, { status: 400 })
+  }
+
   const parsed = mergeSchema.safeParse(body)
   if (!parsed.success) {
-    return NextResponse.json({ error: 'Données invalides' }, { status: 400 })
+    return NextResponse.json(
+      { error: 'Données invalides', issues: parsed.error.flatten().fieldErrors },
+      { status: 400 }
+    )
   }
 
   const keepId = parsed.data.keepId

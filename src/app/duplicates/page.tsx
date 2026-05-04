@@ -22,38 +22,53 @@ export default function DuplicatesPage() {
   const [loading, setLoading] = useState(true)
   const [merging, setMerging] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   const loadDuplicates = useCallback(async () => {
     setLoading(true)
-    const res = await fetch('/api/leads/duplicates')
-    const payload = await res.json()
-    if (res.ok) setGroups(payload.groups ?? [])
-    setLoading(false)
+    setError(null)
+    try {
+      const res = await fetch('/api/leads/duplicates')
+      const payload = await res.json()
+      if (!res.ok) {
+        setError(payload?.error || 'Impossible de charger les doublons')
+        setGroups([])
+      } else {
+        setGroups(payload.groups ?? [])
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Impossible de charger les doublons')
+      setGroups([])
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
   useEffect(() => {
-    let cancelled = false
-    fetch('/api/leads/duplicates')
-      .then((res) => res.json().then((payload) => ({ ok: res.ok, payload })))
-      .then(({ ok, payload }) => {
-        if (!cancelled && ok) setGroups(payload.groups ?? [])
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
-    return () => { cancelled = true }
-  }, [])
+    loadDuplicates()
+  }, [loadDuplicates])
 
   async function mergeGroup(group: DuplicateLead[], keepId: string) {
+    const mergeIds = group.filter((lead) => lead.id !== keepId).map((lead) => lead.id)
+    if (mergeIds.length === 0) {
+      setMessage('Aucun doublon à fusionner pour ce groupe.')
+      return
+    }
+
     setMerging(keepId)
     setMessage(null)
+    setError(null)
     const res = await fetch('/api/leads/duplicates', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ keepId, mergeIds: group.filter((lead) => lead.id !== keepId).map((lead) => lead.id) }),
+      body: JSON.stringify({ keepId, mergeIds }),
     })
     const payload = await res.json().catch(() => ({}))
-    setMessage(res.ok ? `${payload.merged ?? 0} doublon(s) fusionné(s).` : payload.error ?? 'Fusion impossible')
+    if (res.ok) {
+      setMessage(`${payload.merged ?? 0} doublon(s) fusionné(s).`)
+    } else {
+      setError(payload.error ?? 'Fusion impossible')
+    }
     await loadDuplicates()
     setMerging(null)
   }
@@ -85,6 +100,12 @@ export default function DuplicatesPage() {
         {message && (
           <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
             {message}
+          </div>
+        )}
+
+        {error && (
+          <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+            {error}
           </div>
         )}
 
