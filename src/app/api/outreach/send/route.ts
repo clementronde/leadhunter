@@ -59,6 +59,7 @@ export async function POST(request: Request) {
     await assertCanContactEmail({ supabase, userId: user.id, email: input.recipientEmail })
     if (!isFutureSchedule) await assertDailySendLimit({ supabase, userId: user.id })
   } catch (error) {
+    console.error('Contact/send limit error', { userId: user.id, email: input.recipientEmail, error: error instanceof Error ? error.message : error })
     return NextResponse.json({ error: error instanceof Error ? error.message : 'Envoi bloqué' }, { status: 409 })
   }
 
@@ -74,7 +75,11 @@ export async function POST(request: Request) {
 
   const senderEmail = settings?.sender_email || user.email
   if (!senderEmail) {
-    return NextResponse.json({ error: 'Ajoutez un email expéditeur professionnel avant envoi' }, { status: 400 })
+    console.error('No sender email configured', { userId: user.id, userEmail: user.email, settings })
+    return NextResponse.json({ 
+      error: 'Aucun email expéditeur configuré. Allez dans Paramètres > Outreach pour configurer un email professionnel, ou vérifiez que votre profil a un email valide.',
+      details: { hasSettings: !!settings, hasUserEmail: !!user.email }
+    }, { status: 400 })
   }
 
   const baseMessage = {
@@ -145,7 +150,10 @@ export async function POST(request: Request) {
       .select()
       .single()
 
-    if (updateError) throw updateError
+    if (updateError) {
+      console.error('Database update error after send', { messageId: inserted.id, error: updateError })
+      throw updateError
+    }
 
     await supabase
       .from('companies')
@@ -176,6 +184,7 @@ export async function POST(request: Request) {
   } catch (error) {
     const now = new Date().toISOString()
     const errorMessage = error instanceof Error ? error.message : 'Erreur envoi email'
+    console.error('Email send failed', { messageId: inserted.id, userId: user.id, error: errorMessage, senderEmail, recipientEmail: input.recipientEmail })
 
     const { data: message } = await supabase
       .from('email_messages')

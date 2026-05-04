@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { CalendarClock, CheckCircle, Loader2, Mail, Send } from 'lucide-react'
 import { Company, LeadStatus, CreateNoteInput, OutreachSettings } from '@/types'
 import { loadTemplates, applyTemplate, TemplateId } from '@/lib/email-templates'
+import { usePlan } from '@/hooks/usePlan'
 
 interface OutreachPanelProps {
   lead: Company
@@ -24,6 +25,9 @@ export function OutreachPanel({ lead, onStatusChange, onNoteAdded, compact }: Ou
   const [sendError, setSendError] = useState<string | null>(null)
   const [scheduledAt, setScheduledAt] = useState('')
   const [followupsEnabled, setFollowupsEnabled] = useState(true)
+
+  const { isPro, isAdmin } = usePlan()
+  const hasFullAccess = isPro || isAdmin
 
   const templates = loadTemplates()
   const template = templates[selectedTemplate]
@@ -123,35 +127,49 @@ export function OutreachPanel({ lead, onStatusChange, onNoteAdded, compact }: Ou
       {/* Open in mail client */}
       {lead.email ? (
         <div className="space-y-2">
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto]">
-            <label className="relative">
-              <CalendarClock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+          {hasFullAccess ? (
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto]">
+              <label className="relative">
+                <CalendarClock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+                <input
+                  type="datetime-local"
+                  value={scheduledAt}
+                  onChange={(e) => setScheduledAt(e.target.value)}
+                  className="w-full rounded-lg border border-white/[0.08] bg-zinc-800/60 py-2.5 pl-9 pr-3 text-sm text-zinc-300 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                />
+              </label>
+              <button
+                onClick={handleSend}
+                disabled={sending}
+                className="flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
+              >
+                {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : scheduledAt ? <CalendarClock className="h-4 w-4" /> : <Send className="h-4 w-4" />}
+                {sending ? 'Traitement...' : scheduledAt ? 'Programmer' : 'Envoyer'}
+              </button>
+            </div>
+          ) : (
+            <a
+              href={mailtoHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 rounded-lg bg-amber-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-amber-700"
+            >
+              <Mail className="h-4 w-4" />
+              Ouvrir dans ma messagerie
+            </a>
+          )}
+
+          {hasFullAccess && (
+            <label className="flex items-center justify-between rounded-lg border border-white/[0.06] bg-zinc-800/40 px-3 py-2 text-xs text-zinc-400">
+              Relances automatiques J+3 et J+7
               <input
-                type="datetime-local"
-                value={scheduledAt}
-                onChange={(e) => setScheduledAt(e.target.value)}
-                className="w-full rounded-lg border border-white/[0.08] bg-zinc-800/60 py-2.5 pl-9 pr-3 text-sm text-zinc-300 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                type="checkbox"
+                checked={followupsEnabled}
+                onChange={(e) => setFollowupsEnabled(e.target.checked)}
+                className="h-4 w-4 accent-amber-500"
               />
             </label>
-            <button
-              onClick={handleSend}
-              disabled={sending}
-              className="flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
-            >
-              {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : scheduledAt ? <CalendarClock className="h-4 w-4" /> : <Send className="h-4 w-4" />}
-              {sending ? 'Traitement...' : scheduledAt ? 'Programmer' : 'Envoyer'}
-            </button>
-          </div>
-
-          <label className="flex items-center justify-between rounded-lg border border-white/[0.06] bg-zinc-800/40 px-3 py-2 text-xs text-zinc-400">
-            Relances automatiques J+3 et J+7
-            <input
-              type="checkbox"
-              checked={followupsEnabled}
-              onChange={(e) => setFollowupsEnabled(e.target.checked)}
-              className="h-4 w-4 accent-amber-500"
-            />
-          </label>
+          )}
 
           {sendStatus && (
             <p className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-xs font-medium text-emerald-300">
@@ -168,7 +186,12 @@ export function OutreachPanel({ lead, onStatusChange, onNoteAdded, compact }: Ou
             </div>
           )}
 
-          {!settings?.sender_email && (
+          {!hasFullAccess && (
+            <p className="text-xs text-amber-400">
+              Passez au plan Pro pour envoyer directement depuis LeadHunter avec suivi et relances automatiques.
+            </p>
+          )}
+          {hasFullAccess && !settings?.sender_email && (
             <p className="text-xs text-amber-400">
               Ajoutez un email pro dans Paramètres pour envoyer depuis LeadHunter.
             </p>
