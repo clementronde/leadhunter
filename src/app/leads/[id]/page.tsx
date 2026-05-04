@@ -44,6 +44,7 @@ import {
   TrendingDown,
   Minus,
   History,
+  Star,
 } from 'lucide-react'
 import { generateAuditPDF } from '@/lib/audit-pdf'
 
@@ -232,6 +233,9 @@ export default function LeadDetailPage() {
   }
 
   const audit = lead.audit
+  const googleMyBusinessUrl =
+    lead.google_maps_url ||
+    (lead.google_place_id ? `https://www.google.com/maps/place/?q=place_id:${encodeURIComponent(lead.google_place_id)}` : null)
 
   return (
     <div className="min-h-screen">
@@ -339,6 +343,17 @@ export default function LeadDetailPage() {
                       <a href={lead.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm text-amber-600 hover:text-amber-700">
                         <ExternalLink className="h-4 w-4" />
                         {lead.website.replace(/^https?:\/\//, '')}
+                      </a>
+                    )}
+                    {googleMyBusinessUrl && (
+                      <a
+                        href={googleMyBusinessUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 text-sm text-blue-400 hover:text-blue-300"
+                      >
+                        <MapPin className="h-4 w-4" />
+                        Fiche Google My Business
                       </a>
                     )}
                   </div>
@@ -584,18 +599,85 @@ export default function LeadDetailPage() {
               </CardContent>
             </Card>
             
+            {/* Quick actions card */}
+            <Card>
+              <CardHeader>
+                <CardTitle>État du lead</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {/* Email readiness */}
+                <div className={`flex items-center gap-3 p-3 rounded-lg border ${
+                  lead.email
+                    ? 'bg-emerald-500/10 border-emerald-500/20'
+                    : lead.website
+                    ? 'bg-amber-500/10 border-amber-500/20'
+                    : 'bg-red-500/10 border-red-500/20'
+                }`}>
+                  <div className={`h-2 w-2 rounded-full ${
+                    lead.email
+                      ? 'bg-emerald-500'
+                      : lead.website
+                      ? 'bg-amber-500'
+                      : 'bg-red-500'
+                  }`} />
+                  <div className="flex-1">
+                    {lead.email ? (
+                      <p className="text-xs font-medium text-emerald-300">Prêt à contacter</p>
+                    ) : lead.website ? (
+                      <p className="text-xs font-medium text-amber-300">À enrichir</p>
+                    ) : (
+                      <p className="text-xs font-medium text-red-300">Infos incomplètes</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Contact timeline */}
+                <div className="space-y-2 border-t border-white/[0.06] pt-3">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-zinc-500">Status CRM</span>
+                    <Badge className={statusColors[lead.status]} variant="outline">
+                      {statusLabels[lead.status]}
+                    </Badge>
+                  </div>
+                  {lead.last_contacted_at && (
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-zinc-500">Dernier contact</span>
+                      <span className="text-zinc-300">{formatDate(lead.last_contacted_at)}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-zinc-500">Ajouté</span>
+                    <span className="text-zinc-300">{timeAgo(lead.created_at)}</span>
+                  </div>
+                </div>
+
+                {/* Next step suggestion */}
+                <div className="border-t border-white/[0.06] pt-3 text-xs">
+                  {lead.email && lead.status === 'new' && (
+                    <p className="text-amber-400">💡 Suggéré: Envoyer un premier email</p>
+                  )}
+                  {lead.email && lead.status === 'contacted' && lead.last_contacted_at && (
+                    <p className="text-blue-400">💡 Suggéré: Relancer dans 3-5 jours</p>
+                  )}
+                  {lead.website && !lead.email && (
+                    <p className="text-amber-400">💡 Suggéré: Enrichir l'email du site web</p>
+                  )}
+                  {!lead.email && !lead.website && (
+                    <p className="text-zinc-500">⚠️ Infos à compléter (email ou site)</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+            
             {/* Info card */}
             <Card>
               <CardHeader>
                 <CardTitle>Informations</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
-                <InfoRow label="Source" value={lead.source} />
+                <InfoRow label="Source" value={lead.source === 'google_places' ? 'Google Maps' : lead.source === 'sirene' ? 'INSEE Sirene' : lead.source} />
                 {lead.siret && <InfoRow label="SIRET" value={lead.siret} />}
-                <InfoRow label="Ajouté le" value={formatDate(lead.created_at)} />
-                {lead.last_contacted_at && (
-                  <InfoRow label="Dernier contact" value={formatDate(lead.last_contacted_at)} />
-                )}
+                <InfoRow label="Créé le" value={formatDate(lead.created_at)} />
               </CardContent>
             </Card>
           </div>
