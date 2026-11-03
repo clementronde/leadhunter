@@ -110,15 +110,18 @@ export async function PATCH(request: Request) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  const results: { id: string; status: string; error?: string }[] = []
+  // Réserver les jobs (un autre appel concurrent ne reprendra pas ceux déjà passés en "running")
+  const now = new Date().toISOString()
+  const { data: claimed } = await supabase
+    .from('audit_jobs')
+    .update({ status: 'running', started_at: now, updated_at: now })
+    .in('id', (jobs ?? []).map((job) => job.id))
+    .eq('status', 'pending')
+    .select('*')
 
-  for (const job of jobs ?? []) {
-    const now = new Date().toISOString()
-    await supabase
-      .from('audit_jobs')
-      .update({ status: 'running', started_at: now, attempts: job.attempts + 1, updated_at: now })
-      .eq('id', job.id)
-
+  // Audits en parallèle : PageSpeed + capture + avis design
+  const results = await Promise.all((claimed ?? []).map(async (job) => {
+    await supabase.from('audit_jobs').update({ attempts: (job.attempts ?? 0) + 1 }).eq('id', job.id)
     try {
       await runAuditForCompany({
         supabase,
@@ -132,16 +135,16 @@ export async function PATCH(request: Request) {
         .update({ status: 'completed', completed_at: new Date().toISOString(), updated_at: new Date().toISOString() })
         .eq('id', job.id)
 
-      results.push({ id: job.id, status: 'completed' })
+      return { id: job.id, status: 'completed' }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Erreur audit'
       await supabase
         .from('audit_jobs')
         .update({ status: 'failed', error_message: message, completed_at: new Date().toISOString(), updated_at: new Date().toISOString() })
         .eq('id', job.id)
-      results.push({ id: job.id, status: 'failed', error: message })
+      return { id: job.id, status: 'failed', error: message }
     }
-  }
+  }))
 
   return NextResponse.json({ processed: results.length, results })
 }

@@ -16,7 +16,16 @@ const scanSchema = z.object({
   maxResults: z.number().int().min(1).max(60).optional(),
 })
 
-export const maxDuration = 60
+export const maxDuration = 120
+
+/** Valeur envoyée par le Scanner pour « Tous types d'entreprises » */
+const ALL_TYPES_QUERY = '__all__'
+const ALL_TYPES_CATEGORIES = [
+  'restaurants', 'coiffeurs', 'boulangeries', 'instituts de beauté', 'plombiers', 'électriciens',
+  'maçons', 'menuisiers', 'garages automobiles', 'agences immobilières', 'cabinets médicaux',
+  'dentistes', 'hôtels', 'bars', 'fleuristes', 'boutiques de vêtements', 'salles de sport',
+  'paysagistes', 'photographes', 'avocats', 'experts-comptables', 'auto-écoles', 'opticiens', 'traiteurs',
+]
 
 function createSupabaseFromRequest(request: NextRequest) {
   const response = NextResponse.next({ request })
@@ -107,19 +116,14 @@ export async function POST(request: NextRequest) {
 
     // 2. Text Search — paginer jusqu'à avoir maxResults NOUVELLES fiches
     const newPlaces: PlaceSearchResult[] = []
-    let pageToken: string | undefined = undefined
     let skippedCount = 0
+    const allTypes = query.trim() === ALL_TYPES_QUERY
 
-    while (newPlaces.length < maxResults) {
-      const { places: pagePlaces, nextPageToken } = await searchGooglePlaces({
-        query: query.trim(),
-        location: location.trim(),
-        pageToken,
-      })
-
-      if (pagePlaces.length === 0) break
-
+    // Ajoute les fiches nouvelles d'une page, au plus `cap` ; renvoie le nombre ajouté
+    const takeNew = (pagePlaces: PlaceSearchResult[], cap: number) => {
+      let added = 0
       for (const place of pagePlaces) {
+        if (newPlaces.length >= maxResults || added >= cap) break
         if (place.business_status === 'CLOSED_PERMANENTLY') continue
         if (knownPlaceIds.has(place.place_id)) {
           skippedCount++
@@ -127,12 +131,41 @@ export async function POST(request: NextRequest) {
         }
         knownPlaceIds.add(place.place_id) // éviter doublons dans ce scan
         newPlaces.push(place)
-        if (newPlaces.length >= maxResults) break
+        added++
       }
+      return added
+    }
 
-      if (!nextPageToken || newPlaces.length >= maxResults) break
+    if (allTypes) {
+      // Tous types : on balaie plusieurs familles de métiers pour varier les résultats
+      const categories = [...ALL_TYPES_CATEGORIES].sort(() => Math.random() - 0.5)
+      const perCategory = Math.max(3, Math.ceil(maxResults / 8))
+      const firstPages: PlaceSearchResult[][] = []
+      for (const category of categories) {
+        if (newPlaces.length >= maxResults) break
+        const { places } = await searchGooglePlaces({ query: category, location: location.trim() })
+        firstPages.push(places)
+        takeNew(places, perCategory)
+      }
+      // 2e passe sans plafond si la zone est petite
+      for (const places of firstPages) {
+        if (newPlaces.length >= maxResults) break
+        takeNew(places, Infinity)
+      }
+    } else {
+      let pageToken: string | undefined = undefined
+      while (newPlaces.length < maxResults) {
+        const { places: pagePlaces, nextPageToken } = await searchGooglePlaces({
+          query: query.trim(),
+          location: location.trim(),
+          pageToken,
+        })
 
-      pageToken = nextPageToken
+        if (pagePlaces.length === 0) break
+        takeNew(pagePlaces, Infinity)
+        if (!nextPageToken || newPlaces.length >= maxResults) break
+        pageToken = nextPageToken
+      }
     }
 
     console.log(`📊 ${newPlaces.length} nouvelles fiches, ${skippedCount} déjà en base`)
@@ -227,7 +260,7 @@ export async function POST(request: NextRequest) {
     // 6. Enregistrer le scan
     await supabase.from('search_scans').insert({
       user_id: user.id,
-      query: `${query} - ${location}`,
+      query: `${query.trim() === ALL_TYPES_QUERY ? 'Tous types' : query} - ${location}`,
       location: { lat: 0, lng: 0, radius: 0 },
       status: 'completed',
       progress: 100,

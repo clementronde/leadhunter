@@ -127,6 +127,7 @@ function ScannerContent() {
   const [gmQuery, setGmQuery] = useState(() => searchParams.get('query') || '')
   const [gmMaxResults, setGmMaxResults] = useState('20')
   const [gmAuditWebsites, setGmAuditWebsites] = useState(true)
+  const [gmAllTypes, setGmAllTypes] = useState(false)
   const [showSuggestions, setShowSuggestions] = useState(false)
   const suggestionRef = useRef<HTMLDivElement>(null)
 
@@ -184,7 +185,7 @@ function ScannerContent() {
   const hasFormInput =
     activeSource === 'insee'
       ? !!(location.trim() || codePostal.trim())
-      : !!(gmQuery.trim() && location.trim())
+      : !!((gmAllTypes || gmQuery.trim()) && location.trim())
 
   const canStartScan = hasFormInput && !isScanning
 
@@ -202,7 +203,7 @@ function ScannerContent() {
 
     const queryLabel =
       activeSource === 'google_maps'
-        ? `${gmQuery} - ${location}`
+        ? `${gmAllTypes ? 'Tous types' : gmQuery} - ${location}`
         : `${activite || 'Entreprises'} - ${location || codePostal}`
 
     const newScan: SearchScan = {
@@ -230,7 +231,7 @@ function ScannerContent() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            query: gmQuery.trim(),
+            query: gmAllTypes ? '__all__' : gmQuery.trim(),
             location: location.trim(),
             maxResults: parseInt(gmMaxResults),
           }),
@@ -317,8 +318,7 @@ function ScannerContent() {
 
   // Phase 2 : audits Speed Insights en queue serveur
   const queueAuditPhase = async (companies: ScanResult['companies']) => {
-    const MAX_AUDITS = isPro ? 10 : 5
-    const toAudit = companies.filter((c) => c.website && c.id).slice(0, MAX_AUDITS)
+    const toAudit = companies.filter((c) => c.website && c.id)
     if (toAudit.length === 0) return
 
     setAuditPhase(true)
@@ -336,11 +336,11 @@ function ScannerContent() {
       if (!res.ok) return
 
       // Traiter la file tout de suite : PageSpeed + capture + avis design par IA
-      for (let round = 0; round < toAudit.length; round++) {
+      for (let round = 0; round < Math.ceil(toAudit.length / 4) + 3; round++) {
         const run = await fetch('/api/audit/queue', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ limit: 2 }),
+          body: JSON.stringify({ limit: 4 }),
         })
         if (!run.ok) break
         const data = await run.json() as { processed: number; results: { status: string }[] }
@@ -495,13 +495,14 @@ function ScannerContent() {
                     </label>
                     <div className="relative">
                       <Input
-                        placeholder="Ex: restaurants, coiffeurs, plombiers..."
-                        value={gmQuery}
+                        placeholder={gmAllTypes ? 'Tous types d’entreprises' : 'Ex: restaurants, coiffeurs, plombiers...'}
+                        disabled={gmAllTypes}
+                        value={gmAllTypes ? '' : gmQuery}
                         onChange={(e) => { setGmQuery(e.target.value); setShowSuggestions(true) }}
                         onFocus={() => setShowSuggestions(true)}
                         icon={<Search className="h-4 w-4" />}
                       />
-                      {showSuggestions && filteredTypes.length > 0 && (
+                      {!gmAllTypes && showSuggestions && filteredTypes.length > 0 && (
                         <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-zinc-900 border border-white/[0.08] rounded-lg shadow-lg shadow-black/40 max-h-52 overflow-y-auto">
                           {filteredTypes.map((type) => (
                             <button
@@ -520,6 +521,15 @@ function ScannerContent() {
                         </div>
                       )}
                     </div>
+                    <label className="flex items-center gap-2 text-xs text-zinc-400 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={gmAllTypes}
+                        onChange={(e) => { setGmAllTypes(e.target.checked); setShowSuggestions(false) }}
+                        className="h-3.5 w-3.5 rounded accent-amber-500"
+                      />
+                      Tous types d&apos;entreprises (restaurants, artisans, commerces, santé…)
+                    </label>
                   </div>
 
                   <div className="space-y-2">
@@ -568,7 +578,7 @@ function ScannerContent() {
                       onClick={() => { if (!canAudit) setUpgradeModal('audit') }}
                     >
                       <Zap className="h-3.5 w-3.5" />
-                      Analyser les performances des sites trouvés (Core Web Vitals)
+                      Auditer tous les sites trouvés : PageSpeed, capture d&apos;écran et avis design
                       {!canAudit && (
                         <span className="ml-1 text-xs font-semibold bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full">
                           Pro
@@ -576,8 +586,8 @@ function ScannerContent() {
                       )}
                     </label>
                     <p className={`text-xs mt-0.5 ${canAudit ? 'text-blue-400' : 'text-zinc-400'}`}>
-                      Lance un audit PageSpeed Insights sur chaque site web détecté. Plus lent mais
-                      identifie précisément les sites datés ou peu performants.
+                      Chaque entreprise scannée qui a un site est auditée juste après le scan :
+                      score Google PageSpeed, capture de la page d&apos;accueil et avis design par IA.
                     </p>
                   </div>
                 </div>
@@ -816,7 +826,7 @@ function ScannerContent() {
                     />
                   </div>
                   <p className="text-xs text-blue-400 mt-1">
-                    Environ 20 à 40 secondes par site. Si vous quittez la page, les audits restants seront faits demain matin.
+                    Environ 10 secondes par site (4 en parallèle). Si vous quittez la page, les audits restants seront faits demain matin.
                   </p>
                 </div>
               )}
