@@ -60,6 +60,18 @@ export function LeadsFilters({ filters, onChange, onReset }: LeadsFiltersProps) 
           className="w-40"
         />
         
+        {/* Sort */}
+        <Select
+          aria-label="Trier les leads"
+          options={[
+            { value: 'recent', label: 'Plus récents' },
+            { value: 'score', label: 'Meilleur score' },
+          ]}
+          value={filters.sort || 'recent'}
+          onChange={(e) => onChange({ ...filters, sort: e.target.value as 'recent' | 'score' })}
+          className="w-40"
+        />
+
         {/* Priority */}
         <Select
           options={priorityOptions}

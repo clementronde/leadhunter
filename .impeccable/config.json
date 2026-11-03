@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "gradient-text",
+        "value": "*",
+        "files": [
+          "src/components/landing/landing-page.tsx"
+        ],
+        "createdAt": "2026-11-03T10:40:55.433Z",
+        "reason": "User asked on 2026-11-03 to restore the previous landing design (amber gradient headline and PRO label) after rejecting the restrained redesign"
+      }
+    ]
+  }
+}

@@ -52,9 +52,12 @@ export const leadsApi = {
     const from = (page - 1) * perPage
     const to = from + perPage - 1
 
-    const { data, count, error } = await query
-      .order('prospect_score', { ascending: false })
-      .range(from, to)
+    // Par défaut : les leads les plus récents d'abord (le dernier scan en tête)
+    const ordered = filters?.sort === 'score'
+      ? query.order('prospect_score', { ascending: false }).order('created_at', { ascending: false })
+      : query.order('created_at', { ascending: false }).order('prospect_score', { ascending: false })
+
+    const { data, count, error } = await ordered.range(from, to)
 
     if (error) throw error
 

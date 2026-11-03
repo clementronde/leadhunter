@@ -21,6 +21,7 @@ import {
   timeAgo,
   severityColors
 } from '@/lib/utils'
+import { getFollowUpDate } from '@/lib/utils'
 import { webPresenceLabels } from '@/lib/web-presence'
 import {
   ArrowLeft,
@@ -410,6 +411,17 @@ export default function LeadDetailPage() {
                       <option key={value} value={value}>{label}</option>
                     ))}
                   </select>
+                  {(() => {
+                    const followUp = getFollowUpDate(lead)
+                    if (!followUp) return null
+                    const late = followUp.getTime() < Date.now()
+                    return (
+                      <p className={`text-xs ${late ? 'text-orange-400' : 'text-zinc-400'}`}>
+                        {late ? 'Relance en retard depuis le ' : 'Relance prévue le '}
+                        {followUp.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                      </p>
+                    )
+                  })()}
                   {lead.replied_at ? (
                     <span className="text-xs text-emerald-400">A répondu · relances stoppées</span>
                   ) : (

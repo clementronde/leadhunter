@@ -188,6 +188,15 @@ export const severityColors: Record<IssueSeverity, string> = {
 // Date helpers
 // ============================================
 
+/** Délai avant relance après un premier contact sans réponse */
+export const FOLLOWUP_DELAY_DAYS = 7
+
+/** Date de relance prévue : dernier contact + 7 jours, tant que le lead n'a pas répondu */
+export function getFollowUpDate(lead: { status: string; last_contacted_at?: string | null; replied_at?: string | null }): Date | null {
+  if (lead.status !== 'contacted' || lead.replied_at || !lead.last_contacted_at) return null
+  return new Date(new Date(lead.last_contacted_at).getTime() + FOLLOWUP_DELAY_DAYS * 24 * 60 * 60 * 1000)
+}
+
 export function formatDate(date: string | Date): string {
   return new Intl.DateTimeFormat('fr-FR', {
     day: 'numeric',

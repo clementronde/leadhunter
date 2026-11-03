@@ -347,6 +347,7 @@ export interface LeadFilters {
   min_score?: number
   max_score?: number
   needs_followup?: boolean
+  sort?: 'recent' | 'score'
 }
 
 // ============================================

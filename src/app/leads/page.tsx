@@ -30,7 +30,6 @@ import {
   Gauge,
   Play,
   Send,
-  Radar,
 } from 'lucide-react'
 
 // ============================================
@@ -503,11 +502,13 @@ function LeadsContent() {
     const priority = searchParams.get('priority')
     const hasWebsite = searchParams.get('has_website')
     const search = searchParams.get('search')
+    const sort = searchParams.get('sort')
 
     if (status) initial.status = status as LeadStatus
     if (priority) initial.priority = priority as LeadFilters['priority']
     if (hasWebsite) initial.has_website = hasWebsite === 'true'
     if (search) initial.search = search
+    if (sort === 'score' || sort === 'recent') initial.sort = sort
 
     return initial
   })
@@ -1053,11 +1054,6 @@ export default function LeadsPage() {
       <Header
         title="Leads"
         subtitle="Gérez vos prospects, trouvez les emails et passez à l'action"
-        action={{
-          label: 'Scanner',
-          onClick: () => router.push('/scanner'),
-          icon: <Radar className="h-4 w-4" />,
-        }}
       />
 
       <Suspense fallback={<div className="p-6"><Skeleton className="h-96" /></div>}>

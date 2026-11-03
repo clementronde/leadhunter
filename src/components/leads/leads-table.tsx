@@ -16,6 +16,7 @@ import {
   sectorLabels,
   getScoreColor,
 } from '@/lib/utils'
+import { getFollowUpDate } from '@/lib/utils'
 import {
   Globe,
   Globe2,
@@ -67,15 +68,15 @@ export function LeadsTable({ leads, onStatusChange, sortBy, onSort }: LeadsTable
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
 
   const columns = [
-    { key: 'name', label: 'Établissement', sortable: true },
-    { key: 'city', label: 'Adresse', sortable: true },
-    { key: 'has_website', label: 'Site web', sortable: true },
-    { key: 'google_rating', label: 'Note Google', sortable: true },
-    { key: 'sector', label: 'Secteur', sortable: true },
-    { key: 'prospect_score', label: 'Score', sortable: true },
+    { key: 'name', label: 'Établissement', sortable: false },
+    { key: 'city', label: 'Adresse', sortable: false },
+    { key: 'has_website', label: 'Site web', sortable: false },
+    { key: 'google_rating', label: 'Note Google', sortable: false },
+    { key: 'sector', label: 'Secteur', sortable: false },
+    { key: 'prospect_score', label: 'Score', sortable: false },
     { key: 'reason', label: 'Potentiel', sortable: false },
-    { key: 'priority', label: 'Priorité', sortable: true },
-    { key: 'status', label: 'Statut', sortable: true },
+    { key: 'priority', label: 'Priorité', sortable: false },
+    { key: 'status', label: 'Statut', sortable: false },
     { key: 'contact', label: 'Contact', sortable: false },
     { key: 'actions', label: '', sortable: false },
   ]
@@ -131,15 +132,22 @@ export function LeadsTable({ leads, onStatusChange, sortBy, onSort }: LeadsTable
                       >
                         {lead.name}
                       </Link>
-                      {needsFollowUp(lead) && (
-                        <span
-                          title="À relancer — contacté il y a plus de 7 jours"
-                          className="shrink-0 flex items-center gap-0.5 text-[10px] font-semibold text-orange-400 bg-orange-500/15 rounded-full px-1.5 py-0.5"
-                        >
-                          <Bell className="h-2.5 w-2.5" />
-                          Relancer
-                        </span>
-                      )}
+                      {(() => {
+                        const followUp = getFollowUpDate(lead)
+                        if (!followUp) return null
+                        const due = needsFollowUp(lead)
+                        return (
+                          <span
+                            title={due ? 'Relance en retard' : 'Date de relance prévue'}
+                            className={`shrink-0 flex items-center gap-0.5 text-[10px] font-semibold rounded-full px-1.5 py-0.5 ${
+                              due ? 'text-orange-400 bg-orange-500/15' : 'text-zinc-400 bg-zinc-800'
+                            }`}
+                          >
+                            <Bell className="h-2.5 w-2.5" />
+                            {due ? 'Relancer' : 'Relance'} {followUp.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                          </span>
+                        )
+                      })()}
                     </div>
                     {lead.google_maps_url && (
                       <a
