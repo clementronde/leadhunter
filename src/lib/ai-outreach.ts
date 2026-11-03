@@ -125,8 +125,27 @@ export async function findContactsWithAI(business: BusinessForSearch): Promise<F
     .filter((block): block is Anthropic.TextBlock => block.type === 'text')
     .map((block) => block.text)
     .join('')
-  const contacts = parseContacts(text)
-  if (!contacts) throw new Error('Réponse de recherche illisible')
+  let contacts = parseContacts(text)
+
+  // Le modèle a parfois oublié le bloc <json> : on extrait les contacts de sa réponse
+  // avec un appel sans outil et à sortie structurée (garantie conforme au schéma)
+  if (!contacts && text.trim()) {
+    const extraction = await anthropic.messages.parse({
+      model: MODEL,
+      max_tokens: 2000,
+      output_config: { effort: 'low', format: zodOutputFormat(ContactsSchema) },
+      messages: [{
+        role: 'user',
+        content: `Voici le résultat d'une recherche des coordonnées de "${business.name}". Extrais uniquement les coordonnées qui y figurent explicitement (null sinon) :\n\n${text}`,
+      }],
+    })
+    contacts = extraction.parsed_output ?? null
+  }
+
+  if (!contacts) {
+    console.warn('Recherche contacts sans résultat exploitable:', response.stop_reason, text.slice(-500))
+    throw new Error('Réponse de recherche illisible')
+  }
 
   return {
     ...contacts,
