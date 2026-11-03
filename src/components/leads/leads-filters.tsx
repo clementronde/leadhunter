@@ -100,7 +100,7 @@ export function LeadsFilters({ filters, onChange, onReset }: LeadsFiltersProps) 
       
       {/* Advanced filters */}
       {showAdvanced && (
-        <div className="flex flex-wrap gap-3 p-4 bg-surface-2 border border-hairline rounded-lg">
+        <div className="flex flex-wrap gap-3 p-4 bg-zinc-800/40 border border-white/[0.06] rounded-lg">
           {/* Sector */}
           <div className="space-y-1">
             <label className="text-xs font-medium text-zinc-500">Secteur</label>

@@ -116,7 +116,7 @@ export function OutreachPanel({ lead, onStatusChange, onNoteAdded, compact }: Ou
 
   return (
     <div className={compact ? 'space-y-3' : 'space-y-4'}>
-      <div className="rounded-xl border border-hairline-strong bg-surface-1 p-4">
+      <div className="rounded-2xl border border-white/[0.08] bg-zinc-900/70 p-4">
         <div className="flex items-center justify-between gap-3 text-sm">
           <div>
             <p className="font-semibold text-white">Contact par email</p>
@@ -148,8 +148,8 @@ export function OutreachPanel({ lead, onStatusChange, onNoteAdded, compact }: Ou
               onClick={() => setSelectedTemplate(id)}
               className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors border ${
                 selectedTemplate === id
-                  ? 'bg-amber-500 text-on-accent border-amber-500'
-                  : 'bg-surface-2 text-zinc-400 border-hairline-strong hover:border-amber-500/40 hover:text-zinc-200'
+                  ? 'bg-amber-500 text-white border-amber-500'
+                  : 'bg-zinc-800/60 text-zinc-400 border-white/[0.08] hover:border-amber-500/40 hover:text-zinc-200'
               }`}
             >
               {t.label}
@@ -168,7 +168,7 @@ export function OutreachPanel({ lead, onStatusChange, onNoteAdded, compact }: Ou
           readOnly
           value={body}
           rows={compact ? 5 : 7}
-          className="w-full text-xs text-zinc-300 bg-surface-2 border border-hairline-strong rounded-lg p-3 resize-none font-mono leading-relaxed"
+          className="w-full text-xs text-zinc-300 bg-zinc-800/60 border border-white/[0.08] rounded-lg p-3 resize-none font-mono leading-relaxed"
         />
       </div>
 
@@ -183,7 +183,7 @@ export function OutreachPanel({ lead, onStatusChange, onNoteAdded, compact }: Ou
                   type="datetime-local"
                   value={scheduledAt}
                   onChange={(e) => setScheduledAt(e.target.value)}
-                  className="w-full rounded-lg border border-hairline-strong bg-surface-2 py-2.5 pl-9 pr-3 text-sm text-zinc-300 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className="w-full rounded-lg border border-white/[0.08] bg-zinc-800/60 py-2.5 pl-9 pr-3 text-sm text-zinc-300 focus:outline-none focus:ring-2 focus:ring-amber-500"
                 />
               </label>
               <Button
@@ -208,7 +208,7 @@ export function OutreachPanel({ lead, onStatusChange, onNoteAdded, compact }: Ou
           )}
 
           {hasFullAccess && (
-            <label className="flex items-center justify-between rounded-lg border border-hairline bg-surface-2 px-3 py-2 text-xs text-zinc-400">
+            <label className="flex items-center justify-between rounded-lg border border-white/[0.06] bg-zinc-800/40 px-3 py-2 text-xs text-zinc-400">
               Relances automatiques J+3 et J+7
               <input
                 type="checkbox"
@@ -277,7 +277,7 @@ export function OutreachPanel({ lead, onStatusChange, onNoteAdded, compact }: Ou
       )}
 
       {/* After sending */}
-      <div className="border-t border-hairline pt-3">
+      <div className="border-t border-white/[0.06] pt-3">
         <p className="text-xs font-medium text-zinc-500 mb-2">Après l&apos;envoi</p>
 
         <textarea
@@ -285,7 +285,7 @@ export function OutreachPanel({ lead, onStatusChange, onNoteAdded, compact }: Ou
           value={noteText}
           onChange={(e) => setNoteText(e.target.value)}
           rows={2}
-          className="w-full text-sm text-zinc-300 bg-surface-2 border border-hairline-strong rounded-lg p-2.5 resize-none mb-3 placeholder:text-zinc-500"
+          className="w-full text-sm text-zinc-300 bg-zinc-800/60 border border-white/[0.08] rounded-lg p-2.5 resize-none mb-3 placeholder:text-zinc-600"
         />
 
         {contacted ? (

@@ -15,7 +15,7 @@ export default function HomePage() {
   const { user, loading: authLoading } = useAuth()
   const router = useRouter()
 
-  // After an OAuth round-trip, resume the destination chosen on the landing page
+  // Après un aller-retour OAuth, reprendre la destination demandée avant la connexion
   useEffect(() => {
     if (!user) return
     try {
@@ -28,7 +28,11 @@ export default function HomePage() {
   }, [user, router])
 
   if (authLoading) {
-    return <div className="min-h-screen bg-canvas" role="status" aria-label="Chargement" />
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-[#09090b]">
+        <div className="h-8 w-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
   }
 
   if (!user) {
@@ -77,7 +81,7 @@ function DashboardPage() {
   if (!loading && stats?.total_leads === 0) {
     return (
       <div className="min-h-screen">
-        <Header title="Vue d'ensemble" subtitle="Où en est votre prospection" />
+        <Header title="Dashboard" subtitle="Vue d'ensemble de votre prospection" />
         <div className="p-6">
           <OnboardingEmptyState />
         </div>
@@ -88,8 +92,8 @@ function DashboardPage() {
   return (
     <div className="min-h-screen">
       <Header
-        title="Vue d'ensemble"
-        subtitle="Où en est votre prospection"
+        title="Dashboard"
+        subtitle="Vue d'ensemble de votre prospection"
       />
 
       <div className="p-6 space-y-6">
@@ -160,29 +164,29 @@ function DashboardPage() {
 
           {/* Quick Actions */}
           <Card className="p-6">
-            <h3 className="mb-3 text-[15px] font-semibold text-white">Actions rapides</h3>
-            <div className="-mx-2 space-y-px">
+            <h3 className="font-semibold text-lg text-white mb-4">Actions rapides</h3>
+            <div className="space-y-2">
               <QuickAction
                 href="/scanner"
-                icon={<Radar className="h-4 w-4" />}
+                icon={<Radar className="h-5 w-5 text-amber-500" />}
                 title="Lancer un scan"
                 description="Scanner une nouvelle zone"
               />
               <QuickAction
                 href="/leads?has_website=false"
-                icon={<Target className="h-4 w-4" />}
+                icon={<Target className="h-5 w-5 text-blue-400" />}
                 title="Voir les prospects sans site"
                 description={`${stats?.leads_without_site || 0} entreprises`}
               />
               <QuickAction
                 href="/leads?priority=hot"
-                icon={<Flame className="h-4 w-4" />}
+                icon={<Flame className="h-5 w-5 text-red-400" />}
                 title="Leads chauds"
                 description={`${stats?.hot_leads || 0} prospects prioritaires`}
               />
               <QuickAction
                 href="/pipeline"
-                icon={<Kanban className="h-4 w-4" />}
+                icon={<Kanban className="h-5 w-5 text-violet-400" />}
                 title="Pipeline"
                 description="Gérez vos opportunités"
               />
@@ -195,59 +199,70 @@ function DashboardPage() {
 }
 
 const QUICK_SCANS = [
-  { query: 'Restaurants', location: 'Paris' },
-  { query: 'Coiffeurs', location: 'Lyon' },
-  { query: 'Plombiers', location: 'Bordeaux' },
-  { query: 'Boulangeries', location: 'Marseille' },
+  { query: 'Restaurants', location: 'Paris', emoji: '🍽️' },
+  { query: 'Coiffeurs', location: 'Lyon', emoji: '✂️' },
+  { query: 'Plombiers', location: 'Bordeaux', emoji: '🔧' },
+  { query: 'Boulangeries', location: 'Marseille', emoji: '🥖' },
 ]
 
 function OnboardingEmptyState() {
   return (
-    <div className="mx-auto max-w-[640px] py-10">
-      <h2 className="text-[24px] font-semibold tracking-[-0.02em] text-white">Lancez votre premier scan</h2>
-      <p className="mt-2 text-[15px] leading-relaxed text-zinc-400">
-        Choisissez un métier et une ville. LeadHunter récupère les entreprises de la zone, vérifie leur
-        présence en ligne et les classe par score.
-      </p>
+    <Card className="max-w-2xl mx-auto p-8 border-amber-500/20 bg-amber-500/[0.04]">
+      <div className="text-center mb-8">
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/20 mx-auto mb-4">
+          <Target className="h-8 w-8 text-amber-500" />
+        </div>
+        <h2 className="text-2xl font-bold text-white mb-2">Bienvenue sur LeadHunter !</h2>
+        <p className="text-zinc-400">Trouvez vos premiers prospects en 3 étapes simples.</p>
+      </div>
 
-      <a
-        href="/scanner"
-        className="mt-6 inline-flex h-10 items-center gap-2 rounded-lg bg-amber-500 px-4 text-[14px] font-medium text-on-accent transition-colors hover:bg-accent-hover"
-      >
-        <Radar className="h-4 w-4" />
-        Ouvrir le scanner
-      </a>
-
-      <p className="mt-10 text-[13px] text-zinc-500">Ou partez d&apos;un exemple</p>
-      <ul className="mt-2 divide-y divide-hairline/70 overflow-hidden rounded-xl border border-hairline bg-surface-1">
-        {QUICK_SCANS.map(({ query, location }) => (
-          <li key={query}>
-            <a
-              href={`/scanner?query=${encodeURIComponent(query)}&location=${encodeURIComponent(location)}`}
-              className="group flex items-center justify-between px-4 py-3 text-[14px] transition-colors hover:bg-white/[0.03]"
-            >
-              <span className="text-zinc-200">
-                {query} <span className="text-zinc-600">·</span> <span className="text-zinc-400">{location}</span>
-              </span>
-              <ArrowRight className="h-4 w-4 text-zinc-600 transition-colors group-hover:text-zinc-300" />
-            </a>
-          </li>
-        ))}
-      </ul>
-
-      <ol className="mt-10 grid gap-6 text-[13px] sm:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-3 mb-8">
         {[
-          { title: 'Scanner', desc: 'Une zone, un métier : la liste arrive triée par score.' },
-          { title: 'Trier', desc: 'Gardez ou écartez chaque lead au clavier.' },
-          { title: 'Contacter', desc: 'Appelez, envoyez un email, suivez la relance.' },
-        ].map(({ title, desc }) => (
-          <li key={title}>
-            <p className="font-medium text-zinc-200">{title}</p>
-            <p className="mt-1 leading-relaxed text-zinc-500">{desc}</p>
-          </li>
+          { num: '1', icon: <Radar className="h-5 w-5 text-amber-500" />, title: 'Scannez', desc: 'Recherchez des entreprises locales via Google Maps' },
+          { num: '2', icon: <Flame className="h-5 w-5 text-red-400" />, title: 'Qualifiez', desc: 'Identifiez les prospects sans site ou à refondre' },
+          { num: '3', icon: <Kanban className="h-5 w-5 text-violet-400" />, title: 'Contactez', desc: 'Envoyez un email et suivez vos opportunités' },
+        ].map(({ num, icon, title, desc }) => (
+          <div key={num} className="flex flex-col items-center text-center p-4 bg-zinc-800/40 rounded-xl border border-white/[0.06]">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-500/20 text-amber-400 font-bold text-sm mb-3">{num}</div>
+            <div className="flex items-center justify-center mb-2">{icon}</div>
+            <p className="font-semibold text-white text-sm">{title}</p>
+            <p className="text-xs text-zinc-500 mt-1">{desc}</p>
+          </div>
         ))}
-      </ol>
-    </div>
+      </div>
+
+      {/* Quick-start scan examples */}
+      <div className="mb-6">
+        <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-3 text-center">Démarrer rapidement</p>
+        <div className="grid grid-cols-2 gap-2">
+          {QUICK_SCANS.map(({ query, location, emoji }) => (
+            <a
+              key={query}
+              href={`/scanner?query=${encodeURIComponent(query)}&location=${encodeURIComponent(location)}`}
+              className="flex items-center gap-2.5 p-3 rounded-xl bg-zinc-800/40 border border-white/[0.06] hover:border-amber-500/30 hover:bg-zinc-700/40 transition-all group"
+            >
+              <span className="text-xl">{emoji}</span>
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-zinc-200 group-hover:text-white">{query}</p>
+                <p className="text-xs text-zinc-500">{location}</p>
+              </div>
+              <ArrowRight className="h-3.5 w-3.5 text-zinc-600 group-hover:text-amber-500 ml-auto shrink-0 transition-colors" />
+            </a>
+          ))}
+        </div>
+      </div>
+
+      <div className="text-center">
+        <a
+          href="/scanner"
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold hover:opacity-90 transition-opacity"
+        >
+          <Radar className="h-4 w-4" />
+          Scanner ma propre zone
+          <ArrowRight className="h-4 w-4" />
+        </a>
+      </div>
+    </Card>
   )
 }
 
@@ -260,9 +275,9 @@ function QuickAction({ href, icon, title, description }: {
   return (
     <a
       href={href}
-      className="group flex items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-white/[0.04]"
+      className="flex items-center gap-3 p-3 rounded-xl border border-transparent hover:bg-white/5 hover:border-white/[0.06] transition-all group"
     >
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-hairline bg-surface-2 text-zinc-400 transition-colors group-hover:text-amber-400">
+      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-800/60 group-hover:bg-zinc-700/60 transition-colors shrink-0">
         {icon}
       </div>
       <div>

@@ -71,16 +71,16 @@ function BulkContactModal({ filters, onClose }: { filters: LeadFilters; onClose:
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       onClick={onClose}
     >
-      <div className="absolute inset-0 bg-surface-1" />
+      <div className="absolute inset-0 bg-zinc-900/50 backdrop-blur-sm" />
       <div
-        className="relative w-full max-w-2xl rounded-xl border border-hairline-strong bg-surface-1 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.7)] max-h-[85vh] flex flex-col"
+        className="relative w-full max-w-2xl rounded-2xl border border-white/[0.08] bg-zinc-900/95 backdrop-blur-xl shadow-2xl shadow-black/60 max-h-[85vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-hairline">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-surface-3">
-              <Users className="h-5 w-5 text-zinc-400" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/15">
+              <Users className="h-5 w-5 text-blue-400" />
             </div>
             <div>
               <h2 className="font-semibold text-white">Contacter tous les leads</h2>
@@ -113,10 +113,10 @@ function BulkContactModal({ filters, onClose }: { filters: LeadFilters; onClose:
         ) : (
           <>
             {/* Actions bar */}
-            <div className="px-6 py-3 bg-surface-2 border-b border-hairline flex items-center gap-3 flex-wrap">
+            <div className="px-6 py-3 bg-zinc-800/40 border-b border-white/[0.06] flex items-center gap-3 flex-wrap">
               <button
                 onClick={handleCopyEmails}
-                className="flex items-center gap-1.5 text-sm font-medium text-zinc-300 hover:text-white bg-zinc-800 border border-hairline-strong rounded-lg px-3 py-1.5 transition-colors"
+                className="flex items-center gap-1.5 text-sm font-medium text-zinc-300 hover:text-white bg-zinc-800 border border-white/[0.08] rounded-lg px-3 py-1.5 transition-colors"
               >
                 {copied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
                 {copied ? 'Copié !' : 'Copier tous les emails'}
@@ -126,7 +126,7 @@ function BulkContactModal({ filters, onClose }: { filters: LeadFilters; onClose:
                 href={`mailto:?bcc=${encodeURIComponent(allEmails)}&subject=${encodeURIComponent('Proposition de services web')}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1.5 text-sm font-medium text-zinc-200 hover:text-white bg-surface-2 border border-hairline-strong rounded-lg px-3 py-1.5 transition-colors"
+                className="flex items-center gap-1.5 text-sm font-medium text-blue-400 hover:text-blue-300 bg-blue-500/10 border border-blue-500/20 rounded-lg px-3 py-1.5 transition-colors"
               >
                 <ExternalLink className="h-4 w-4" />
                 Ouvrir en BCC dans ma messagerie
@@ -163,7 +163,7 @@ function BulkContactModal({ filters, onClose }: { filters: LeadFilters; onClose:
                           href={`mailto:${lead.email}?subject=${encodeURIComponent('Proposition de services web')}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-xs text-zinc-200 hover:text-white font-medium flex items-center gap-1"
+                          className="text-xs text-blue-400 hover:text-blue-300 font-medium flex items-center gap-1"
                         >
                           <Mail className="h-3.5 w-3.5" />
                           Contacter
@@ -175,9 +175,8 @@ function BulkContactModal({ filters, onClose }: { filters: LeadFilters; onClose:
                           }}
                           className="text-xs text-zinc-500 hover:text-emerald-400 font-medium transition-colors"
                           title="Marquer comme contacté"
-                          aria-label="Marquer comme contacté"
                         >
-                          <Check className="h-3.5 w-3.5" aria-hidden />
+                          ✓
                         </button>
                       </>
                     )}
@@ -187,7 +186,7 @@ function BulkContactModal({ filters, onClose }: { filters: LeadFilters; onClose:
             </div>
 
             {/* Footer */}
-            <div className="px-6 py-3 border-t border-hairline bg-surface-2 rounded-b-2xl">
+            <div className="px-6 py-3 border-t border-white/[0.06] bg-zinc-800/40 rounded-b-2xl">
               <p className="text-xs text-zinc-500 text-center">
                 {markedIds.size > 0 ? `${markedIds.size} lead${markedIds.size > 1 ? 's' : ''} marqués comme contactés` : `${leads.length} email${leads.length > 1 ? 's' : ''} disponible${leads.length > 1 ? 's' : ''}`}
               </p>
@@ -263,14 +262,14 @@ function CampaignModal({ filters, onClose }: { filters: LeadFilters; onClose: ()
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="absolute inset-0 bg-surface-1" />
+      <div className="absolute inset-0 bg-zinc-900/50 backdrop-blur-sm" />
       <div
-        className="relative flex max-h-[88vh] w-full max-w-4xl flex-col rounded-xl border border-hairline-strong bg-surface-1 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.7)]"
+        className="relative flex max-h-[88vh] w-full max-w-4xl flex-col rounded-2xl border border-white/[0.08] bg-zinc-900/95 shadow-2xl shadow-black/60"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-hairline px-6 py-4">
+        <div className="flex items-center justify-between border-b border-white/[0.06] px-6 py-4">
           <div className="flex items-center gap-3">
-            <Send className="h-5 w-5 text-zinc-400" />
+            <Send className="h-5 w-5 text-blue-400" />
             <div>
               <h2 className="font-semibold text-white">Prévisualiser la campagne</h2>
               <p className="text-sm text-zinc-500">{renderedMessages.length} destinataire{renderedMessages.length > 1 ? 's' : ''} avec email</p>
@@ -282,7 +281,7 @@ function CampaignModal({ filters, onClose }: { filters: LeadFilters; onClose: ()
         </div>
 
         <div className="grid min-h-0 flex-1 gap-0 md:grid-cols-[280px_1fr]">
-          <div className="space-y-4 border-b border-hairline p-5 md:border-b-0 md:border-r">
+          <div className="space-y-4 border-b border-white/[0.06] p-5 md:border-b-0 md:border-r">
             <div>
               <p className="mb-2 text-xs font-medium text-zinc-500">Template pour leads avec site</p>
               <div className="flex flex-wrap gap-2">
@@ -292,8 +291,8 @@ function CampaignModal({ filters, onClose }: { filters: LeadFilters; onClose: ()
                     onClick={() => setSelectedTemplate(id)}
                     className={`rounded-full border px-3 py-1.5 text-xs font-medium ${
                       selectedTemplate === id
-                        ? 'border-amber-500 bg-amber-500 text-on-accent'
-                        : 'border-hairline-strong bg-surface-2 text-zinc-400'
+                        ? 'border-amber-500 bg-amber-500 text-white'
+                        : 'border-white/[0.08] bg-zinc-800/60 text-zinc-400'
                     }`}
                   >
                     {template.label}
@@ -308,11 +307,11 @@ function CampaignModal({ filters, onClose }: { filters: LeadFilters; onClose: ()
                 type="datetime-local"
                 value={scheduledAt}
                 onChange={(e) => setScheduledAt(e.target.value)}
-                className="w-full rounded-lg border border-hairline-strong bg-surface-2 px-3 py-2 text-sm text-zinc-300 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                className="w-full rounded-lg border border-white/[0.08] bg-zinc-800/60 px-3 py-2 text-sm text-zinc-300 focus:outline-none focus:ring-2 focus:ring-amber-500"
               />
             </label>
 
-            <label className="flex items-center justify-between rounded-lg border border-hairline bg-surface-2 px-3 py-2 text-xs text-zinc-400">
+            <label className="flex items-center justify-between rounded-lg border border-white/[0.06] bg-zinc-800/40 px-3 py-2 text-xs text-zinc-400">
               Relances J+3 et J+7
               <input
                 type="checkbox"
@@ -341,13 +340,13 @@ function CampaignModal({ filters, onClose }: { filters: LeadFilters; onClose: ()
             ) : (
               <div className="space-y-4">
                 {renderedMessages.slice(0, 10).map((message) => (
-                  <div key={message.lead.id} className="rounded-xl border border-hairline bg-surface-2 p-4">
+                  <div key={message.lead.id} className="rounded-xl border border-white/[0.06] bg-zinc-800/40 p-4">
                     <div className="mb-3 flex items-center justify-between gap-3">
                       <div>
                         <p className="font-medium text-zinc-200">{message.lead.name}</p>
                         <p className="text-xs text-zinc-500">{message.lead.email} · {message.lead.city}</p>
                       </div>
-                      <span className="rounded-full bg-zinc-900 px-2 py-1 text-[11px] font-medium text-zinc-400">
+                      <span className="rounded-full bg-zinc-900 px-2 py-1 text-[10px] font-medium text-zinc-400">
                         {templates[message.templateId].label}
                       </span>
                     </div>
@@ -356,7 +355,7 @@ function CampaignModal({ filters, onClose }: { filters: LeadFilters; onClose: ()
                       readOnly
                       value={message.body}
                       rows={5}
-                      className="w-full resize-none rounded-lg border border-hairline bg-surface-1 p-3 text-xs leading-relaxed text-zinc-400"
+                      className="w-full resize-none rounded-lg border border-white/[0.06] bg-zinc-900/70 p-3 text-xs leading-relaxed text-zinc-400"
                     />
                   </div>
                 ))}
@@ -418,12 +417,12 @@ function DueEmailsModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="absolute inset-0 bg-surface-1" />
+      <div className="absolute inset-0 bg-zinc-900/50 backdrop-blur-sm" />
       <div
-        className="relative w-full max-w-2xl rounded-xl border border-hairline-strong bg-surface-1 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.7)]"
+        className="relative w-full max-w-2xl rounded-2xl border border-white/[0.08] bg-zinc-900/95 shadow-2xl shadow-black/60"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-hairline px-6 py-4">
+        <div className="flex items-center justify-between border-b border-white/[0.06] px-6 py-4">
           <div className="flex items-center gap-3">
             <Bell className="h-5 w-5 text-amber-400" />
             <div>
@@ -458,7 +457,7 @@ function DueEmailsModal({ onClose }: { onClose: () => void }) {
 
         {error && <p className="px-6 pt-3 text-sm text-red-400">{error}</p>}
 
-        <div className="flex justify-end gap-2 border-t border-hairline px-6 py-4">
+        <div className="flex justify-end gap-2 border-t border-white/[0.06] px-6 py-4">
           <Button variant="outline" onClick={onClose}>Fermer</Button>
           <Button onClick={handleProcess} disabled={processing || messages.length === 0}>
             {processing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
@@ -706,13 +705,23 @@ function LeadsContent() {
         </div>
       )}
 
-      <p className="text-[13px] tabular-nums text-zinc-500">
-        {loading ? 'Chargement…' : (
-          <>
-            <span className="text-zinc-300">{pagination.total} leads</span> · {knownEmails} avec email · {leadsWithWebsite} avec site
-          </>
-        )}
-      </p>
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Card className="p-4 border-white/[0.06] bg-zinc-900/70">
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-zinc-500">Total</p>
+          <p className="mt-4 text-3xl font-semibold text-white">{loading ? '...' : pagination.total}</p>
+          <p className="mt-2 text-sm text-zinc-400">Leads affichés selon vos filtres</p>
+        </Card>
+        <Card className="p-4 border-white/[0.06] bg-zinc-900/70">
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-zinc-500">Emails</p>
+          <p className="mt-4 text-3xl font-semibold text-white">{loading ? '...' : knownEmails}</p>
+          <p className="mt-2 text-sm text-zinc-400">Leads avec une adresse email connue</p>
+        </Card>
+        <Card className="p-4 border-white/[0.06] bg-zinc-900/70">
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-zinc-500">Sites web</p>
+          <p className="mt-4 text-3xl font-semibold text-white">{loading ? '...' : leadsWithWebsite}</p>
+          <p className="mt-2 text-sm text-zinc-400">Leads avec un site web pour enrichissement</p>
+        </Card>
+      </div>
 
       {/* Filters */}
       <Card className="p-4">
@@ -739,7 +748,7 @@ function LeadsContent() {
             className={`flex items-center gap-1.5 text-sm font-medium rounded-lg px-3 py-1.5 border transition-colors ${
               filters.needs_followup
                 ? 'bg-orange-500/20 border-orange-500/30 text-orange-400'
-                : 'border-hairline-strong text-zinc-500 hover:text-amber-400'
+                : 'border-white/[0.08] text-zinc-500 hover:text-amber-400'
             }`}
             title="Leads contactés il y a plus de 7 jours — à relancer"
           >
@@ -749,7 +758,7 @@ function LeadsContent() {
 
           <button
             onClick={() => setShowDueEmails(true)}
-            className="flex items-center gap-1.5 text-sm font-medium text-zinc-500 hover:text-amber-400 border border-hairline-strong rounded-lg px-3 py-1.5 transition-colors"
+            className="flex items-center gap-1.5 text-sm font-medium text-zinc-500 hover:text-amber-400 border border-white/[0.08] rounded-lg px-3 py-1.5 transition-colors"
           >
             <Mail className="h-4 w-4" />
             À envoyer
@@ -769,7 +778,7 @@ function LeadsContent() {
           ) : (
             <button
               onClick={() => setShowUpgradeModal(true)}
-              className="flex items-center gap-1.5 text-sm font-medium text-zinc-500 hover:text-amber-400 border border-hairline-strong rounded-lg px-3 py-1.5 transition-colors"
+              className="flex items-center gap-1.5 text-sm font-medium text-zinc-500 hover:text-amber-400 border border-white/[0.08] rounded-lg px-3 py-1.5 transition-colors"
             >
               <Send className="h-4 w-4" />
               Campagne
@@ -828,7 +837,7 @@ function LeadsContent() {
           ) : (
             <button
               onClick={() => setShowUpgradeModal(true)}
-              className="flex items-center gap-1.5 text-sm font-medium text-zinc-500 hover:text-amber-400 border border-hairline-strong rounded-lg px-3 py-1.5 transition-colors"
+              className="flex items-center gap-1.5 text-sm font-medium text-zinc-500 hover:text-amber-400 border border-white/[0.08] rounded-lg px-3 py-1.5 transition-colors"
             >
               <Mail className="h-4 w-4" />
               Contacter tous
@@ -883,7 +892,7 @@ function LeadsContent() {
             </Button>
           </ProGate>
 
-          <div className="flex items-center gap-0.5 bg-surface-2 p-1 rounded-lg border border-hairline">
+          <div className="flex items-center gap-0.5 bg-zinc-800/60 p-1 rounded-lg border border-white/[0.06]">
             <button
               onClick={() => setViewMode('table')}
               className={`p-2 rounded-md transition-colors ${
@@ -963,7 +972,7 @@ function LeadsContent() {
                 </p>
                 <a
                   href="/scanner"
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-500 text-on-accent text-sm font-medium hover:bg-amber-600 transition-colors"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-500 text-white text-sm font-medium hover:bg-amber-600 transition-colors"
                 >
                   Lancer un scan
                 </a>
@@ -1010,7 +1019,7 @@ function LeadsContent() {
                     onClick={() => handlePageChange(pageNum)}
                     className={`h-8 w-8 rounded-lg text-sm font-medium transition-colors ${
                       pageNum === pagination.page
-                        ? 'bg-amber-500 text-on-accent'
+                        ? 'bg-amber-500 text-white'
                         : 'text-zinc-400 hover:bg-white/[0.06] hover:text-white'
                     }`}
                   >

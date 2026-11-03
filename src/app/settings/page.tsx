@@ -226,7 +226,7 @@ export default function SettingsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center justify-between p-4 bg-surface-2 rounded-xl border border-hairline">
+            <div className="flex items-center justify-between p-4 bg-zinc-800/40 rounded-xl border border-white/[0.06]">
               <div className="flex items-center gap-3">
                 <div className={`flex h-10 w-10 items-center justify-center rounded-full ${isPro ? 'bg-amber-500/20' : 'bg-zinc-700/60'}`}>
                   {isPro ? (
@@ -244,7 +244,7 @@ export default function SettingsPage() {
                   </p>
                 </div>
               </div>
-              <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${isPro ? 'bg-amber-500 text-on-accent' : 'bg-zinc-700 text-zinc-400'}`}>
+              <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${isPro ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white' : 'bg-zinc-700 text-zinc-400'}`}>
                 {isPro ? 'PRO' : 'FREE'}
               </span>
             </div>
@@ -258,7 +258,7 @@ export default function SettingsPage() {
               ) : (
                 <button
                   onClick={() => router.push('/upgrade')}
-                  className="flex items-center gap-2 py-2 px-4 rounded-lg font-semibold text-sm bg-amber-500 text-on-accent hover:opacity-90 transition-opacity"
+                  className="flex items-center gap-2 py-2 px-4 rounded-lg font-semibold text-sm bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:opacity-90 transition-opacity"
                 >
                   <Zap className="h-4 w-4" />
                   Passer à Pro — 29€/mois
@@ -280,16 +280,16 @@ export default function SettingsPage() {
               Pour envoyer des emails depuis LeadHunter, suivez ces étapes :
             </p>
             <div className="grid gap-3 sm:grid-cols-3">
-              <div className="rounded-xl border border-hairline-strong bg-surface-1 p-4">
-                <p className="text-[13px] font-medium text-zinc-300">1. Profil</p>
+              <div className="rounded-2xl border border-white/[0.08] bg-zinc-900/70 p-4">
+                <p className="text-xs uppercase tracking-[0.24em] text-zinc-500">1. Profil</p>
                 <p className="mt-3 text-sm text-zinc-200">Renseignez un email expéditeur pro, un nom d'agence et une signature.</p>
               </div>
-              <div className="rounded-xl border border-hairline-strong bg-surface-1 p-4">
-                <p className="text-[13px] font-medium text-zinc-300">2. Domaine</p>
+              <div className="rounded-2xl border border-white/[0.08] bg-zinc-900/70 p-4">
+                <p className="text-xs uppercase tracking-[0.24em] text-zinc-500">2. Domaine</p>
                 <p className="mt-3 text-sm text-zinc-200">Vérifiez MX, SPF, DMARC et la configuration Resend pour votre domaine.</p>
               </div>
-              <div className="rounded-xl border border-hairline-strong bg-surface-1 p-4">
-                <p className="text-[13px] font-medium text-zinc-300">3. Templates</p>
+              <div className="rounded-2xl border border-white/[0.08] bg-zinc-900/70 p-4">
+                <p className="text-xs uppercase tracking-[0.24em] text-zinc-500">3. Templates</p>
                 <p className="mt-3 text-sm text-zinc-200">Personnalisez vos modèles avant d'envoyer vos premiers emails.</p>
               </div>
             </div>
@@ -329,7 +329,7 @@ export default function SettingsPage() {
               </div>
 
               {!supabaseConfigured && (
-                <div className="pt-2 border-t border-hairline">
+                <div className="pt-2 border-t border-white/[0.06]">
                   <p className="text-sm text-zinc-400 mb-3"><strong>Instructions :</strong></p>
                   <ol className="text-sm text-zinc-500 space-y-2 list-decimal list-inside">
                     <li>
@@ -476,7 +476,7 @@ export default function SettingsPage() {
                 onChange={(e) => setOutreachSettings((s) => ({ ...s, signature: e.target.value }))}
                 rows={5}
                 placeholder={'Clément\nArtichaud Studio\nhttps://agence.fr'}
-                className="w-full px-3 py-2 text-sm text-zinc-200 bg-surface-1 border border-hairline-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"
+                className="w-full px-3 py-2 text-sm text-zinc-200 bg-zinc-900/60 border border-white/[0.08] rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"
               />
             </div>
 
@@ -487,7 +487,7 @@ export default function SettingsPage() {
               {savingOutreach ? 'Sauvegarde...' : outreachSaved ? 'Profil sauvegardé !' : 'Sauvegarder le profil'}
             </Button>
 
-            <div className="rounded-xl border border-hairline bg-surface-2 p-4">
+            <div className="rounded-xl border border-white/[0.06] bg-zinc-800/40 p-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="font-medium text-zinc-200">Délivrabilité domaine</p>
@@ -531,8 +531,8 @@ export default function SettingsPage() {
                   onClick={() => setEditingTemplate(id)}
                   className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors border ${
                     editingTemplate === id
-                      ? 'bg-amber-500 text-on-accent border-amber-500'
-                      : 'bg-surface-2 text-zinc-400 border-hairline-strong hover:text-zinc-200'
+                      ? 'bg-amber-500 text-white border-amber-500'
+                      : 'bg-zinc-800/60 text-zinc-400 border-white/[0.08] hover:text-zinc-200'
                   }`}
                 >
                   {t.label}
@@ -541,7 +541,7 @@ export default function SettingsPage() {
             </div>
 
             {/* Template editor */}
-            <div className="space-y-3 p-4 bg-surface-2 border border-hairline rounded-xl">
+            <div className="space-y-3 p-4 bg-zinc-800/40 border border-white/[0.06] rounded-xl">
               <div className="space-y-1">
                 <label className="text-xs font-medium text-zinc-500">Libellé du template</label>
                 <input
@@ -552,7 +552,7 @@ export default function SettingsPage() {
                     setTemplates(updated)
                     setTemplatesSaved(false)
                   }}
-                  className="w-full px-3 py-2 text-sm text-zinc-200 bg-surface-1 border border-hairline-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className="w-full px-3 py-2 text-sm text-zinc-200 bg-zinc-900/60 border border-white/[0.08] rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
                 />
               </div>
               <div className="space-y-1">
@@ -565,7 +565,7 @@ export default function SettingsPage() {
                     setTemplates(updated)
                     setTemplatesSaved(false)
                   }}
-                  className="w-full px-3 py-2 text-sm text-zinc-200 bg-surface-1 border border-hairline-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className="w-full px-3 py-2 text-sm text-zinc-200 bg-zinc-900/60 border border-white/[0.08] rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
                 />
               </div>
               <div className="space-y-1">
@@ -578,7 +578,7 @@ export default function SettingsPage() {
                     setTemplatesSaved(false)
                   }}
                   rows={8}
-                  className="w-full px-3 py-2 text-sm text-zinc-200 bg-surface-1 border border-hairline-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none font-mono leading-relaxed"
+                  className="w-full px-3 py-2 text-sm text-zinc-200 bg-zinc-900/60 border border-white/[0.08] rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none font-mono leading-relaxed"
                 />
               </div>
             </div>
@@ -685,7 +685,7 @@ export default function SettingsPage() {
                   </button>
                   <button
                     onClick={() => setShowDeleteConfirm(false)}
-                    className="px-4 py-2 bg-zinc-800 text-zinc-300 text-sm font-medium rounded-lg border border-hairline-strong hover:bg-zinc-700 transition-colors"
+                    className="px-4 py-2 bg-zinc-800 text-zinc-300 text-sm font-medium rounded-lg border border-white/[0.08] hover:bg-zinc-700 transition-colors"
                   >
                     Annuler
                   </button>
@@ -728,7 +728,7 @@ function ApiKeyRow({
 
   return (
     <div className={`flex items-center justify-between p-4 rounded-xl border ${
-      configured ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-surface-2 border-hairline'
+      configured ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-zinc-800/40 border-white/[0.06]'
     }`}>
       <div className="flex items-center gap-3">
         {configured ? (
@@ -750,7 +750,7 @@ function ApiKeyRow({
         href={docsUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-zinc-400 hover:text-amber-400 transition-colors ml-3"
+        className="text-zinc-400 hover:text-amber-600 transition-colors ml-3"
         title="Documentation"
       >
         <ExternalLink className="h-4 w-4" />
@@ -819,7 +819,7 @@ function OutreachInput({
         value={value ?? ''}
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full px-3 py-2 text-sm text-zinc-200 bg-surface-1 border border-hairline-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+        className="w-full px-3 py-2 text-sm text-zinc-200 bg-zinc-900/60 border border-white/[0.08] rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
       />
     </div>
   )

@@ -84,7 +84,7 @@ export function LeadsTable({ leads, onStatusChange, sortBy, onSort }: LeadsTable
     <div className="overflow-x-auto">
       <table className="w-full">
         <thead>
-          <tr className="border-b border-hairline">
+          <tr className="border-b border-white/[0.06]">
             {columns.map((col) => (
               <th
                 key={col.key}
@@ -134,7 +134,7 @@ export function LeadsTable({ leads, onStatusChange, sortBy, onSort }: LeadsTable
                       {needsFollowUp(lead) && (
                         <span
                           title="À relancer — contacté il y a plus de 7 jours"
-                          className="shrink-0 flex items-center gap-0.5 text-[11px] font-medium text-orange-400 bg-orange-500/15 rounded-full px-1.5 py-0.5"
+                          className="shrink-0 flex items-center gap-0.5 text-[10px] font-semibold text-orange-400 bg-orange-500/15 rounded-full px-1.5 py-0.5"
                         >
                           <Bell className="h-2.5 w-2.5" />
                           Relancer
@@ -146,7 +146,7 @@ export function LeadsTable({ leads, onStatusChange, sortBy, onSort }: LeadsTable
                         href={lead.google_maps_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-xs text-zinc-300 hover:text-white hover:underline flex items-center gap-0.5 mt-0.5"
+                        className="text-xs text-blue-400 hover:underline flex items-center gap-0.5 mt-0.5"
                       >
                         <ExternalLink className="h-3 w-3" />
                         Fiche Maps
@@ -256,7 +256,7 @@ export function LeadsTable({ leads, onStatusChange, sortBy, onSort }: LeadsTable
                 {isPro ? (
                   <button
                     onClick={() => setContactingLead(lead)}
-                    className="flex items-center gap-1.5 text-xs font-medium text-zinc-200 hover:text-white transition-colors"
+                    className="flex items-center gap-1.5 text-xs font-medium text-blue-400 hover:text-blue-300 transition-colors"
                   >
                     <Mail className="h-3.5 w-3.5" />
                     Contacter
@@ -301,9 +301,9 @@ export function LeadsTable({ leads, onStatusChange, sortBy, onSort }: LeadsTable
           className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
           onClick={() => setContactingLead(null)}
         >
-          <div className="absolute inset-0 bg-black/60" />
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
           <div
-            className="relative w-full max-w-lg rounded-xl border border-hairline-strong bg-surface-1 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.7)] p-6 max-h-[90vh] overflow-y-auto"
+            className="relative w-full max-w-lg rounded-2xl border border-white/[0.08] bg-zinc-900/95 backdrop-blur-xl shadow-2xl shadow-black/60 p-6 max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">

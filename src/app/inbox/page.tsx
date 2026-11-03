@@ -91,7 +91,7 @@ export default function OutreachInboxPage() {
             <button
               onClick={loadInbox}
               disabled={loading}
-              className="inline-flex items-center gap-2 rounded-lg border border-hairline-strong px-3 py-2 text-sm font-medium text-zinc-300 hover:bg-white/[0.04] disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-sm font-medium text-zinc-300 hover:bg-white/[0.04] disabled:opacity-50"
             >
               <RefreshCw className="h-4 w-4" />
               Actualiser
@@ -120,11 +120,11 @@ export default function OutreachInboxPage() {
         </div>
 
         {loading ? (
-          <div className="rounded-xl border border-hairline-strong bg-white/[0.03] p-8 text-center text-sm text-zinc-500">
+          <div className="rounded-xl border border-white/10 bg-white/[0.03] p-8 text-center text-sm text-zinc-500">
             Chargement de l&apos;inbox...
           </div>
         ) : totalAttention === 0 && data.activity.length === 0 ? (
-          <div className="rounded-xl border border-hairline-strong bg-white/[0.03] p-8 text-center">
+          <div className="rounded-xl border border-white/10 bg-white/[0.03] p-8 text-center">
             <CheckCircle2 className="mx-auto h-8 w-8 text-emerald-400" />
             <p className="mt-3 font-medium text-white">Rien à traiter pour le moment.</p>
             <p className="mt-1 text-sm text-zinc-500">Les programmations, erreurs et signaux récents apparaîtront ici.</p>
@@ -145,7 +145,7 @@ export default function OutreachInboxPage() {
 
 function Stat({ label, value, icon }: { label: string; value: number; icon: ReactNode }) {
   return (
-    <div className="rounded-xl border border-hairline-strong bg-white/[0.03] p-4">
+    <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-zinc-500">{label}</p>
         {icon}
@@ -169,8 +169,8 @@ function MessageSection({
   activity?: boolean
 }) {
   return (
-    <section className="rounded-xl border border-hairline-strong bg-white/[0.03]">
-      <div className="border-b border-hairline-strong px-4 py-3">
+    <section className="rounded-xl border border-white/10 bg-white/[0.03]">
+      <div className="border-b border-white/10 px-4 py-3">
         <h2 className="font-semibold text-white">{title}</h2>
       </div>
       {messages.length === 0 ? (
@@ -190,7 +190,7 @@ function MessageSection({
                 {message.company_id && (
                   <Link
                     href={`/leads/${message.company_id}`}
-                    className="shrink-0 rounded-lg border border-hairline-strong px-2.5 py-1.5 text-xs font-medium text-zinc-300 hover:bg-white/[0.04]"
+                    className="shrink-0 rounded-lg border border-white/10 px-2.5 py-1.5 text-xs font-medium text-zinc-300 hover:bg-white/[0.04]"
                   >
                     Ouvrir
                   </Link>

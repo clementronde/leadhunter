@@ -1,707 +1,1097 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
-import { ArrowRight, Check, Minus, Phone, Mail, KanbanSquare, Link2, FileText } from 'lucide-react'
-import { Logo } from '@/components/ui/logo'
-import { cn, scoreProspect, getPriorityFromScore, type ScoreFactors } from '@/lib/utils'
+import { motion, useInView } from 'framer-motion'
+import {
+  Target, MapPin, Zap, Globe, ArrowRight, Check, Phone,
+  ExternalLink, Shield, Smartphone, AlertTriangle, X,
+  Building2, Database, Download, KanbanSquare,
+  LayoutDashboard, Users, Radar, Globe2, Wrench, Flame,
+} from 'lucide-react'
 
-/* ─── Shared ───────────────────────────────────────────────────────────── */
+/* ─── Variants ─────────────────────────────────────────────────────────────── */
 
-const ease = [0.16, 1, 0.3, 1] as const
-
-function signupHref(query: string, location: string) {
-  const params = new URLSearchParams()
-  if (query.trim()) params.set('query', query.trim())
-  if (location.trim()) params.set('location', location.trim())
-  const next = `/scanner${params.toString() ? `?${params}` : ''}`
-  return `/login?mode=register&next=${encodeURIComponent(next)}`
+const fadeUp = {
+  hidden: { opacity: 0, y: 28 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.55, ease: 'easeOut' as const } },
+}
+const stagger = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.1 } },
 }
 
-/* ─── Page ─────────────────────────────────────────────────────────────── */
+/* ─── LandingPage ────────────────────────────────────────────────────────── */
 
 export function LandingPage() {
-  const [query, setQuery] = useState('')
-  const [location, setLocation] = useState('')
-
   return (
-    <div className="min-h-screen overflow-x-clip bg-canvas text-ink">
+    <div className="min-h-screen bg-[#09090b] text-white overflow-x-hidden">
       <Navbar />
-      <main>
-        <Hero query={query} location={location} onQuery={setQuery} onLocation={setLocation} />
-        <AuditSection />
-        <DailySection />
-        <Pricing />
-        <Closing />
-      </main>
+      <Hero />
+      <ScannerSection />
+      <AuditSection />
+      <PipelineSection />
+      <Pricing />
+      <FinalCTA />
       <Footer />
     </div>
   )
 }
 
-/* ─── Navbar ───────────────────────────────────────────────────────────── */
+/* ─── Navbar ─────────────────────────────────────────────────────────────── */
 
 function Navbar() {
   return (
-    <header className="sticky top-0 z-50 border-b border-hairline/70 bg-canvas/85 backdrop-blur-md">
-      <div className="mx-auto flex h-14 max-w-[1200px] items-center justify-between gap-4 px-4 sm:px-6">
-        <Link href="/" aria-label="LeadHunter, accueil" className="rounded-md">
-          <Logo />
-        </Link>
-        <nav aria-label="Sections" className="hidden items-center gap-1 text-[13px] text-zinc-400 md:flex">
-          <a href="#audit" className="rounded-md px-3 py-1.5 transition-colors hover:text-white">Audit</a>
-          <a href="#quotidien" className="rounded-md px-3 py-1.5 transition-colors hover:text-white">Au quotidien</a>
-          <a href="#tarifs" className="rounded-md px-3 py-1.5 transition-colors hover:text-white">Tarifs</a>
+    <motion.header
+      initial={{ opacity: 0, y: -12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: 'easeOut' }}
+      className="sticky top-0 z-50 border-b border-white/[0.06] bg-[#09090b]/80 backdrop-blur-xl"
+    >
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-orange-600">
+            <Target className="h-4 w-4 text-white" />
+          </div>
+          <span className="text-lg font-bold">Lead<span className="text-amber-400">Hunter</span></span>
+        </div>
+        <nav className="hidden sm:flex items-center gap-6 text-sm text-zinc-400">
+          <a href="#scanner" className="hover:text-white transition-colors">Fonctionnalités</a>
+          <a href="#pricing" className="hover:text-white transition-colors">Tarifs</a>
+          <Link href="/pricing" className="hover:text-white transition-colors">Pricing</Link>
         </nav>
-        <div className="flex items-center gap-1.5">
-          <Link href="/login" className="rounded-md px-3 py-1.5 text-[13px] text-zinc-300 transition-colors hover:text-white">
+        <div className="flex items-center gap-3">
+          <Link href="/login" className="text-sm text-zinc-400 hover:text-white transition-colors">
             Connexion
           </Link>
           <Link
-            href="/login?mode=register"
-            className="rounded-lg bg-white px-3 py-1.5 text-[13px] font-medium text-zinc-950 transition-colors hover:bg-zinc-200"
+            href="/login"
+            className="text-sm font-medium px-4 py-2 rounded-lg bg-white text-zinc-900 hover:bg-zinc-100 transition-colors"
           >
-            Créer un compte
+            Essayer gratuitement
           </Link>
         </div>
       </div>
-    </header>
+    </motion.header>
   )
 }
 
-/* ─── Scan form (hero + closing) ───────────────────────────────────────── */
+/* ─── Hero ─────────────────────────────────────────────────────────────────── */
 
-function ScanForm({
-  query,
-  location,
-  onQuery,
-  onLocation,
-  idPrefix,
-}: {
-  query: string
-  location: string
-  onQuery: (v: string) => void
-  onLocation: (v: string) => void
-  idPrefix: string
-}) {
-  const router = useRouter()
+function HeroParticles() {
+  const [particles, setParticles] = useState<
+    { id: number; left: string; delay: number; duration: number; size: string; opacity: number }[]
+  >([])
+
+  useEffect(() => {
+    setParticles(
+      Array.from({ length: 28 }, (_, i) => ({
+        id: i,
+        left: `${3 + Math.random() * 94}%`,
+        delay: Math.random() * 5,
+        duration: 4 + Math.random() * 5,
+        size: `${4 + Math.random() * 5}px`,
+        opacity: 0.55 + Math.random() * 0.45,
+      }))
+    )
+  }, [])
 
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault()
-        router.push(signupHref(query, location))
-      }}
-      className="flex w-full flex-col gap-2 rounded-xl border border-hairline-strong bg-surface-1 p-2 sm:flex-row sm:items-center sm:gap-0 sm:p-1.5"
-    >
-      <label htmlFor={`${idPrefix}-q`} className="flex min-w-0 flex-1 items-center gap-3 rounded-lg px-3 py-2 focus-within:bg-white/[0.03] focus-within:ring-1 focus-within:ring-amber-500/50">
-        <span className="w-14 shrink-0 text-[12px] text-zinc-500">Activité</span>
-        <input
-          id={`${idPrefix}-q`}
-          value={query}
-          onChange={(e) => onQuery(e.target.value)}
-          placeholder="Plombiers"
-          autoComplete="off"
-          className="w-full min-w-0 bg-transparent text-[15px] text-white placeholder:text-zinc-500 focus:outline-none"
+    <div className="pointer-events-none absolute inset-0 overflow-hidden">
+      {particles.map((p) => (
+        <motion.div
+          key={p.id}
+          className="absolute rounded-full bg-amber-400"
+          style={{ left: p.left, bottom: '-10px', width: p.size, height: p.size }}
+          animate={{ y: [0, -700], opacity: [0, p.opacity, p.opacity, 0] }}
+          transition={{
+            duration: p.duration,
+            delay: p.delay,
+            repeat: Infinity,
+            ease: 'linear',
+          }}
         />
-      </label>
-      <span aria-hidden className="hidden h-6 w-px bg-hairline-strong sm:block" />
-      <label htmlFor={`${idPrefix}-l`} className="flex min-w-0 flex-1 items-center gap-3 rounded-lg px-3 py-2 focus-within:bg-white/[0.03] focus-within:ring-1 focus-within:ring-amber-500/50">
-        <span className="w-14 shrink-0 text-[12px] text-zinc-500">Ville</span>
-        <input
-          id={`${idPrefix}-l`}
-          value={location}
-          onChange={(e) => onLocation(e.target.value)}
-          placeholder="Lyon"
-          autoComplete="off"
-          className="w-full min-w-0 bg-transparent text-[15px] text-white placeholder:text-zinc-500 focus:outline-none"
-        />
-      </label>
-      <button
-        type="submit"
-        className="group inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-amber-500 px-4 text-[14px] font-medium text-on-accent transition-colors hover:bg-accent-hover active:translate-y-px"
-      >
-        Scanner la zone
-        <ArrowRight className="h-4 w-4 transition-transform duration-150 group-hover:translate-x-0.5" />
-      </button>
-    </form>
-  )
-}
-
-/* ─── Hero ─────────────────────────────────────────────────────────────── */
-
-function Hero({
-  query,
-  location,
-  onQuery,
-  onLocation,
-}: {
-  query: string
-  location: string
-  onQuery: (v: string) => void
-  onLocation: (v: string) => void
-}) {
-  return (
-    <section className="mx-auto max-w-[1200px] px-4 pb-24 pt-14 sm:px-6 sm:pt-20">
-      <div className="max-w-[720px]">
-        <h1 className="text-[40px] font-semibold leading-[1.04] tracking-[-0.035em] text-white sm:text-[56px] lg:text-[64px]">
-          Les entreprises de votre ville qui ont besoin d&apos;un site.
-        </h1>
-        <p className="mt-5 max-w-[640px] text-[17px] leading-relaxed text-zinc-400">
-          Un métier, une ville : LeadHunter classe les entreprises qui ont besoin d&apos;un site.
-        </p>
-      </div>
-
-      <div className="mt-9 max-w-[720px]">
-        <ScanForm query={query} location={location} onQuery={onQuery} onLocation={onLocation} idPrefix="hero" />
-        <p className="mt-3 text-[13px] text-zinc-500">
-          3 scans gratuits par mois. Sans carte bancaire.
-        </p>
-      </div>
-
-      <ResultsPanel query={query} location={location} />
-    </section>
-  )
-}
-
-/* ─── Results panel: example data scored by the real scoring function ──── */
-
-type DemoLead = {
-  name: string
-  presence: string
-  reviews: string
-  factors: ScoreFactors
-}
-
-const TRADE_NAMES: { match: RegExp; names: string[] }[] = [
-  { match: /plomb|chauff/i, names: ['Plomberie Garnier', 'Moreau Chauffage', 'SOS Dépannage Roux', 'Ets Lefèvre & Fils', 'Bernard Sanitaire', 'Dubois Thermique', 'Plomberie du Centre'] },
-  { match: /restau|brasserie|pizz|bistro/i, names: ['Le Comptoir de Léon', 'Chez Martine', 'La Table du Marché', 'Pizzeria Da Marco', 'Brasserie des Halles', 'Le Petit Zinc', 'Auberge du Pont'] },
-  { match: /coiff|barb/i, names: ['Salon Élodie', 'Barber Shop Karim', 'L’Atelier Coiffure', 'Hair & Co', 'Coiffure Moreau', 'Studio Mèches', 'Le Salon d’Inès'] },
-  { match: /boulang|pâtiss|patiss/i, names: ['Boulangerie Moreau', 'Au Pain Doré', 'La Fournée', 'Maison Garnier', 'Le Fournil du Parc', 'Pâtisserie Roux', 'Aux Délices'] },
-  { match: /garag|auto|carross/i, names: ['Garage Lefèvre', 'Carrosserie Martin', 'Auto Service Roux', 'Garage du Stade', 'Pneus & Co', 'Dubois Automobiles', 'Garage Central'] },
-]
-const DEFAULT_NAMES = ['Maison Garnier', 'Atelier Moreau', 'Ets Lefèvre & Fils', 'Chez Bernard', 'Dubois & Associés', 'Roux Services', 'Martin Frères']
-
-const DEMO_PROFILES: Omit<DemoLead, 'name'>[] = [
-  {
-    presence: 'Facebook uniquement',
-    reviews: '4,6 · 64 avis',
-    factors: { hasWebsite: false, webPresence: 'social', googleReviewsCount: 64, googleRating: 4.6 },
-  },
-  {
-    presence: 'Site lent, non mobile',
-    reviews: '4,2 · 48 avis',
-    factors: { hasWebsite: true, webPresence: 'website', performanceScore: 22, seoScore: 48, isHttps: true, isMobileFriendly: false, copyrightYear: 2017, googleReviewsCount: 48, googleRating: 4.2 },
-  },
-  {
-    presence: 'Aucun site',
-    reviews: '4,4 · 31 avis',
-    factors: { hasWebsite: false, webPresence: 'none', googleReviewsCount: 31, googleRating: 4.4 },
-  },
-  {
-    presence: 'PagesJaunes uniquement',
-    reviews: '4,1 · 12 avis',
-    factors: { hasWebsite: false, webPresence: 'directory', googleReviewsCount: 12, googleRating: 4.1 },
-  },
-  {
-    presence: 'Site correct',
-    reviews: '4,7 · 120 avis',
-    factors: { hasWebsite: true, webPresence: 'website', performanceScore: 61, seoScore: 45, isHttps: true, isMobileFriendly: true, googleReviewsCount: 120, googleRating: 4.7 },
-  },
-  {
-    presence: 'Site récent et rapide',
-    reviews: '4,8 · 210 avis',
-    factors: { hasWebsite: true, webPresence: 'website', performanceScore: 94, seoScore: 92, isHttps: true, isMobileFriendly: true, googleReviewsCount: 210, googleRating: 4.8 },
-  },
-  {
-    presence: 'Non vérifiée',
-    reviews: 'Aucun avis',
-    factors: { hasWebsite: false, webPresence: 'unknown', googleReviewsCount: 0 },
-  },
-]
-
-const PRIORITY = {
-  hot: { label: 'Chaud', dot: 'bg-red-400', text: 'text-red-300' },
-  warm: { label: 'Tiède', dot: 'bg-amber-400', text: 'text-amber-300' },
-  cold: { label: 'Froid', dot: 'bg-sky-400', text: 'text-sky-300' },
-} as const
-
-function useDemoLeads(query: string) {
-  return useMemo(() => {
-    const names = TRADE_NAMES.find((t) => t.match.test(query))?.names ?? DEFAULT_NAMES
-    return DEMO_PROFILES.map((p, i) => {
-      const { score, reasons } = scoreProspect(p.factors)
-      const priority = getPriorityFromScore(score) as keyof typeof PRIORITY
-      return { ...p, name: names[i], score, reasons, priority }
-    }).sort((a, b) => b.score - a.score)
-  }, [query])
-}
-
-type ScoredLead = ReturnType<typeof useDemoLeads>[number]
-
-function LeadDetail({ lead, city }: { lead: ScoredLead; city: string }) {
-  return (
-    <>
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <p className="truncate text-[16px] font-medium text-white">{lead.name}</p>
-          <p className="mt-0.5 text-[13px] text-zinc-500">{city} · {lead.reviews}</p>
-        </div>
-        <div className="text-right">
-          <p className="font-mono text-[32px] font-medium leading-none tabular-nums text-amber-400">{lead.score}</p>
-          <p className={cn('mt-1 text-[12px]', PRIORITY[lead.priority].text)}>{PRIORITY[lead.priority].label}</p>
-        </div>
-      </div>
-
-      <p className="mt-5 text-[12px] text-zinc-500">Pourquoi ce score</p>
-      <ul className="mt-2 space-y-1.5">
-        {lead.reasons.map((r) => (
-          <li key={r} className="flex items-start gap-2 text-[13px] text-zinc-300">
-            <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-zinc-500" aria-hidden />
-            {r}
-          </li>
-        ))}
-      </ul>
-
-      <p className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-hairline/60 pt-4 text-[12px] text-zinc-500">
-        Depuis la fiche :
-        <span className="inline-flex items-center gap-1 text-zinc-300"><Phone className="h-3.5 w-3.5 text-zinc-500" aria-hidden />appeler</span>
-        <span className="inline-flex items-center gap-1 text-zinc-300"><Mail className="h-3.5 w-3.5 text-zinc-500" aria-hidden />écrire</span>
-        <span className="inline-flex items-center gap-1 text-zinc-300"><KanbanSquare className="h-3.5 w-3.5 text-zinc-500" aria-hidden />suivre</span>
-      </p>
-    </>
-  )
-}
-
-function ResultsPanel({ query, location }: { query: string; location: string }) {
-  const trade = query.trim() || 'Plombiers'
-  const city = location.trim() || 'Lyon'
-  const leads = useDemoLeads(trade)
-  const [selected, setSelected] = useState(0)
-  const reduce = useReducedMotion()
-  const lead = leads[Math.min(selected, leads.length - 1)]
-
-  return (
-    <figure className="mt-12 overflow-hidden rounded-2xl border border-hairline bg-surface-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_30px_80px_-40px_rgba(0,0,0,0.9)]">
-      {/* Panel toolbar */}
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-hairline px-4 py-3 sm:px-5">
-        <p className="min-w-0 truncate text-[14px] font-medium text-white">
-          {trade} <span className="text-zinc-500">·</span> {city}
-        </p>
-        <span className="text-[12px] text-zinc-500">{leads.length} résultats<span className="hidden sm:inline">, triés par score</span></span>
-        <span className="ml-auto rounded-md border border-hairline px-1.5 py-0.5 text-[11px] text-zinc-400">
-          Exemple
-        </span>
-      </div>
-
-      <div className="grid lg:grid-cols-[minmax(0,1fr)_360px]">
-        {/* List */}
-        <div aria-label="Résultats d'exemple" className="divide-y divide-hairline/60 lg:border-r lg:border-hairline">
-          <div className="hidden grid-cols-[minmax(0,1fr)_170px_120px_88px] gap-4 px-5 py-2 text-[11px] text-zinc-500 sm:grid">
-            <span>Entreprise</span>
-            <span>Présence web</span>
-            <span>Avis Google</span>
-            <span className="text-right">Score</span>
-          </div>
-          {leads.map((l, i) => {
-            const p = PRIORITY[l.priority]
-            const active = i === selected
-            return (
-              <div key={l.presence}>
-              <motion.button
-                layout={!reduce}
-                type="button"
-                aria-pressed={active}
-                onClick={() => setSelected(i)}
-                initial={reduce ? false : { opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, ease, delay: reduce ? 0 : 0.15 + i * 0.06, layout: { duration: 0.3, ease } }}
-                className={cn(
-                  'grid w-full grid-cols-[minmax(0,1fr)_64px] items-center gap-x-4 gap-y-0.5 px-4 py-3 text-left transition-colors sm:grid-cols-[minmax(0,1fr)_170px_120px_88px] sm:px-5',
-                  active ? 'bg-white/[0.045]' : 'hover:bg-white/[0.025]'
-                )}
-              >
-                <span className="flex min-w-0 items-center gap-2.5">
-                  <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', p.dot)} aria-hidden />
-                  <span className="truncate text-[14px] text-zinc-100">{l.name}</span>
-                </span>
-                <span className="col-start-1 row-start-2 pl-4 text-[12px] text-zinc-500 sm:col-start-auto sm:row-start-auto sm:pl-0 sm:text-[13px] sm:text-zinc-400">
-                  {l.presence}
-                </span>
-                <span className="hidden text-[13px] tabular-nums text-zinc-500 sm:block">{l.reviews}</span>
-                <span className="col-start-2 row-span-2 row-start-1 flex items-center justify-end gap-2 sm:col-start-auto sm:row-span-1 sm:row-start-auto">
-                  <span className="hidden h-1 w-10 overflow-hidden rounded-full bg-zinc-800 sm:block" aria-hidden>
-                    <span className="block h-full rounded-full bg-amber-500" style={{ width: `${l.score}%`, opacity: 0.35 + l.score / 160 }} />
-                  </span>
-                  <span className="w-7 text-right font-mono text-[14px] tabular-nums text-white">{l.score}</span>
-                </span>
-              </motion.button>
-              {active && (
-                <div className="border-t border-hairline/60 bg-white/[0.02] px-4 py-4 lg:hidden">
-                  <LeadDetail lead={l} city={city} />
-                </div>
-              )}
-              </div>
-            )
-          })}
-        </div>
-
-        {/* Detail (desktop side column) */}
-        <div className="hidden p-5 lg:block">
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-              key={lead.name}
-              initial={reduce ? false : { opacity: 0, y: 4 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={reduce ? undefined : { opacity: 0, y: -4 }}
-              transition={{ duration: 0.18, ease }}
-            >
-              <LeadDetail lead={lead} city={city} />
-            </motion.div>
-          </AnimatePresence>
-        </div>
-      </div>
-      <figcaption className="border-t border-hairline px-5 py-2.5 text-[12px] text-zinc-500">
-        Données d&apos;exemple. Les scores et les raisons sont calculés par le même algorithme que dans l&apos;application.
-      </figcaption>
-    </figure>
-  )
-}
-
-/* ─── Section shell ────────────────────────────────────────────────────── */
-
-function Section({ id, children, className }: { id?: string; children: React.ReactNode; className?: string }) {
-  return (
-    <section id={id} className={cn('scroll-mt-16 border-t border-hairline', className)}>
-      <div className="mx-auto max-w-[1200px] px-4 py-24 sm:px-6 sm:py-28">{children}</div>
-    </section>
-  )
-}
-
-function SectionHead({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="max-w-[520px]">
-      <h2 className="text-[32px] font-semibold leading-[1.1] tracking-[-0.03em] text-white sm:text-[40px]">{title}</h2>
-      <div className="mt-4 space-y-3 text-[16px] leading-relaxed text-zinc-400">{children}</div>
+      ))}
     </div>
   )
 }
 
-/* ─── Audit ────────────────────────────────────────────────────────────── */
+function Hero() {
+  return (
+    <section className="relative min-h-[90vh] flex flex-col items-center justify-center px-4 sm:px-6 pt-20 pb-12 overflow-hidden">
 
-const AUDIT_METRICS = [
-  { label: 'Performance', value: 22 },
-  { label: 'SEO', value: 48 },
-  { label: 'Accessibilité', value: 61 },
-  { label: 'Bonnes pratiques', value: 58 },
-]
+      {/* Dot grid background */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.10) 1px, transparent 1px)',
+          backgroundSize: '34px 34px',
+          maskImage: 'radial-gradient(ellipse 80% 60% at 50% 10%, black 0%, transparent 100%)',
+          WebkitMaskImage: 'radial-gradient(ellipse 80% 60% at 50% 10%, black 0%, transparent 100%)',
+        }}
+      />
 
-function metricTone(v: number) {
-  if (v >= 90) return { bar: 'bg-emerald-400', text: 'text-emerald-300' }
-  if (v >= 50) return { bar: 'bg-amber-400', text: 'text-amber-300' }
-  return { bar: 'bg-red-400', text: 'text-red-300' }
+      {/* Static amber glow — always visible, no z-index tricks */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background: 'radial-gradient(ellipse 90% 55% at 50% -5%, rgba(251,146,60,0.45) 0%, rgba(245,158,11,0.20) 40%, transparent 70%)',
+        }}
+      />
+
+      {/* Pulsing glow overlay */}
+      <motion.div
+        animate={{ opacity: [0.6, 1, 0.6] }}
+        transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background: 'radial-gradient(ellipse 60% 40% at 50% 0%, rgba(251,146,60,0.30) 0%, transparent 65%)',
+        }}
+      />
+
+      {/* Side orbs */}
+      <div className="pointer-events-none absolute inset-0">
+        <motion.div
+          animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0.5, 0.3] }}
+          transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+          className="absolute top-12 left-[10%] w-[300px] h-[300px] rounded-full blur-[80px]"
+          style={{ background: 'rgba(234, 88, 12, 0.5)' }}
+        />
+        <motion.div
+          animate={{ scale: [1, 1.25, 1], opacity: [0.25, 0.45, 0.25] }}
+          transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut', delay: 3 }}
+          className="absolute top-8 right-[8%] w-[260px] h-[260px] rounded-full blur-[70px]"
+          style={{ background: 'rgba(245, 158, 11, 0.45)' }}
+        />
+      </div>
+
+      {/* Floating particles */}
+      <HeroParticles />
+
+      <motion.div
+        variants={stagger}
+        initial="hidden"
+        animate="visible"
+        className="relative z-10 text-center max-w-4xl mx-auto"
+      >
+        {/* Badge with shimmer */}
+        <motion.div variants={fadeUp} className="inline-flex mb-8">
+          <div className="relative inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-400 text-xs font-medium tracking-wide uppercase overflow-hidden">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+            Google Maps · INSEE / Sirene · Scoring automatique
+            {/* shimmer sweep */}
+            <motion.div
+              className="pointer-events-none absolute inset-0"
+              animate={{ x: ['-110%', '210%'] }}
+              transition={{ duration: 2.2, repeat: Infinity, repeatDelay: 3.5, ease: 'easeInOut' }}
+              style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.40), transparent)' }}
+            />
+          </div>
+        </motion.div>
+
+        <motion.h1
+          variants={fadeUp}
+          className="text-5xl sm:text-6xl lg:text-7xl font-bold leading-[1.08] tracking-tight mb-6"
+        >
+          Trouvez les clients locaux{' '}
+          <motion.span
+            animate={{ backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] }}
+            transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+            style={{ backgroundSize: '300% auto' }}
+            className="bg-gradient-to-r from-white via-amber-300 to-orange-500 bg-clip-text text-transparent inline-block"
+          >
+            qui ont besoin de vous
+          </motion.span>
+        </motion.h1>
+
+        <motion.p
+          variants={fadeUp}
+          className="text-lg sm:text-xl text-zinc-400 max-w-2xl mx-auto mb-10 leading-relaxed"
+        >
+          Scannez n&apos;importe quelle ville, détectez les entreprises sans site web ou avec un site
+          obsolète — et obtenez des leads qualifiés avec scoring{' '}
+          <span className="text-red-400 font-medium">Chaud</span> ·{' '}
+          <span className="text-amber-400 font-medium">Tiède</span> ·{' '}
+          <span className="text-blue-400 font-medium">Froid</span> automatique.
+        </motion.p>
+
+        <motion.div
+          variants={fadeUp}
+          className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-4"
+        >
+          <Link
+            href="/login"
+            className="group relative flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold hover:opacity-90 transition-opacity shadow-lg shadow-amber-900/40 overflow-hidden"
+          >
+            {/* CTA shimmer */}
+            <motion.div
+              className="pointer-events-none absolute inset-0"
+              animate={{ x: ['-110%', '210%'] }}
+              transition={{ duration: 1.8, repeat: Infinity, repeatDelay: 4, ease: 'easeInOut', delay: 1 }}
+              style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent)' }}
+            />
+            Commencer gratuitement
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+          </Link>
+          <a
+            href="#scanner"
+            className="flex items-center gap-2 px-6 py-3 rounded-xl border border-white/10 text-zinc-300 font-medium hover:border-white/20 hover:text-white transition-all"
+          >
+            Voir les fonctionnalités
+          </a>
+        </motion.div>
+
+        <motion.p variants={fadeUp} className="text-xs text-zinc-600">
+          3 scans gratuits · Sans carte bancaire · Sans engagement
+        </motion.p>
+      </motion.div>
+
+      {/* Hero demo card */}
+      <motion.div
+        initial={{ opacity: 0, y: 60, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ delay: 0.5, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+        className="relative z-10 mt-16 w-full max-w-3xl mx-auto"
+      >
+        {/* Glow behind card */}
+        <motion.div
+          animate={{ opacity: [0.4, 0.7, 0.4] }}
+          transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+          className="absolute inset-x-12 -bottom-4 h-16 bg-amber-500/30 blur-2xl rounded-full pointer-events-none"
+        />
+        <DashboardMockup />
+      </motion.div>
+    </section>
+  )
 }
 
-function AuditSection() {
-  return (
-    <Section id="audit">
-      <div className="grid items-start gap-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16">
-        <SectionHead title="Un audit pour ouvrir la conversation.">
-          <p>
-            Quand l&apos;entreprise a déjà un site, LeadHunter mesure sa performance et son SEO,
-            vérifie le HTTPS et l&apos;affichage mobile, repère le CMS et l&apos;année du copyright.
-          </p>
-          <p>
-            Vous appelez avec des faits précis, et un lien vers le rapport à envoyer au gérant.
-          </p>
-        </SectionHead>
+/* ─── Dashboard Mockup (Hero) ─────────────────────────────────────────────── */
 
-        <div className="rounded-2xl border border-hairline bg-surface-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-          <div className="flex items-center justify-between gap-3 border-b border-hairline px-5 py-3">
-            <p className="truncate font-mono text-[13px] text-zinc-300">moreau-chauffage.fr</p>
-            <span className="rounded-md border border-hairline px-1.5 py-0.5 text-[11px] text-zinc-400">Exemple</span>
+const DASH_RECENT = [
+  { name: 'Boulangerie Martin', city: 'Lyon', priority: 'Chaud', score: 95, noSite: true },
+  { name: 'Plomberie Moreau', city: 'Marseille', priority: 'Chaud', score: 91, noSite: true },
+  { name: 'Coiffure Élise', city: 'Bordeaux', priority: 'Tiède', score: 62, noSite: false },
+  { name: 'Auto École Dupont', city: 'Nantes', priority: 'Froid', score: 28, noSite: false },
+]
+
+const MOCK_NAV = [
+  { icon: LayoutDashboard, label: 'Dashboard', active: true },
+  { icon: Users, label: 'Leads', active: false },
+  { icon: Radar, label: 'Scanner', active: false },
+  { icon: KanbanSquare, label: 'Pipeline', active: false },
+]
+
+function DashboardMockup() {
+  const [counts, setCounts] = useState({ leads: 0, noSite: 0, refonte: 0, hot: 0 })
+  const [recentVisible, setRecentVisible] = useState(0)
+
+  useEffect(() => {
+    function run() {
+      setCounts({ leads: 0, noSite: 0, refonte: 0, hot: 0 })
+      setRecentVisible(0)
+      let step = 0
+      const total = 45
+      const t = setInterval(() => {
+        step++
+        const e = 1 - (1 - Math.min(step / total, 1)) ** 3
+        setCounts({
+          leads: Math.round(247 * e),
+          noSite: Math.round(89 * e),
+          refonte: Math.round(54 * e),
+          hot: Math.round(38 * e),
+        })
+        if (step >= total) {
+          clearInterval(t)
+          let ri = 0
+          const rt = setInterval(() => {
+            ri++; setRecentVisible(ri)
+            if (ri >= DASH_RECENT.length) {
+              clearInterval(rt)
+              setTimeout(run, 6000)
+            }
+          }, 350)
+        }
+      }, 30)
+    }
+    run()
+  }, [])
+
+  return (
+    <div className="rounded-2xl border border-white/[0.08] bg-zinc-900/60 backdrop-blur-sm overflow-hidden shadow-2xl shadow-black/60">
+      {/* Window chrome */}
+      <div className="flex items-center gap-1.5 px-4 py-2.5 border-b border-white/[0.06] bg-zinc-950/60">
+        <div className="w-3 h-3 rounded-full bg-red-500/70" />
+        <div className="w-3 h-3 rounded-full bg-amber-500/70" />
+        <div className="w-3 h-3 rounded-full bg-emerald-500/70" />
+        <span className="ml-3 text-[10px] text-zinc-500 font-mono">leadhunter.app — Dashboard</span>
+      </div>
+
+      <div className="flex" style={{ height: '360px' }}>
+        {/* Sidebar */}
+        <div className="w-[138px] shrink-0 border-r border-white/[0.06] bg-zinc-950/50 flex flex-col">
+          <div className="flex items-center gap-2 px-3 py-3 border-b border-white/[0.06]">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 shrink-0">
+              <Target className="h-4 w-4 text-white" />
+            </div>
+            <span className="text-sm font-bold text-white">Lead<span className="text-amber-500">Hunter</span></span>
           </div>
-          <div className="grid gap-x-8 gap-y-5 p-5 sm:grid-cols-2">
-            {AUDIT_METRICS.map(({ label, value }) => {
-              const t = metricTone(value)
-              return (
-                <div key={label}>
-                  <div className="flex items-baseline justify-between">
-                    <span className="text-[13px] text-zinc-400">{label}</span>
-                    <span className={cn('font-mono text-[15px] tabular-nums', t.text)}>{value}</span>
-                  </div>
-                  <div className="mt-2 h-1 overflow-hidden rounded-full bg-zinc-800">
-                    <div className={cn('h-full rounded-full', t.bar)} style={{ width: `${value}%` }} />
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-          <dl className="grid grid-cols-2 border-t border-hairline text-[13px] sm:grid-cols-4">
-            {[
-              { k: 'HTTPS', v: 'Oui', ok: true },
-              { k: 'Mobile', v: 'Non adapté', ok: false },
-              { k: 'CMS', v: 'WordPress 4.9', ok: false },
-              { k: 'Copyright', v: '© 2017', ok: false },
-            ].map(({ k, v, ok }, i) => (
+
+          <nav className="flex flex-col gap-0.5 p-2 mt-1">
+            {MOCK_NAV.map(({ icon: Icon, label, active }) => (
               <div
-                key={k}
-                className={cn(
-                  'border-hairline px-5 py-3',
-                  i % 2 === 1 && 'border-l',
-                  i >= 2 && 'border-t sm:border-t-0',
-                  i >= 1 && 'sm:border-l'
-                )}
+                key={label}
+                className={`relative flex items-center gap-2.5 px-2.5 py-2 rounded-lg ${
+                  active ? 'bg-amber-500/15 text-amber-500' : 'text-zinc-500'
+                }`}
               >
-                <dt className="text-[12px] text-zinc-500">{k}</dt>
-                <dd className={cn('mt-0.5', ok ? 'text-zinc-200' : 'text-red-300')}>{v}</dd>
+                {active && (
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-amber-500 rounded-full" />
+                )}
+                <Icon className="h-3.5 w-3.5 shrink-0" />
+                <span className="text-[11px] font-medium">{label}</span>
               </div>
             ))}
-          </dl>
-          <div className="flex flex-wrap items-center gap-2 border-t border-hairline px-5 py-3 text-[12px] text-zinc-400">
-            <span className="inline-flex items-center gap-1.5">
-              <Link2 className="h-3.5 w-3.5 text-zinc-500" /> Lien de rapport partageable
-            </span>
-            <span className="text-zinc-700">·</span>
-            <span className="inline-flex items-center gap-1.5">
-              <FileText className="h-3.5 w-3.5 text-zinc-500" /> Export PDF
-            </span>
-            <span className="ml-auto text-zinc-500">Inclus dans Pro</span>
+          </nav>
+
+          <div className="flex-1" />
+
+          <div className="border-t border-white/[0.06] p-2">
+            <div className="flex items-center gap-2 p-2 rounded-lg bg-zinc-800/60">
+              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-amber-500/20 shrink-0">
+                <span className="text-[10px] font-bold text-amber-400">C</span>
+              </div>
+              <div className="min-w-0">
+                <p className="text-[9px] font-medium text-white truncate leading-none">clement@...</p>
+                <span className="text-[8px] font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-orange-600">PRO</span>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-    </Section>
-  )
-}
 
-/* ─── Daily loop ───────────────────────────────────────────────────────── */
-
-const TODAY_ROWS = [
-  { name: 'Boulangerie Moreau', action: 'Relancer par email', when: 'Email envoyé il y a 3 jours' },
-  { name: 'Garage du Stade', action: 'Rappeler', when: 'Pas de réponse lundi' },
-  { name: 'Salon Élodie', action: 'Envoyer la proposition', when: 'RDV fait hier' },
-  { name: 'Chez Martine', action: 'Premier contact', when: 'Ajouté par le scan de mardi' },
-]
-
-const KEYS = [
-  { k: '→', label: 'Garder' },
-  { k: '←', label: 'Écarter' },
-  { k: '↑', label: 'Marquer chaud' },
-  { k: 'Espace', label: 'Passer' },
-  { k: 'O', label: 'Ouvrir le site' },
-  { k: 'Entrée', label: 'Ouvrir la fiche' },
-]
-
-function DailySection() {
-  return (
-    <Section id="quotidien">
-      <SectionHead title="Chaque matin, une liste courte.">
-        <p>
-          L&apos;écran Aujourd&apos;hui rassemble les relances dues et les nouveaux leads à contacter.
-          Le tri des scans se fait au clavier, un lead à la fois.
-        </p>
-      </SectionHead>
-
-      <div className="mt-12 grid items-start gap-4 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
-        <div className="rounded-2xl border border-hairline bg-surface-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-          <div className="flex items-baseline justify-between border-b border-hairline px-5 py-3">
-            <p className="text-[14px] font-medium text-white">Aujourd&apos;hui</p>
-            <p className="text-[12px] text-zinc-500">4 actions</p>
+        {/* Main content */}
+        <div className="flex-1 overflow-hidden flex flex-col p-3 gap-2.5 min-w-0">
+          {/* Header */}
+          <div>
+            <p className="text-sm font-bold text-white leading-none">Dashboard</p>
+            <p className="text-[9px] text-zinc-500 mt-0.5">Vue d'ensemble de votre prospection</p>
           </div>
-          <ul className="divide-y divide-hairline/60">
-            {TODAY_ROWS.map((r) => (
-              <li key={r.name} className="flex items-center gap-3 px-5 py-3">
-                <span aria-hidden className="h-4 w-4 shrink-0 rounded-[5px] border border-hairline-strong" />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-[14px] text-zinc-100">{r.action} <span className="text-zinc-500">·</span> {r.name}</p>
-                  <p className="truncate text-[12px] text-zinc-500">{r.when}</p>
+
+          {/* Stats */}
+          <div className="grid grid-cols-4 gap-2">
+            {[
+              { label: 'Total Leads', value: counts.leads, icon: Users, iconColor: 'text-zinc-300', bg: 'bg-zinc-700/50', trend: '+12%' },
+              { label: 'Sans site web', value: counts.noSite, icon: Globe, iconColor: 'text-blue-400', bg: 'bg-blue-500/15', trend: null },
+              { label: 'Besoin refonte', value: counts.refonte, icon: Wrench, iconColor: 'text-amber-400', bg: 'bg-amber-500/15', trend: null },
+              { label: 'Leads chauds', value: counts.hot, icon: Flame, iconColor: 'text-red-400', bg: 'bg-red-500/15', trend: '+25%' },
+            ].map(({ label, value, icon: Icon, iconColor, bg, trend }) => (
+              <div key={label} className="bg-zinc-800/50 border border-white/[0.06] rounded-xl p-2.5">
+                <div className="flex items-start justify-between mb-1.5">
+                  <p className="text-[8px] text-zinc-500 leading-tight">{label}</p>
+                  <div className={`flex h-5 w-5 items-center justify-center rounded-lg ${bg}`}>
+                    <Icon className={`h-3 w-3 ${iconColor}`} />
+                  </div>
                 </div>
-              </li>
+                <p className="text-[18px] font-bold text-white leading-none">{value}</p>
+                {trend && <p className="text-[8px] text-emerald-400 mt-1">{trend} cette sem.</p>}
+              </div>
             ))}
-          </ul>
-        </div>
+          </div>
 
-        <div className="rounded-2xl border border-hairline bg-surface-1 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-          <p className="text-[14px] font-medium text-white">Tri au clavier</p>
-          <p className="mt-1 text-[13px] text-zinc-500">Ou en glissant la carte, sur mobile.</p>
-          <ul className="mt-5 grid grid-cols-2 gap-x-4 gap-y-3">
-            {KEYS.map(({ k, label }) => (
-              <li key={k} className="flex items-center gap-2.5 text-[13px] text-zinc-300">
-                <kbd className="inline-flex h-6 min-w-6 items-center justify-center rounded-md border border-hairline-strong bg-surface-2 px-1.5 font-mono text-[11px] text-zinc-200 shadow-[0_1px_0_#34343a]">
-                  {k}
-                </kbd>
-                {label}
-              </li>
-            ))}
-          </ul>
+          {/* Chart + Leads row */}
+          <div className="grid grid-cols-5 gap-2 flex-1 min-h-0">
+            {/* Area chart */}
+            <div className="col-span-3 bg-zinc-800/40 border border-white/[0.06] rounded-xl p-2.5 flex flex-col">
+              <p className="text-[9px] font-semibold text-white mb-1">Évolution des leads</p>
+              <div className="flex-1 relative">
+                <svg className="absolute inset-0 w-full h-full" viewBox="0 0 200 70" preserveAspectRatio="none">
+                  <defs>
+                    <linearGradient id="gAmber" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="rgb(245,158,11)" stopOpacity="0.4" />
+                      <stop offset="100%" stopColor="rgb(245,158,11)" stopOpacity="0" />
+                    </linearGradient>
+                    <linearGradient id="gGreen" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="rgb(16,185,129)" stopOpacity="0.3" />
+                      <stop offset="100%" stopColor="rgb(16,185,129)" stopOpacity="0" />
+                    </linearGradient>
+                  </defs>
+                  {[20, 40, 60].map(y => (
+                    <line key={y} x1="0" y1={y} x2="200" y2={y} stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+                  ))}
+                  <path d="M0,60 C25,52 45,30 70,35 S105,18 130,20 S165,8 200,5 L200,70 L0,70 Z" fill="url(#gAmber)" />
+                  <path d="M0,60 C25,52 45,30 70,35 S105,18 130,20 S165,8 200,5" fill="none" stroke="rgb(245,158,11)" strokeWidth="1.5" strokeLinecap="round" />
+                  <path d="M0,65 C30,62 55,52 80,56 S115,44 150,42 S180,38 200,34 L200,70 L0,70 Z" fill="url(#gGreen)" />
+                  <path d="M0,65 C30,62 55,52 80,56 S115,44 150,42 S180,38 200,34" fill="none" stroke="rgb(16,185,129)" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+              </div>
+              <div className="flex gap-3 mt-1.5">
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-0.5 bg-amber-500 rounded" />
+                  <span className="text-[8px] text-zinc-500">Nouveaux leads</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-0.5 bg-emerald-500 rounded" />
+                  <span className="text-[8px] text-zinc-500">Contactés</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Recent leads */}
+            <div className="col-span-2 bg-zinc-800/40 border border-white/[0.06] rounded-xl p-2.5 flex flex-col">
+              <p className="text-[9px] font-semibold text-white mb-1.5">Leads prioritaires</p>
+              <div className="space-y-1.5 flex-1">
+                {DASH_RECENT.slice(0, recentVisible).map((lead, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, x: -6 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="flex items-center gap-2 p-1.5 rounded-lg bg-zinc-800/60 border border-white/[0.04]"
+                  >
+                    <div className={`flex h-5 w-5 items-center justify-center rounded-md shrink-0 ${lead.noSite ? 'bg-amber-500/20' : 'bg-zinc-700/60'}`}>
+                      {lead.noSite
+                        ? <Globe2 className="h-3 w-3 text-amber-400" />
+                        : <Globe className="h-3 w-3 text-zinc-400" />
+                      }
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[9px] font-medium text-white truncate leading-none">{lead.name}</p>
+                      <p className="text-[8px] text-zinc-500 leading-none mt-0.5">{lead.city}</p>
+                    </div>
+                    <div className="flex flex-col items-end gap-0.5 shrink-0">
+                      <span className={`text-[7px] px-1 py-0.5 rounded font-bold leading-none ${
+                        lead.priority === 'Chaud' ? 'bg-red-500/20 text-red-400' :
+                        lead.priority === 'Tiède' ? 'bg-amber-500/20 text-amber-400' :
+                        'bg-blue-500/20 text-blue-400'
+                      }`}>{lead.priority}</span>
+                      <span className="text-[9px] font-bold text-zinc-400">{lead.score}</span>
+                    </div>
+                  </motion.div>
+                ))}
+                {Array.from({ length: Math.max(0, DASH_RECENT.length - recentVisible) }).map((_, i) => (
+                  <div key={`ph-${i}`} className="h-8 rounded-lg bg-zinc-800/30 border border-white/[0.03] animate-pulse" />
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-
-      <ol className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-2 rounded-2xl border border-hairline bg-surface-1 px-5 py-4 text-[13px]" aria-label="Étapes du pipeline">
-        <li className="mr-2 text-zinc-500">Pipeline</li>
-        {['Nouveau', 'Contacté', 'RDV', 'Proposition', 'Gagné'].map((s, i, arr) => (
-          <li key={s} className="flex items-center gap-2">
-            <span className={cn('inline-flex items-center gap-1 rounded-md bg-surface-3 px-2 py-0.5', i === arr.length - 1 ? 'text-white' : 'text-zinc-300')}>{i === arr.length - 1 && <Check className="h-3 w-3" aria-hidden />}{s}</span>
-            {i < arr.length - 1 && <ArrowRight aria-hidden className="h-3 w-3 text-zinc-600" />}
-          </li>
-        ))}
-      </ol>
-    </Section>
+    </div>
   )
 }
 
-/* ─── Pricing ──────────────────────────────────────────────────────────── */
+/* ─── Scanner Section ─────────────────────────────────────────────────────── */
 
-const PLAN_ROWS: { label: string; free: string | boolean; pro: string | boolean }[] = [
-  { label: 'Scans', free: '3 par mois', pro: 'Illimités' },
-  { label: 'Leads par scan', free: '10', pro: "Jusqu'à 60" },
-  { label: 'Score chaud / tiède / froid', free: true, pro: true },
-  { label: 'Pipeline', free: true, pro: true },
-  { label: 'Audit de site (Core Web Vitals)', free: false, pro: true },
-  { label: 'Export XLSX', free: false, pro: true },
-  { label: 'Support prioritaire', free: false, pro: true },
+function ScannerSection() {
+  const ref = useRef<HTMLElement>(null)
+  const inView = useInView(ref, { once: false, margin: '-100px' })
+
+  return (
+    <section id="scanner" ref={ref} className="py-28 max-w-6xl mx-auto px-4 sm:px-6">
+      <div className="grid lg:grid-cols-2 gap-16 items-center">
+        <motion.div
+          variants={stagger}
+          initial="hidden"
+          animate={inView ? 'visible' : 'hidden'}
+        >
+          <motion.div variants={fadeUp} className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-400 text-xs font-medium mb-6 uppercase tracking-wide">
+            <MapPin className="h-3 w-3" /> Scanner Google Maps
+          </motion.div>
+          <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl font-bold leading-tight mb-5">
+            Détectez des dizaines de leads{' '}
+            <span className="text-zinc-400">en quelques secondes</span>
+          </motion.h2>
+          <motion.p variants={fadeUp} className="text-zinc-400 leading-relaxed mb-8">
+            Saisissez un type d&apos;activité et une ville. LeadHunter interroge Google Maps
+            et récupère les fiches enrichies — téléphone, site web, note, avis — pour chaque établissement.
+          </motion.p>
+          <motion.ul variants={stagger} className="space-y-3">
+            {[
+              '45+ types d\'entreprises prédéfinis (restaurants, coiffeurs, plombiers…)',
+              'Déduplication automatique des fiches déjà dans votre CRM',
+              'Scoring chaud / tiède / froid en temps réel',
+              'Jusqu\'à 60 résultats par scan (Pro)',
+            ].map((item) => (
+              <motion.li key={item} variants={fadeUp} className="flex items-start gap-3 text-sm text-zinc-400">
+                <Check className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+                {item}
+              </motion.li>
+            ))}
+          </motion.ul>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, x: 40 }}
+          animate={inView ? { opacity: 1, x: 0 } : {}}
+          transition={{ duration: 0.6, ease: 'easeOut', delay: 0.15 }}
+        >
+          <ScannerMockup inView={inView} />
+        </motion.div>
+      </div>
+    </section>
+  )
+}
+
+/* ─── Scanner Mockup (animated) ───────────────────────────────────────────── */
+
+const SCANNER_LEADS = [
+  { name: 'Plomberie Moreau', phone: '04 91 55 23 10', hasWebsite: false, score: 95, rating: 4.1 },
+  { name: 'SOS Plombier 13', phone: '04 91 77 89 00', hasWebsite: false, score: 92, rating: 3.8 },
+  { name: 'Artisan Plombier Sud', phone: '04 91 33 44 55', hasWebsite: true, score: 44, rating: 4.5 },
+  { name: 'Depannage Express', phone: '04 91 20 11 99', hasWebsite: false, score: 89, rating: 4.0 },
+  { name: 'Robinetterie Pro', phone: '04 91 66 88 12', hasWebsite: false, score: 87, rating: 3.9 },
 ]
 
-function Cell({ v }: { v: string | boolean }) {
-  if (v === true) return <Check className="h-4 w-4 text-zinc-200" aria-label="Inclus" />
-  if (v === false) return <Minus className="h-4 w-4 text-zinc-700" aria-label="Non inclus" />
-  return <span className="text-zinc-200">{v}</span>
+function ScannerMockup({ inView }: { inView: boolean }) {
+  const [phase, setPhase] = useState<'idle' | 'typing-q' | 'typing-l' | 'loading' | 'results'>('idle')
+  const [queryTxt, setQueryTxt] = useState('')
+  const [locationTxt, setLocationTxt] = useState('')
+  const [visible, setVisible] = useState(0)
+  const started = useRef(false)
+
+  const QUERY = 'Plombiers'
+  const LOCATION = 'Marseille 13'
+
+  useEffect(() => {
+    if (!inView || started.current) return
+    started.current = true
+    runAnimation()
+  }, [inView])
+
+  function runAnimation() {
+    setPhase('typing-q')
+    setQueryTxt('')
+    setLocationTxt('')
+    setVisible(0)
+
+    let q = ''
+    const typeQ = setInterval(() => {
+      q += QUERY[q.length]
+      setQueryTxt(q)
+      if (q.length === QUERY.length) {
+        clearInterval(typeQ)
+        setTimeout(() => {
+          setPhase('typing-l')
+          let l = ''
+          const typeL = setInterval(() => {
+            l += LOCATION[l.length]
+            setLocationTxt(l)
+            if (l.length === LOCATION.length) {
+              clearInterval(typeL)
+              setTimeout(() => {
+                setPhase('loading')
+                setTimeout(() => {
+                  setPhase('results')
+                  let i = 0
+                  const show = setInterval(() => {
+                    i++; setVisible(i)
+                    if (i >= SCANNER_LEADS.length) {
+                      clearInterval(show)
+                      setTimeout(() => {
+                        started.current = false
+                        runAnimation()
+                      }, 5000)
+                    }
+                  }, 400)
+                }, 1600)
+              }, 300)
+            }
+          }, 65)
+        }, 200)
+      }
+    }, 70)
+  }
+
+  return (
+    <div className="rounded-2xl border border-white/[0.08] bg-zinc-900/80 overflow-hidden shadow-2xl shadow-black/50">
+      <div className="flex items-center gap-1.5 px-4 py-3 border-b border-white/[0.06] bg-zinc-950/50">
+        <div className="w-2.5 h-2.5 rounded-full bg-red-500/60" />
+        <div className="w-2.5 h-2.5 rounded-full bg-amber-500/60" />
+        <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/60" />
+        <span className="ml-3 text-[11px] text-zinc-500">Scanner — Google Maps</span>
+      </div>
+
+      <div className="p-4 space-y-3">
+        {/* Inputs */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="bg-zinc-800/60 border border-white/[0.07] rounded-lg px-3 py-2.5 text-sm text-zinc-200 font-mono min-h-[38px] flex items-center gap-1.5">
+            <Building2 className="h-3 w-3 text-zinc-500 shrink-0" />
+            {queryTxt}
+            {phase === 'typing-q' && <span className="w-0.5 h-3.5 bg-amber-400 animate-pulse" />}
+          </div>
+          <div className="bg-zinc-800/60 border border-white/[0.07] rounded-lg px-3 py-2.5 text-sm text-zinc-200 font-mono min-h-[38px] flex items-center gap-1.5">
+            <MapPin className="h-3 w-3 text-zinc-500 shrink-0" />
+            {locationTxt}
+            {phase === 'typing-l' && <span className="w-0.5 h-3.5 bg-amber-400 animate-pulse" />}
+          </div>
+        </div>
+
+        {/* Dynamic area — fixed min-height prevents layout shift */}
+        <div className="min-h-[280px]">
+          {/* Status bar */}
+          {phase === 'loading' && (
+            <div className="flex items-center gap-2 py-2 text-xs text-zinc-500">
+              <div className="w-3 h-3 border border-amber-500/40 border-t-amber-500 rounded-full animate-spin" />
+              Interrogation de Google Maps en cours...
+            </div>
+          )}
+
+          {/* Results */}
+          {phase === 'results' && (
+            <div className="space-y-1.5">
+              {SCANNER_LEADS.slice(0, visible).map((lead, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.25 }}
+                  className="flex items-center gap-2.5 p-2.5 rounded-lg bg-zinc-800/40 border border-white/[0.04]"
+                >
+                  <div className={`shrink-0 w-1.5 h-1.5 rounded-full ${lead.hasWebsite ? 'bg-blue-400' : 'bg-red-400'}`} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-white truncate">{lead.name}</p>
+                    <p className="text-[10px] text-zinc-500 flex items-center gap-1">
+                      <Phone className="h-2.5 w-2.5" />{lead.phone}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {lead.hasWebsite ? (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400">Site web</span>
+                    ) : (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 font-medium">Sans site 🔥</span>
+                    )}
+                    <span className="text-[10px] text-zinc-500">★ {lead.rating}</span>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
 }
+
+/* ─── Audit Section ───────────────────────────────────────────────────────── */
+
+function AuditSection() {
+  const ref = useRef<HTMLElement>(null)
+  const inView = useInView(ref, { once: false, margin: '-100px' })
+
+  return (
+    <section ref={ref} className="py-28 relative overflow-hidden">
+      <div className="pointer-events-none absolute inset-0 -z-10">
+        <div className="absolute bottom-0 right-0 w-[500px] h-[400px] bg-orange-600/5 blur-[100px]" />
+      </div>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 grid lg:grid-cols-2 gap-16 items-center">
+        <motion.div
+          initial={{ opacity: 0, x: -40 }}
+          animate={inView ? { opacity: 1, x: 0 } : {}}
+          transition={{ duration: 0.6, ease: 'easeOut' }}
+        >
+          <AuditMockup inView={inView} />
+        </motion.div>
+
+        <motion.div variants={stagger} initial="hidden" animate={inView ? 'visible' : 'hidden'}>
+          <motion.div variants={fadeUp} className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-orange-500/30 bg-orange-500/10 text-orange-400 text-xs font-medium mb-6 uppercase tracking-wide">
+            <Zap className="h-3 w-3" /> Audit Speed Insights
+          </motion.div>
+          <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl font-bold leading-tight mb-5">
+            Identifiez les sites{' '}
+            <span className="text-zinc-400">qui ont besoin d&apos;une refonte</span>
+          </motion.h2>
+          <motion.p variants={fadeUp} className="text-zinc-400 leading-relaxed mb-8">
+            Pour chaque lead avec un site web, LeadHunter lance une analyse Lighthouse complète —
+            performance, SEO, compatibilité mobile, technologies détectées — et calcule un score de priorité.
+          </motion.p>
+          <motion.ul variants={stagger} className="space-y-3">
+            {[
+              'Performance Core Web Vitals (score 0-100)',
+              'Détection HTTPS · Mobile-friendly · CMS',
+              'Liste des problèmes avec recommandations',
+              'Mise à jour du scoring du lead en temps réel',
+            ].map((item) => (
+              <motion.li key={item} variants={fadeUp} className="flex items-start gap-3 text-sm text-zinc-400">
+                <Check className="h-4 w-4 text-orange-400 shrink-0 mt-0.5" />
+                {item}
+              </motion.li>
+            ))}
+          </motion.ul>
+        </motion.div>
+      </div>
+    </section>
+  )
+}
+
+/* ─── Audit Mockup (animated) ─────────────────────────────────────────────── */
+
+function AuditMockup({ inView }: { inView: boolean }) {
+  const [scores, setScores] = useState({ perf: 0, seo: 0, access: 0, bp: 0 })
+  const [showIssues, setShowIssues] = useState(false)
+  const [issueCount, setIssueCount] = useState(0)
+  const started = useRef(false)
+
+  useEffect(() => {
+    if (!inView || started.current) return
+    started.current = true
+
+    const animate = () => {
+      setScores({ perf: 0, seo: 0, access: 0, bp: 0 })
+      setShowIssues(false)
+      setIssueCount(0)
+
+      setTimeout(() => {
+        setScores({ perf: 18, seo: 42, access: 55, bp: 67 })
+        setTimeout(() => {
+          setShowIssues(true)
+          let n = 0
+          const t = setInterval(() => { n++; setIssueCount(n); if (n >= 3) { clearInterval(t); setTimeout(() => { started.current = false; animate() }, 5000) } }, 400)
+        }, 1200)
+      }, 600)
+    }
+    animate()
+  }, [inView])
+
+  const BAR_ITEMS = [
+    { label: 'Performance', value: scores.perf, color: scores.perf < 50 ? 'bg-red-500' : 'bg-amber-500' },
+    { label: 'SEO', value: scores.seo, color: scores.seo < 50 ? 'bg-red-500' : 'bg-amber-500' },
+    { label: 'Accessibilité', value: scores.access, color: scores.access < 50 ? 'bg-orange-500' : 'bg-amber-500' },
+    { label: 'Bonnes pratiques', value: scores.bp, color: scores.bp < 50 ? 'bg-orange-500' : 'bg-emerald-500' },
+  ]
+
+  const ISSUES = [
+    { icon: Shield, label: 'Pas de HTTPS', sev: 'critical' },
+    { icon: Smartphone, label: 'Non optimisé mobile', sev: 'critical' },
+    { icon: AlertTriangle, label: 'Performance 18/100', sev: 'warning' },
+  ]
+
+  return (
+    <div className="rounded-2xl border border-white/[0.08] bg-zinc-900/80 overflow-hidden shadow-2xl shadow-black/50">
+      <div className="flex items-center gap-1.5 px-4 py-3 border-b border-white/[0.06] bg-zinc-950/50">
+        <div className="w-2.5 h-2.5 rounded-full bg-red-500/60" />
+        <div className="w-2.5 h-2.5 rounded-full bg-amber-500/60" />
+        <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/60" />
+        <span className="ml-3 text-[11px] text-zinc-500 flex items-center gap-1.5">
+          <Globe className="h-3 w-3" /> www.boulangerie-martin.fr — Audit en cours
+        </span>
+      </div>
+
+      <div className="p-4 space-y-4">
+        {/* Scores */}
+        <div className="space-y-2.5">
+          {BAR_ITEMS.map(({ label, value, color }) => (
+            <div key={label}>
+              <div className="flex justify-between text-xs mb-1">
+                <span className="text-zinc-400">{label}</span>
+                <span className={`font-mono font-bold ${value < 50 ? 'text-red-400' : 'text-emerald-400'}`}>{value}</span>
+              </div>
+              <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                <motion.div
+                  className={`h-full ${color} rounded-full`}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${value}%` }}
+                  transition={{ duration: 0.8, ease: 'easeOut' }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Tech badges */}
+        <div className="flex flex-wrap gap-1.5 pt-1">
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 border border-white/[0.05] flex items-center gap-1">
+            <Shield className="h-2.5 w-2.5 text-red-400" /> HTTP
+          </span>
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 border border-white/[0.05] flex items-center gap-1">
+            <Smartphone className="h-2.5 w-2.5 text-red-400" /> Non mobile
+          </span>
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 border border-white/[0.05]">
+            WordPress 5.2
+          </span>
+        </div>
+
+        {/* Issues — fixed min-height prevents layout shift */}
+        <div className="min-h-[140px]">
+          {showIssues && (
+            <div className="space-y-1.5 pt-1 border-t border-white/[0.06]">
+              <p className="text-[10px] text-zinc-500 font-medium uppercase tracking-wide">Problèmes détectés</p>
+              {ISSUES.slice(0, issueCount).map(({ icon: Icon, label, sev }, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className={`flex items-center gap-2 text-xs p-2 rounded-lg ${
+                    sev === 'critical' ? 'bg-red-500/10 text-red-400' : 'bg-amber-500/10 text-amber-400'
+                  }`}
+                >
+                  <Icon className="h-3 w-3 shrink-0" />
+                  {label}
+                  <span className={`ml-auto text-[9px] px-1.5 py-0.5 rounded font-bold uppercase ${
+                    sev === 'critical' ? 'bg-red-500/20' : 'bg-amber-500/20'
+                  }`}>{sev}</span>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ─── Pipeline Section ────────────────────────────────────────────────────── */
+
+function PipelineSection() {
+  const ref = useRef<HTMLElement>(null)
+  const inView = useInView(ref, { once: true, margin: '-80px' })
+
+  const COLUMNS = [
+    { label: 'Nouveau', color: 'text-zinc-400', dot: 'bg-zinc-500', leads: ['Boulangerie Martin', 'SOS Plombier'] },
+    { label: 'Contacté', color: 'text-blue-400', dot: 'bg-blue-500', leads: ['Au Pain Doré'] },
+    { label: 'RDV', color: 'text-amber-400', dot: 'bg-amber-500', leads: ['Artisan Blé'] },
+    { label: 'Gagné ✓', color: 'text-emerald-400', dot: 'bg-emerald-500', leads: ['La Fournée'] },
+  ]
+
+  return (
+    <section ref={ref} className="py-28 max-w-6xl mx-auto px-4 sm:px-6">
+      <div className="grid lg:grid-cols-2 gap-16 items-center">
+        <motion.div variants={stagger} initial="hidden" animate={inView ? 'visible' : 'hidden'}>
+          <motion.div variants={fadeUp} className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-xs font-medium mb-6 uppercase tracking-wide">
+            <KanbanSquare className="h-3 w-3" /> Pipeline CRM
+          </motion.div>
+          <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl font-bold leading-tight mb-5">
+            Suivez chaque lead de la{' '}
+            <span className="text-zinc-400">détection au closing</span>
+          </motion.h2>
+          <motion.p variants={fadeUp} className="text-zinc-400 leading-relaxed mb-8">
+            Pipeline Kanban intégré avec 6 étapes : Nouveau · Contacté · RDV · Proposition · Gagné · Perdu.
+            Notes, historique de contact et export XLSX inclus.
+          </motion.p>
+          <motion.ul variants={stagger} className="space-y-3">
+            {[
+              'Pipeline visuel Nouveau → Gagné en un glisser-déposer',
+              'Notes et timeline par lead',
+              'Export XLSX pour vos outils CRM existants (Pro)',
+              'Scoring mis à jour automatiquement après chaque audit',
+            ].map((item) => (
+              <motion.li key={item} variants={fadeUp} className="flex items-start gap-3 text-sm text-zinc-400">
+                <Check className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+                {item}
+              </motion.li>
+            ))}
+          </motion.ul>
+        </motion.div>
+
+        {/* Pipeline mockup */}
+        <motion.div
+          initial={{ opacity: 0, x: 40 }}
+          animate={inView ? { opacity: 1, x: 0 } : {}}
+          transition={{ duration: 0.6, ease: 'easeOut', delay: 0.15 }}
+        >
+          <div className="rounded-2xl border border-white/[0.08] bg-zinc-900/80 overflow-hidden shadow-2xl shadow-black/50">
+            <div className="flex items-center gap-1.5 px-4 py-3 border-b border-white/[0.06] bg-zinc-950/50">
+              <div className="w-2.5 h-2.5 rounded-full bg-red-500/60" />
+              <div className="w-2.5 h-2.5 rounded-full bg-amber-500/60" />
+              <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/60" />
+              <span className="ml-3 text-[11px] text-zinc-500">Pipeline CRM — Boulangeries Paris</span>
+            </div>
+            <div className="p-4 grid grid-cols-4 gap-2">
+              {COLUMNS.map(({ label, color, dot, leads }, ci) => (
+                <motion.div
+                  key={label}
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={inView ? { opacity: 1, y: 0 } : {}}
+                  transition={{ delay: 0.2 + ci * 0.1, duration: 0.4 }}
+                  className="space-y-2"
+                >
+                  <div className={`flex items-center gap-1.5 text-[10px] font-medium ${color}`}>
+                    <div className={`w-1.5 h-1.5 rounded-full ${dot}`} />
+                    {label}
+                  </div>
+                  {leads.map((name, li) => (
+                    <motion.div
+                      key={name}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={inView ? { opacity: 1, scale: 1 } : {}}
+                      transition={{ delay: 0.4 + ci * 0.1 + li * 0.08, duration: 0.3 }}
+                      className="bg-zinc-800/60 border border-white/[0.05] rounded-lg p-2"
+                    >
+                      <p className="text-[10px] font-medium text-white leading-tight">{name}</p>
+                      <p className="text-[9px] text-zinc-500 mt-0.5">Paris 15e</p>
+                    </motion.div>
+                  ))}
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    </section>
+  )
+}
+
+/* ─── Pricing ─────────────────────────────────────────────────────────────── */
+
+const FREE_FEATURES = [
+  { label: '3 scans / mois', ok: true },
+  { label: '10 leads par scan', ok: true },
+  { label: 'Scoring Chaud / Tiède / Froid', ok: true },
+  { label: 'Pipeline CRM Kanban', ok: true },
+  { label: 'Audit Core Web Vitals', ok: false },
+  { label: 'Export XLSX', ok: false },
+]
+
+const PRO_FEATURES = [
+  'Scans illimités',
+  'Jusqu\'à 60 leads par scan',
+  'Scoring Chaud / Tiède / Froid',
+  'Pipeline CRM Kanban',
+  'Audit Core Web Vitals (Speed Insights)',
+  'Export XLSX',
+  'Support prioritaire',
+]
 
 function Pricing() {
-  return (
-    <Section id="tarifs">
-      <SectionHead title={'Gratuit pour essayer. 29 € quand ça rapporte.'}>
-        <p>Sans engagement, annulable à tout moment.</p>
-      </SectionHead>
+  const ref = useRef<HTMLElement>(null)
+  const inView = useInView(ref, { once: true, margin: '-80px' })
 
-      {/* Mobile: two stacked plans */}
-      <div className="mt-10 space-y-3 sm:hidden">
-        {([
-          { name: 'Gratuit', price: '0 €', unit: '', key: 'free', cta: 'Commencer gratuitement', href: '/login?mode=register', primary: false },
-          { name: 'Pro', price: '29 €', unit: '/ mois', key: 'pro', cta: 'Passer à Pro', href: '/login?mode=register&next=%2Fupgrade', primary: true },
-        ] as const).map((plan) => (
-          <div key={plan.key} className="rounded-2xl border border-hairline bg-surface-1 p-5">
-            <p className={cn('text-[13px]', plan.primary ? 'text-amber-400' : 'text-zinc-400')}>{plan.name}</p>
-            <p className="mt-1 text-[28px] font-semibold tracking-[-0.02em] text-white">
-              {plan.price}
-              {plan.unit && <span className="ml-1 text-[14px] font-normal text-zinc-500">{plan.unit}</span>}
-            </p>
-            <ul className="mt-4 space-y-2 text-[14px]">
-              {PLAN_ROWS.map((r) => {
-                const v = r[plan.key]
-                if (v === false) return null
-                return (
-                  <li key={r.label} className="flex items-center gap-2.5 text-zinc-300">
-                    <Check className="h-4 w-4 shrink-0 text-zinc-500" aria-hidden />
-                    {typeof v === 'string' ? `${r.label} : ${v.toLowerCase()}` : r.label}
-                  </li>
-                )
-              })}
+  return (
+    <section id="pricing" ref={ref} className="py-28 relative overflow-hidden">
+      <div className="pointer-events-none absolute inset-0 -z-10">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] bg-amber-500/5 blur-[100px]" />
+      </div>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6">
+        <motion.div variants={stagger} initial="hidden" animate={inView ? 'visible' : 'hidden'} className="text-center mb-14">
+          <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl font-bold mb-4">
+            Tarifs simples et transparents
+          </motion.h2>
+          <motion.p variants={fadeUp} className="text-zinc-400 text-lg">
+            Commencez gratuitement, passez en Pro quand vous êtes prêt.
+          </motion.p>
+        </motion.div>
+
+        <motion.div
+          variants={stagger}
+          initial="hidden"
+          animate={inView ? 'visible' : 'hidden'}
+          className="grid sm:grid-cols-2 gap-5"
+        >
+          {/* Free */}
+          <motion.div
+            variants={fadeUp}
+            className="rounded-2xl border border-white/[0.08] bg-zinc-900/60 p-8 flex flex-col"
+          >
+            <div className="mb-8">
+              <p className="text-zinc-400 text-sm font-medium mb-2">Gratuit</p>
+              <p className="text-5xl font-bold">0€<span className="text-lg font-normal text-zinc-500">/mois</span></p>
+              <p className="text-xs text-zinc-500 mt-1.5">Pour découvrir l&apos;outil</p>
+            </div>
+            <ul className="space-y-3 flex-1 mb-8">
+              {FREE_FEATURES.map(({ label, ok }) => (
+                <li key={label} className="flex items-center gap-2.5 text-sm">
+                  {ok
+                    ? <Check className="h-4 w-4 text-amber-400 shrink-0" />
+                    : <X className="h-4 w-4 text-zinc-700 shrink-0" />
+                  }
+                  <span className={ok ? 'text-zinc-300' : 'text-zinc-600'}>{label}</span>
+                </li>
+              ))}
             </ul>
             <Link
-              href={plan.href}
-              className={cn(
-                'mt-5 flex h-10 items-center justify-center rounded-lg text-[14px] font-medium transition-colors',
-                plan.primary
-                  ? 'bg-amber-500 text-on-accent hover:bg-accent-hover'
-                  : 'border border-hairline-strong bg-surface-2 text-zinc-100 hover:bg-surface-3'
-              )}
+              href="/login"
+              className="text-center py-3 rounded-xl text-sm font-medium border border-white/10 text-zinc-300 hover:border-white/20 hover:text-white transition-all"
             >
-              {plan.cta}
+              Commencer gratuitement
             </Link>
-          </div>
-        ))}
-      </div>
+          </motion.div>
 
-      <div className="mt-12 hidden overflow-x-auto rounded-2xl border border-hairline bg-surface-1 sm:block">
-        <table className="w-full min-w-[560px] border-collapse text-left text-[14px]">
-          <caption className="sr-only">Comparaison des offres Gratuit et Pro</caption>
-          <thead>
-            <tr className="border-b border-hairline">
-              <th scope="col" className="w-[44%] px-5 py-5 align-bottom text-[13px] font-normal text-zinc-500">Inclus</th>
-              <th scope="col" className="px-5 py-5 align-bottom font-normal">
-                <p className="text-[13px] text-zinc-400">Gratuit</p>
-                <p className="mt-1 text-[28px] font-semibold tracking-[-0.02em] text-white">0 €</p>
-              </th>
-              <th scope="col" className="border-l border-hairline bg-white/[0.02] px-5 py-5 align-bottom font-normal">
-                <p className="text-[13px] text-amber-400">Pro</p>
-                <p className="mt-1 text-[28px] font-semibold tracking-[-0.02em] text-white">
-                  29 €<span className="ml-1 text-[14px] font-normal text-zinc-500">/ mois</span>
-                </p>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {PLAN_ROWS.map((r) => (
-              <tr key={r.label} className="border-b border-hairline/60">
-                <th scope="row" className="px-5 py-3 font-normal text-zinc-400">{r.label}</th>
-                <td className="px-5 py-3"><Cell v={r.free} /></td>
-                <td className="border-l border-hairline bg-white/[0.02] px-5 py-3"><Cell v={r.pro} /></td>
-              </tr>
-            ))}
-            <tr>
-              <td className="px-5 py-5" />
-              <td className="px-5 py-5">
-                <Link
-                  href="/login?mode=register"
-                  className="inline-flex h-9 items-center rounded-lg border border-hairline-strong bg-surface-2 px-3.5 text-[13px] font-medium text-zinc-100 transition-colors hover:bg-surface-3"
-                >
-                  Commencer gratuitement
-                </Link>
-              </td>
-              <td className="border-l border-hairline bg-white/[0.02] px-5 py-5">
-                <Link
-                  href="/login?mode=register&next=%2Fupgrade"
-                  className="inline-flex h-9 items-center rounded-lg bg-amber-500 px-3.5 text-[13px] font-medium text-on-accent transition-colors hover:bg-accent-hover"
-                >
-                  Passer à Pro
-                </Link>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+          {/* Pro */}
+          <motion.div
+            variants={fadeUp}
+            className="relative rounded-2xl border border-amber-500/40 bg-gradient-to-b from-amber-500/[0.07] to-transparent p-8 flex flex-col"
+          >
+            <div className="absolute -top-3 left-6">
+              <span className="bg-gradient-to-r from-amber-500 to-orange-600 text-white text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wide">
+                Populaire
+              </span>
+            </div>
+            <div className="mb-8">
+              <p className="text-zinc-400 text-sm font-medium mb-2">Pro</p>
+              <p className="text-5xl font-bold">29€<span className="text-lg font-normal text-zinc-500">/mois</span></p>
+              <p className="text-xs text-zinc-500 mt-1.5">Sans engagement · Annulable à tout moment</p>
+            </div>
+            <ul className="space-y-3 flex-1 mb-8">
+              {PRO_FEATURES.map((label) => (
+                <li key={label} className="flex items-center gap-2.5 text-sm text-zinc-300">
+                  <Check className="h-4 w-4 text-amber-400 shrink-0" />
+                  {label}
+                </li>
+              ))}
+            </ul>
+            <Link
+              href="/login"
+              className="text-center py-3 rounded-xl text-sm font-semibold bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:opacity-90 transition-opacity"
+            >
+              Passer à Pro
+            </Link>
+          </motion.div>
+        </motion.div>
       </div>
-    </Section>
+    </section>
   )
 }
 
-/* ─── Closing ──────────────────────────────────────────────────────────── */
+/* ─── Final CTA ───────────────────────────────────────────────────────────── */
 
-function Closing() {
-  const [query, setQuery] = useState('')
-  const [location, setLocation] = useState('')
+function FinalCTA() {
+  const ref = useRef<HTMLElement>(null)
+  const inView = useInView(ref, { once: true, margin: '-80px' })
+
   return (
-    <Section>
-      <div className="mx-auto max-w-[720px] text-center">
-        <h2 className="text-[32px] font-semibold leading-[1.1] tracking-[-0.03em] text-white sm:text-[44px]">
-          Quelle zone prospectez-vous demain&nbsp;?
-        </h2>
-        <p className="mt-4 text-[16px] text-zinc-400">Un métier, une ville : la liste arrive triée.</p>
-        <div className="mt-8 text-left">
-          <ScanForm query={query} location={location} onQuery={setQuery} onLocation={setLocation} idPrefix="closing" />
-        </div>
-      </div>
-    </Section>
+    <motion.section
+      ref={ref}
+      variants={stagger}
+      initial="hidden"
+      animate={inView ? 'visible' : 'hidden'}
+      className="py-24 text-center px-4 border-t border-white/[0.06]"
+    >
+      <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl font-bold mb-4">
+        Prêt à trouver vos prochains clients ?
+      </motion.h2>
+      <motion.p variants={fadeUp} className="text-zinc-400 text-lg mb-10">
+        Commencez avec 3 scans gratuits — aucune carte bancaire requise.
+      </motion.p>
+      <motion.div variants={fadeUp}>
+        <Link
+          href="/login"
+          className="group inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold text-lg hover:opacity-90 transition-opacity shadow-xl shadow-amber-900/30"
+        >
+          Créer mon compte gratuitement
+          <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+        </Link>
+        <p className="text-xs text-zinc-600 mt-4">3 scans gratuits · Sans carte bancaire · Sans engagement</p>
+      </motion.div>
+    </motion.section>
   )
 }
 
-/* ─── Footer ───────────────────────────────────────────────────────────── */
+/* ─── Footer ──────────────────────────────────────────────────────────────── */
 
 function Footer() {
   return (
-    <footer className="border-t border-hairline">
-      <div className="mx-auto flex max-w-[1200px] flex-col gap-4 px-4 py-10 text-[13px] text-zinc-500 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-        <div className="flex items-center gap-3">
-          <Logo size={18} />
-          <span>Prospection locale pour agences web</span>
+    <footer className="border-t border-white/[0.06] py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-orange-600">
+            <Target className="h-4 w-4 text-white" />
+          </div>
+          <span className="font-bold text-sm">Lead<span className="text-amber-400">Hunter</span></span>
+          <span className="text-zinc-600 text-sm ml-2">— Prospection locale automatique</span>
         </div>
-        <nav aria-label="Pied de page" className="flex items-center gap-5">
-          <a href="#tarifs" className="transition-colors hover:text-white">Tarifs</a>
-          <Link href="/login" className="transition-colors hover:text-white">Connexion</Link>
-          <span>© {new Date().getFullYear()} LeadHunter</span>
+        <nav className="flex items-center gap-5 text-sm text-zinc-600">
+          <Link href="/login" className="hover:text-white transition-colors">Connexion</Link>
+          <a href="#scanner" className="hover:text-white transition-colors">Fonctionnalités</a>
+          <a href="#pricing" className="hover:text-white transition-colors">Tarifs</a>
         </nav>
       </div>
     </footer>

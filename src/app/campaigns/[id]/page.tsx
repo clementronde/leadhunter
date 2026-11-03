@@ -131,7 +131,7 @@ export default function CampaignDetailPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-hairline text-left text-zinc-500">
+                      <tr className="border-b border-white/[0.06] text-left text-zinc-500">
                         <th className="pb-3 font-medium">Lead</th>
                         <th className="pb-3 font-medium">Email</th>
                         <th className="pb-3 font-medium">Statut</th>

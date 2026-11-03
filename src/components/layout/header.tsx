@@ -1,6 +1,6 @@
 'use client'
 
-import { Bell, Plus, Radar, X, ChevronRight, Zap } from 'lucide-react'
+import { Bell, Search, Plus, Radar, X, ChevronRight, Zap } from 'lucide-react'
 import { Button } from '@/components/ui'
 import { useRouter, usePathname } from 'next/navigation'
 import { useState, useEffect, useRef } from 'react'
@@ -74,23 +74,37 @@ export function Header({ title, subtitle, action }: HeaderProps) {
   const isOnScanner = pathname === '/scanner'
 
   return (
-    <header className="sticky top-12 z-20 flex min-h-14 items-center justify-between gap-4 border-b border-hairline bg-canvas/95 px-4 py-2.5 md:top-0 md:px-6">
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-white/[0.05] bg-[#09090b]/95 backdrop-blur-xl px-5">
       {/* Left: title */}
-      <div className="min-w-0 flex-1">
-        <h1 className="truncate text-[15px] font-semibold tracking-[-0.01em] text-white">{title}</h1>
+      <div className="min-w-0 flex-1 mr-4">
+        <h1 className="text-base sm:text-lg font-semibold text-white truncate">{title}</h1>
         {subtitle && (
-          <p className="truncate text-[13px] text-zinc-500">{subtitle}</p>
+          <p className="text-xs sm:text-sm text-zinc-500 truncate">{subtitle}</p>
         )}
       </div>
 
       {/* Right: actions */}
       <div className="flex items-center gap-2 shrink-0">
+        {/* Search — opens command palette */}
+        <button
+          onClick={() => window.dispatchEvent(new CustomEvent('open-cmd'))}
+          aria-label="Ouvrir la recherche"
+          className="hidden md:flex items-center gap-2 w-52 h-8 pl-2.5 pr-2 text-xs bg-zinc-900 border border-white/[0.07] text-zinc-500 rounded-lg hover:border-white/[0.14] hover:text-zinc-400 transition-all"
+        >
+          <Search className="h-3.5 w-3.5 shrink-0" />
+          <span className="flex-1 text-left">Rechercher...</span>
+          <kbd className="flex items-center gap-0.5 px-1 py-px rounded border border-white/[0.07] text-[9px] font-mono bg-zinc-950/80 text-zinc-600">
+            ⌘K
+          </kbd>
+        </button>
+
         {/* Quick Scanner button — masqué si déjà sur /scanner */}
         {!isOnScanner && (
           <Button
+            size="sm"
             variant="outline"
             onClick={() => router.push('/scanner')}
-            size="sm" className="hidden sm:inline-flex"
+            className="hidden sm:flex h-8 text-xs px-3"
           >
             <Radar className="h-3.5 w-3.5" />
             Scanner
@@ -99,7 +113,7 @@ export function Header({ title, subtitle, action }: HeaderProps) {
 
         {/* Custom action button */}
         {action && (
-          <Button onClick={action.onClick} size="sm">
+          <Button onClick={action.onClick} size="sm" className="h-8 text-xs px-3">
             {action.icon ?? <Plus className="h-3.5 w-3.5" />}
             {action.label}
           </Button>
@@ -109,7 +123,7 @@ export function Header({ title, subtitle, action }: HeaderProps) {
         <div ref={notifRef} className="relative">
           <button
             onClick={handleNotifToggle}
-            aria-label="Leads à contacter" aria-expanded={showNotifications} className={`relative flex h-8 w-8 items-center justify-center rounded-md transition-colors ${
+            className={`relative flex h-8 w-8 items-center justify-center rounded-lg transition-all ${
               showNotifications
                 ? 'bg-white/[0.07] text-white'
                 : 'text-zinc-500 hover:bg-white/[0.05] hover:text-zinc-300'
@@ -117,16 +131,16 @@ export function Header({ title, subtitle, action }: HeaderProps) {
           >
             <Bell size={16} />
             {notifCount > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-[14px] min-w-[14px] items-center justify-center rounded-full bg-amber-500 text-[9px] font-bold text-on-accent px-0.5">
+              <span className="absolute -right-0.5 -top-0.5 flex h-[14px] min-w-[14px] items-center justify-center rounded-full bg-gradient-to-br from-amber-500 to-orange-600 text-[9px] font-bold text-white px-0.5 shadow-sm shadow-amber-500/40">
                 {notifCount > 9 ? '9+' : notifCount}
               </span>
             )}
           </button>
 
           {showNotifications && (
-            <div className="absolute right-0 top-10 z-50 w-80 overflow-hidden rounded-xl border border-hairline-strong bg-surface-2 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.7)]">
+            <div className="absolute right-0 top-10 w-76 rounded-xl shadow-2xl shadow-black/60 border border-white/[0.07] bg-zinc-900/98 backdrop-blur-2xl overflow-hidden z-50">
               {/* Header */}
-              <div className="flex items-center justify-between px-4 py-3 border-b border-hairline">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.05]">
                 <div>
                   <h3 className="font-semibold text-white text-sm">Leads à contacter</h3>
                   <p className="text-[11px] text-zinc-500 mt-0.5">Priorités haute et tiède non contactés</p>
@@ -143,11 +157,11 @@ export function Header({ title, subtitle, action }: HeaderProps) {
                 <div className="p-6 text-center text-sm text-zinc-600">Chargement...</div>
               ) : notifLeads.length === 0 ? (
                 <div className="p-6 text-center">
-                  <div className="h-10 w-10 rounded-full bg-surface-2 flex items-center justify-center mx-auto mb-3">
+                  <div className="h-10 w-10 rounded-full bg-zinc-800/60 flex items-center justify-center mx-auto mb-3">
                     <Zap className="h-5 w-5 text-zinc-600" />
                   </div>
                   <p className="text-sm text-zinc-400 font-medium">Tout est à jour</p>
-                  <p className="text-xs text-zinc-600 mt-1">Tous vos leads chauds ont été contactés.</p>
+                  <p className="text-xs text-zinc-600 mt-1">Tous vos leads chauds ont été contactés 🎉</p>
                 </div>
               ) : (
                 <div>
@@ -163,11 +177,11 @@ export function Header({ title, subtitle, action }: HeaderProps) {
                           {lead.name}
                         </p>
                         <p className="text-[11px] text-zinc-600">
-                          {lead.city} · {lead.priority === 'hot' ? 'Chaud' : 'Tiède'}
+                          {lead.city} · {lead.priority === 'hot' ? '🔥 Chaud' : '🌤️ Tiède'}
                         </p>
                       </div>
                       <div className="flex items-center gap-1.5 ml-3 shrink-0">
-                        <span className={`font-mono text-[13px] font-medium tabular-nums ${getScoreColor(lead.prospect_score)}`}>
+                        <span className={`text-sm font-bold tabular-nums ${getScoreColor(lead.prospect_score)}`}>
                           {lead.prospect_score}
                         </span>
                         <ChevronRight className="h-3.5 w-3.5 text-zinc-700 group-hover:text-zinc-500 transition-colors" />
@@ -180,7 +194,7 @@ export function Header({ title, subtitle, action }: HeaderProps) {
                       onClick={() => setShowNotifications(false)}
                       className="block text-center text-xs font-medium text-amber-500 hover:text-amber-400 transition-colors"
                     >
-                      Voir tous les leads chauds
+                      Voir tous les leads chauds →
                     </Link>
                   </div>
                 </div>

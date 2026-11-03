@@ -34,8 +34,8 @@ Built for the web-agency pitch specifically: the lead score is driven by the sta
 ## Brand Commitments
 
 - Name: LeadHunter.
-- Visual reference pinned by the user: DESIGN.md (Linear-style structure: near-black canvas, charcoal panels, hairline borders, no gradients or glows), with a single sober amber accent instead of Linear's lavender to keep LeadHunter's identity (user decision, 2026-11-03).
-- Must avoid "AI slop" looks: glow blobs, gradient buttons/text, particles, shimmer badges.
+- The current amber/orange visual identity (zinc dark UI, amber accents, landing with animated product mockups) is the one the user prefers. A restrained Linear-style redesign (near-black, hairlines, single sober amber, Geist) was built and rejected by the user on 2026-11-03 as reading "AI slop"; do not re-propose it. Any visual change starts from the existing look and is validated with the user on a concrete example before being rolled out.
+- DESIGN.md (Linear analysis) is a reference document only, not the applied design system.
 
 ## Evidence on Hand
 

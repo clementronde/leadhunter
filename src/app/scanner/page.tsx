@@ -19,6 +19,7 @@ import { usePlan, FREE_SCAN_LIMIT, FREE_RESULTS_LIMIT } from '@/hooks/usePlan'
 import { Sector, SearchScan, Company } from '@/types'
 import { scannerApi } from '@/lib/api'
 import {
+  Radar,
   MapPin,
   Search,
   Play,
@@ -34,6 +35,7 @@ import {
   ArrowRight,
   Map,
   Database,
+  Zap,
   KeyRound,
   Lock,
 } from 'lucide-react'
@@ -343,101 +345,142 @@ function ScannerContent() {
     <div className="min-h-screen">
       <Header
         title="Scanner"
-        subtitle="Un métier et une ville : LeadHunter trouve les entreprises et vérifie leur présence web"
+        subtitle="Recherchez des entreprises locales et analysez leur présence web"
       />
 
-      <div className="mx-auto max-w-[1100px] space-y-5 p-4 md:p-6">
+      <div className="p-6 space-y-6">
 
         {/* Bandeau de statut des clés API */}
         {health && !health.keys.GOOGLE_MAPS_API_KEY.configured && (
-          <div role="alert" className="flex items-start gap-3 rounded-lg border border-red-500/25 bg-red-500/10 p-4 text-[13px] text-red-300">
-            <KeyRound className="mt-0.5 h-4 w-4 shrink-0" />
+          <div className={`flex items-start gap-3 p-4 rounded-lg border text-sm ${
+            health.keys.GOOGLE_MAPS_API_KEY.configured
+              ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+              : 'bg-red-500/10 border-red-500/20 text-red-400'
+          }`}>
+            <KeyRound className="h-4 w-4 mt-0.5 shrink-0" />
             <div className="flex-1">
-              <p className="font-medium">Clé API Google Maps manquante ou invalide</p>
-              <p className="mt-1 text-red-300/80">
-                Ajoutez <code className="rounded bg-red-500/15 px-1 font-mono">GOOGLE_MAPS_API_KEY</code> dans{' '}
-                <code className="rounded bg-red-500/15 px-1 font-mono">.env.local</code>, puis redémarrez le serveur.
-              </p>
+              {health.keys.GOOGLE_MAPS_API_KEY.configured ? (
+                <p>
+                  <strong>Google Maps API</strong> configurée{' '}
+                  <span className="font-mono text-xs opacity-70">
+                    ({health.keys.GOOGLE_MAPS_API_KEY.preview})
+                  </span>
+                </p>
+              ) : (
+                <div>
+                  <p className="font-semibold">Clé API Google Maps manquante ou invalide</p>
+                  <p className="mt-1 text-xs">
+                    Créez ou vérifiez votre fichier <code className="bg-red-500/20 px-1 rounded">.env.local</code> à la racine du projet :
+                  </p>
+                  <pre className="mt-2 text-xs bg-red-500/20 p-2 rounded font-mono">
+                    GOOGLE_MAPS_API_KEY=AIzaSy...votre_clé</pre>
+                  <p className="mt-1 text-xs opacity-80">
+                    Puis redémarrez le serveur : <code className="bg-red-500/20 px-1 rounded">Ctrl+C</code> → <code className="bg-red-500/20 px-1 rounded">npm run dev</code>
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}
 
         {/* Free user scan counter */}
         {!isPro && (
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px]">
-            <span className={!canScan ? 'text-red-300' : 'text-zinc-400'}>
-              <span className="font-mono tabular-nums">{scanCountThisMonth} / {FREE_SCAN_LIMIT}</span> scans gratuits utilisés ce mois-ci
-            </span>
-            <div className="h-1 w-32 overflow-hidden rounded-full bg-zinc-800" aria-hidden>
-              <div
-                className={`h-full rounded-full ${!canScan ? 'bg-red-400' : 'bg-zinc-400'}`}
-                style={{ width: `${Math.min((scanCountThisMonth / FREE_SCAN_LIMIT) * 100, 100)}%` }}
-              />
+          <div className={`flex items-center gap-3 p-3 rounded-lg border text-sm ${
+            !canScan
+              ? 'bg-red-500/10 border-red-500/20'
+              : scanCountThisMonth >= FREE_SCAN_LIMIT - 1
+              ? 'bg-amber-500/10 border-amber-500/20'
+              : 'bg-zinc-800/60 border-white/[0.08]'
+          }`}>
+            <div className="flex-1">
+              <span className={`font-medium ${!canScan ? 'text-red-400' : scanCountThisMonth >= FREE_SCAN_LIMIT - 1 ? 'text-amber-400' : 'text-zinc-300'}`}>
+                {scanCountThisMonth} / {FREE_SCAN_LIMIT} scans ce mois
+              </span>
+              <div className="mt-1.5 h-1.5 bg-zinc-700 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all ${
+                    !canScan ? 'bg-red-500' : scanCountThisMonth >= FREE_SCAN_LIMIT - 1 ? 'bg-amber-500' : 'bg-emerald-500'
+                  }`}
+                  style={{ width: `${Math.min((scanCountThisMonth / FREE_SCAN_LIMIT) * 100, 100)}%` }}
+                />
+              </div>
             </div>
-            <button
-              onClick={() => setUpgradeModal('scan_limit')}
-              className="text-zinc-300 underline decoration-zinc-600 underline-offset-4 hover:decoration-zinc-300"
-            >
-              Scans illimités avec Pro
-            </button>
+            {!canScan && (
+              <button
+                onClick={() => setUpgradeModal('scan_limit')}
+                className="text-xs font-semibold text-amber-400 bg-amber-500/20 px-2.5 py-1 rounded-full hover:bg-amber-500/30 transition-colors"
+              >
+                Passer à Pro
+              </button>
+            )}
           </div>
         )}
 
         {/* Sélecteur de source */}
-        <div role="tablist" aria-label="Source des données" className="inline-flex rounded-lg border border-hairline bg-surface-1 p-0.5">
-          {([
-            { id: 'google_maps', label: 'Google Maps', hint: 'Recommandé', icon: Map },
-            { id: 'insee', label: 'INSEE / Sirene', hint: null, icon: Database },
-          ] as const).map(({ id, label, hint, icon: Icon }) => {
-            const active = activeSource === id
-            return (
-              <button
-                key={id}
-                role="tab"
-                aria-selected={active}
-                onClick={() => { setActiveSource(id); setScanStatus('idle') }}
-                className={`inline-flex h-8 items-center gap-2 rounded-md px-3 text-[13px] font-medium transition-colors ${
-                  active ? 'bg-surface-3 text-white shadow-[inset_0_0_0_1px_#34343a]' : 'text-zinc-400 hover:text-zinc-200'
-                }`}
-              >
-                <Icon className={`h-4 w-4 ${active ? 'text-amber-400' : 'text-zinc-500'}`} />
-                {label}
-                {hint && <span className="text-[11px] font-normal text-zinc-500">{hint}</span>}
-              </button>
-            )
-          })}
+        <div className="flex gap-3">
+          <button
+            onClick={() => { setActiveSource('google_maps'); setScanStatus('idle') }}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm transition-all border ${
+              activeSource === 'google_maps'
+                ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                : 'bg-zinc-800/60 text-zinc-400 border-white/[0.08] hover:border-blue-500/40'
+            }`}
+          >
+            <Map className="h-4 w-4" />
+            Google Maps
+            <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${
+              activeSource === 'google_maps' ? 'bg-blue-500 text-white' : 'bg-emerald-500/20 text-emerald-400'
+            }`}>
+              Recommandé
+            </span>
+          </button>
+
+          <button
+            onClick={() => { setActiveSource('insee'); setScanStatus('idle') }}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm transition-all border ${
+              activeSource === 'insee'
+                ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
+                : 'bg-zinc-800/60 text-zinc-400 border-white/[0.08] hover:border-amber-500/40'
+            }`}
+          >
+            <Database className="h-4 w-4" />
+            INSEE / Sirene
+          </button>
         </div>
 
         {/* Formulaire de recherche */}
         <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Radar className="h-5 w-5 text-amber-500" />
+              {activeSource === 'google_maps' ? 'Scan Google Maps' : 'Scan INSEE / Sirene'}
+            </CardTitle>
+          </CardHeader>
           <form
             onSubmit={(e) => {
               e.preventDefault()
               if (canStartScan && canScan) handleStartScan()
             }}
           >
-          <CardContent className="pt-5">
+          <CardContent>
             {activeSource === 'google_maps' ? (
               /* ── Formulaire Google Maps ── */
               <div className="space-y-4">
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                   <div className="space-y-2" ref={suggestionRef}>
-                    <label htmlFor="gm-query" className="text-[13px] text-zinc-400">
-                      Activité
+                    <label className="text-sm font-medium text-zinc-400">
+                      Type d&apos;entreprise *
                     </label>
                     <div className="relative">
                       <Input
-                        id="gm-query"
-                        autoFocus
-                        autoComplete="off"
-                        placeholder="Plombiers, coiffeurs, restaurants…"
+                        placeholder="Ex: restaurants, coiffeurs, plombiers..."
                         value={gmQuery}
                         onChange={(e) => { setGmQuery(e.target.value); setShowSuggestions(true) }}
                         onFocus={() => setShowSuggestions(true)}
                         icon={<Search className="h-4 w-4" />}
                       />
                       {showSuggestions && filteredTypes.length > 0 && (
-                        <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-52 overflow-y-auto rounded-lg border border-hairline-strong bg-surface-2 py-1 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.7)]">
+                        <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-zinc-900 border border-white/[0.08] rounded-lg shadow-lg shadow-black/40 max-h-52 overflow-y-auto">
                           {filteredTypes.map((type) => (
                             <button
                               key={type}
@@ -447,7 +490,7 @@ function ScannerContent() {
                                 setGmQuery(type)
                                 setShowSuggestions(false)
                               }}
-                              className="w-full px-3 py-1.5 text-left text-[13px] text-zinc-300 transition-colors hover:bg-white/[0.05] hover:text-white"
+                              className="w-full text-left px-3 py-2 text-sm text-zinc-300 hover:bg-amber-500/10 hover:text-amber-400 transition-colors"
                             >
                               {type}
                             </button>
@@ -458,19 +501,19 @@ function ScannerContent() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[13px] text-zinc-400">
-                      Ville ou quartier
+                    <label className="text-sm font-medium text-zinc-400">
+                      Ville / Zone *
                     </label>
                     <CityAutocomplete
-                      placeholder="Lyon, Paris 15e, Boulogne-Billancourt…"
+                      placeholder="Ex: Boulogne-Billancourt, Paris 15..."
                       value={location}
                       onChange={setLocation}
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[13px] text-zinc-400">
-                      Nombre de résultats
+                    <label className="text-sm font-medium text-zinc-400">
+                      Nombre de lieux
                     </label>
                     <Select
                       options={gmMaxOptions}
@@ -481,7 +524,7 @@ function ScannerContent() {
                 </div>
 
                 {/* Option audit PageSpeed */}
-                <div className="flex items-start gap-3 rounded-lg border border-hairline bg-surface-2 p-3.5">
+                <div className={`flex items-start gap-3 p-4 rounded-lg border ${canAudit ? 'bg-blue-500/10 border-blue-500/20' : 'bg-zinc-800/40 border-white/[0.08]'}`}>
                   <input
                     type="checkbox"
                     id="audit-websites"
@@ -494,39 +537,44 @@ function ScannerContent() {
                       }
                       setGmAuditWebsites(e.target.checked)
                     }}
-                    className="mt-0.5 h-4 w-4 rounded accent-amber-500 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="mt-0.5 h-4 w-4 rounded border-blue-300 text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                   <div className="flex-1">
                     <label
                       htmlFor="audit-websites"
-                      className={`flex cursor-pointer items-center gap-1.5 text-[13px] font-medium ${canAudit ? 'text-zinc-100' : 'text-zinc-400'}`}
+                      className={`text-sm font-medium cursor-pointer flex items-center gap-1.5 ${canAudit ? 'text-blue-300' : 'text-zinc-500'}`}
                       onClick={() => { if (!canAudit) setUpgradeModal('audit') }}
                     >
-                      Auditer les sites trouvés (Core Web Vitals)
+                      <Zap className="h-3.5 w-3.5" />
+                      Analyser les performances des sites trouvés (Core Web Vitals)
                       {!canAudit && (
-                        <span className="ml-1 rounded-md border border-amber-500/30 px-1.5 py-px text-[11px] font-medium text-amber-300">
+                        <span className="ml-1 text-xs font-semibold bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full">
                           Pro
                         </span>
                       )}
                     </label>
-                    <p className="mt-0.5 text-[12px] text-zinc-500">
-                      Mesure chaque site avec PageSpeed Insights. Le scan est plus long, mais repère
-                      précisément les sites lents ou datés à refaire.
+                    <p className={`text-xs mt-0.5 ${canAudit ? 'text-blue-400' : 'text-zinc-400'}`}>
+                      Lance un audit PageSpeed Insights sur chaque site web détecté. Plus lent mais
+                      identifie précisément les sites datés ou peu performants.
                     </p>
                   </div>
                 </div>
 
-                <p className="text-[12px] leading-relaxed text-zinc-500">
-                  Les entreprises sans site, ou présentes seulement sur Facebook ou un annuaire, ressortent
-                  en tête. Celles dont le site est lent ou daté sont proposées pour une refonte.
-                </p>
+                <div className="p-3 bg-zinc-800/40 rounded-lg text-sm text-zinc-400 border border-white/[0.06]">
+                  <strong>Comment ça marche :</strong> Google Maps retourne les entreprises réelles
+                  avec leurs coordonnées, téléphone et site web. Les entreprises sans site web sont
+                  identifiées comme prospects{' '}
+                  <span className="text-red-600 font-medium">🔥 Chaud</span> pour une création de
+                  site. Les entreprises avec un site web peu performant sont identifiées pour une
+                  refonte.
+                </div>
               </div>
             ) : (
               /* ── Formulaire INSEE ── */
               <div className="space-y-4">
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                   <div className="space-y-2">
-                    <label className="text-[13px] text-zinc-400">Ville</label>
+                    <label className="text-sm font-medium text-zinc-400">Ville</label>
                     <CityAutocomplete
                       placeholder="Ex: Boulogne-Billancourt"
                       value={location}
@@ -535,7 +583,7 @@ function ScannerContent() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[13px] text-zinc-400">ou Code postal</label>
+                    <label className="text-sm font-medium text-zinc-400">ou Code postal</label>
                     <Input
                       placeholder="Ex: 92100"
                       value={codePostal}
@@ -545,7 +593,7 @@ function ScannerContent() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[13px] text-zinc-400">Activité (optionnel)</label>
+                    <label className="text-sm font-medium text-zinc-400">Activité (optionnel)</label>
                     <Input
                       placeholder="Ex: restaurant, coiffure..."
                       value={activite}
@@ -555,7 +603,7 @@ function ScannerContent() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[13px] text-zinc-400">Nombre max</label>
+                    <label className="text-sm font-medium text-zinc-400">Nombre max</label>
                     <Select
                       options={nombreOptions}
                       value={nombreResultats}
@@ -564,8 +612,8 @@ function ScannerContent() {
                   </div>
                 </div>
 
-                <div className="text-[12px] leading-relaxed text-zinc-500">
-                  <strong className="font-medium text-zinc-300">INSEE Sirene :</strong> Recherche dans le registre officiel des
+                <div className="p-3 bg-amber-500/10 rounded-lg text-sm text-amber-400 border border-amber-500/20">
+                  <strong>💡 INSEE Sirene :</strong> Recherche dans le registre officiel des
                   entreprises françaises. Très exhaustif mais les coordonnées téléphoniques et sites
                   web ne sont pas toujours disponibles. Renseignez au moins la ville ou le code
                   postal.
@@ -573,11 +621,10 @@ function ScannerContent() {
               </div>
             )}
 
-            <div className="mt-5 flex flex-wrap items-center justify-end gap-3 border-t border-hairline pt-4">
+            <div className="flex items-center justify-end gap-3 mt-6">
               {!canScan && (
-                <p className="text-[13px] text-zinc-400">
-                  Limite gratuite atteinte.{' '}
-                  <button type="button" onClick={() => setUpgradeModal('scan_limit')} className="text-zinc-200 underline underline-offset-4">Passer à Pro</button>
+                <p className="text-sm text-amber-600 font-medium">
+                  Limite atteinte — <button type="button" onClick={() => setUpgradeModal('scan_limit')} className="underline">Passer à Pro</button>
                 </p>
               )}
               <Button
@@ -587,7 +634,7 @@ function ScannerContent() {
                 className="min-w-[160px]"
               >
                 {!canScan ? <Lock className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                {isScanning ? 'Scan en cours…' : !canScan ? 'Limite atteinte' : 'Lancer le scan'}
+                {isScanning ? 'Scan en cours...' : !canScan ? 'Limite atteinte' : 'Lancer le scan'}
               </Button>
             </div>
           </CardContent>
@@ -596,25 +643,27 @@ function ScannerContent() {
 
         {/* Scan en cours */}
         {scanStatus === 'scanning' && (
-          <Card role="status" aria-live="polite">
-            <CardContent className="pt-5">
-              <div className="flex items-center gap-3">
-                <Loader2 className="h-4 w-4 shrink-0 animate-spin text-amber-400" />
+          <Card className="border-amber-500/30 bg-amber-500/[0.06]">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="h-12 w-12 rounded-xl bg-amber-500/20 flex items-center justify-center">
+                  <Loader2 className="h-6 w-6 text-amber-400 animate-spin" />
+                </div>
                 <div className="flex-1">
-                  <h3 className="text-[14px] font-medium text-white">Recherche en cours…</h3>
-                  <p className="text-[13px] text-zinc-500">
+                  <h3 className="font-semibold text-white">Recherche en cours...</h3>
+                  <p className="text-sm text-zinc-500">
                     {activeSource === 'google_maps'
                       ? gmAuditWebsites
-                        ? 'Google Maps, puis audit PageSpeed des sites trouvés…'
-                        : 'Google Maps, puis vérification des sites web…'
-                      : 'Registre Sirene, puis vérification des sites web…'}
+                        ? 'Interrogation Google Maps + audit PageSpeed des sites trouvés...'
+                        : 'Interrogation Google Places API et vérification des sites web...'
+                      : 'Interrogation de l\'API Sirene et vérification des sites web...'}
                   </p>
                 </div>
               </div>
-              <p className="mt-3 text-[12px] text-zinc-500">
+              <p className="text-center text-zinc-500 text-sm">
                 {gmAuditWebsites && activeSource === 'google_maps'
-                  ? 'Avec l’audit activé, comptez plusieurs minutes. Vous pouvez rester sur cette page.'
-                  : 'Comptez de quelques secondes à une minute.'}
+                  ? 'Cette opération peut prendre plusieurs minutes (audit PageSpeed activé)'
+                  : 'Cette opération peut prendre quelques minutes'}
               </p>
             </CardContent>
           </Card>
@@ -622,13 +671,15 @@ function ScannerContent() {
 
         {/* Erreur */}
         {scanStatus === 'error' && errorMessage && (
-          <Card role="alert" className="border-red-500/30">
-            <CardContent className="pt-5">
-              <div className="flex items-start gap-3">
-                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
+          <Card className="border-red-500/30 bg-red-500/[0.06]">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-xl bg-red-500/20 flex items-center justify-center">
+                  <AlertTriangle className="h-6 w-6 text-red-400" />
+                </div>
                 <div className="flex-1">
-                  <h3 className="text-[14px] font-medium text-white">Le scan n&apos;a pas abouti</h3>
-                  <p className="text-[13px] text-red-300">{errorMessage}</p>
+                  <h3 className="font-semibold text-red-400">Erreur lors du scan</h3>
+                  <p className="text-sm text-red-300">{errorMessage}</p>
                 </div>
               </div>
 
@@ -660,27 +711,24 @@ function ScannerContent() {
 
         {/* Résultats */}
         {scanStatus === 'completed' && scanResult && (
-          <Card>
-            <CardContent className="pt-5">
-              <div className="mb-5 flex flex-wrap items-center gap-3">
-                <CheckCircle className="h-4 w-4 shrink-0 text-emerald-400" />
-                <div className="min-w-0 flex-1">
-                  <h3 className="text-[15px] font-medium text-white">Scan terminé</h3>
-                  <p className="text-[13px] text-zinc-500">
+          <Card className="border-emerald-500/30 bg-emerald-500/[0.06]">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="h-12 w-12 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                  <CheckCircle className="h-6 w-6 text-emerald-400" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-white">Scan terminé !</h3>
+                  <p className="text-sm text-zinc-500">
                     {activeSource === 'google_maps'
                       ? `${scanResult.total_found} entreprises trouvées via Google Maps${scanResult.skipped ? ` · ${scanResult.skipped} déjà dans votre CRM` : ''}`
                       : `${scanResult.total_found} entreprises trouvées dans la base SIRENE`}
                   </p>
                 </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" onClick={handleViewResults}>
-                    Voir la liste
-                  </Button>
-                  <Button onClick={() => router.push('/triage')}>
-                    Trier les nouveaux leads
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </div>
+                <Button onClick={handleViewResults}>
+                  Voir les leads
+                  <ArrowRight className="h-4 w-4 ml-1" />
+                </Button>
               </div>
 
               {/* Statistiques */}
@@ -692,39 +740,61 @@ function ScannerContent() {
                   (c) => c.has_website && c.priority !== 'warm'
                 ).length
                 return (
-                  <dl className={`grid divide-hairline overflow-hidden rounded-lg border border-hairline ${activeSource === 'google_maps' ? 'grid-cols-2 md:grid-cols-4 md:divide-x' : 'grid-cols-3 divide-x'}`}>
-                    {[
-                      { label: 'Entreprises traitées', value: scanResult.processed, tone: 'text-white', show: true },
-                      { label: 'Sans site web', value: scanResult.without_site, tone: 'text-red-300', show: true },
-                      { label: 'Site à refaire', value: needingRefonte, tone: 'text-amber-300', show: true },
-                      { label: 'Sites audités', value: auditedCount, tone: 'text-zinc-200', show: activeSource === 'google_maps' },
-                    ].filter((x) => x.show).map((stat) => (
-                      <div key={stat.label} className="bg-surface-2 px-4 py-3">
-                        <dt className="text-[12px] text-zinc-500">{stat.label}</dt>
-                        <dd className={`mt-0.5 font-mono text-[22px] tabular-nums ${stat.tone}`}>{stat.value}</dd>
+                  <div className={`grid gap-4 text-center ${activeSource === 'google_maps' ? 'grid-cols-2 md:grid-cols-4' : 'grid-cols-3'}`}>
+                    <div className="p-4 bg-zinc-800/60 border border-white/[0.06] rounded-lg">
+                      <div className="flex items-center justify-center gap-2 mb-2">
+                        <Building2 className="h-5 w-5 text-zinc-400" />
                       </div>
-                    ))}
-                  </dl>
+                      <p className="text-3xl font-bold text-white">{scanResult.processed}</p>
+                      <p className="text-sm text-zinc-500">Entreprises traitées</p>
+                    </div>
+
+                    <div className="p-4 bg-zinc-800/60 border border-white/[0.06] rounded-lg">
+                      <div className="flex items-center justify-center gap-2 mb-2">
+                        <Globe className="h-5 w-5 text-red-500" />
+                      </div>
+                      <p className="text-3xl font-bold text-red-600">{scanResult.without_site}</p>
+                      <p className="text-sm text-zinc-500">Sans site web 🔥</p>
+                    </div>
+
+                    <div className="p-4 bg-zinc-800/60 border border-white/[0.06] rounded-lg">
+                      <div className="flex items-center justify-center gap-2 mb-2">
+                        <Wrench className="h-5 w-5 text-amber-500" />
+                      </div>
+                      <p className="text-3xl font-bold text-amber-600">{needingRefonte}</p>
+                      <p className="text-sm text-zinc-500">Site à refaire</p>
+                    </div>
+
+                    {activeSource === 'google_maps' && (
+                      <div className="p-4 bg-zinc-800/60 border border-white/[0.06] rounded-lg">
+                        <div className="flex items-center justify-center gap-2 mb-2">
+                          <Zap className="h-5 w-5 text-blue-500" />
+                        </div>
+                        <p className="text-3xl font-bold text-blue-600">{auditedCount}</p>
+                        <p className="text-sm text-zinc-500">Sites audités</p>
+                      </div>
+                    )}
+                  </div>
                 )
               })()}
 
               {/* Bannière progression audit Phase 2 */}
               {auditPhase && (
-                <div className="mt-4 rounded-lg border border-hairline bg-surface-2 p-3.5">
+                <div className="mt-4 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl">
                   <div className="flex items-center gap-3 mb-2">
-                    <Loader2 className="h-4 w-4 shrink-0 animate-spin text-zinc-400" />
-                    <p className="text-[13px] text-zinc-200">
-                      Mise en file des audits… <span className="font-mono tabular-nums text-zinc-400">{auditProgress.current}/{auditProgress.total}</span>
+                    <div className="h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin flex-shrink-0" />
+                    <p className="text-sm font-medium text-blue-300">
+                      Ajout à la queue d&apos;audits... {auditProgress.current}/{auditProgress.total}
                     </p>
                   </div>
-                  <div className="h-1 overflow-hidden rounded-full bg-zinc-800">
+                  <div className="h-1.5 bg-blue-500/20 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-zinc-300 transition-[width] duration-700 ease-out"
+                      className="h-full bg-blue-500 transition-all duration-700 ease-out"
                       style={{ width: `${auditProgress.total > 0 ? (auditProgress.current / auditProgress.total) * 100 : 0}%` }}
                     />
                   </div>
-                  <p className="mt-1.5 text-[12px] text-zinc-500">
-                    Les audits continuent côté serveur : vous pouvez quitter cette page.
+                  <p className="text-xs text-blue-400 mt-1">
+                    Les audits seront traités côté serveur depuis la page Leads ou par cron.
                   </p>
                 </div>
               )}
@@ -732,23 +802,25 @@ function ScannerContent() {
               {/* Top résultats */}
               {scanResult.companies.length > 0 && (
                 <div className="mt-6">
-                  <h4 className="mb-2 text-[13px] text-zinc-500">Meilleurs prospects de ce scan</h4>
-                  <div className="divide-y divide-hairline/70 overflow-hidden rounded-lg border border-hairline">
+                  <h4 className="text-sm font-semibold text-zinc-400 mb-3">
+                    Aperçu des meilleurs prospects
+                  </h4>
+                  <div className="space-y-2">
                     {scanResult.companies
                       .sort((a, b) => b.prospect_score - a.prospect_score)
                       .slice(0, 5)
                       .map((company, idx) => (
                         <div
                           key={idx}
-                          className="flex items-center gap-3 bg-surface-2 px-3 py-2.5"
+                          className="flex items-center gap-3 p-3 bg-zinc-800/60 rounded-lg border border-white/[0.06]"
                         >
                           <div
-                            className={`w-8 text-right font-mono text-[14px] tabular-nums ${
+                            className={`h-8 w-8 rounded-lg flex items-center justify-center text-xs font-bold ${
                               company.priority === 'hot'
-                                ? 'text-red-300'
+                                ? 'bg-red-100 text-red-700'
                                 : company.priority === 'warm'
-                                ? 'text-amber-300'
-                                : 'text-sky-300'
+                                ? 'bg-amber-500/20 text-amber-400'
+                                : 'bg-blue-500/20 text-blue-400'
                             }`}
                           >
                             {company.prospect_score}
@@ -763,9 +835,9 @@ function ScannerContent() {
                           </div>
                           <div className="flex items-center gap-2">
                             {!company.has_website ? (
-                              <Badge variant="destructive">Pas de site</Badge>
+                              <Badge variant="destructive" className="text-xs">Pas de site</Badge>
                             ) : (
-                              <Badge variant="secondary">À refaire</Badge>
+                              <Badge variant="secondary" className="text-xs">A refondre</Badge>
                             )}
                           </div>
                         </div>
@@ -804,7 +876,7 @@ function ScannerContent() {
                 scans.map((scan) => (
                   <div
                     key={scan.id}
-                    className="flex items-center gap-4 p-4 bg-surface-2 rounded-lg border border-white/[0.04]"
+                    className="flex items-center gap-4 p-4 bg-zinc-800/40 rounded-lg border border-white/[0.04]"
                   >
                     <div
                       className={`h-10 w-10 rounded-lg flex items-center justify-center ${
@@ -818,13 +890,13 @@ function ScannerContent() {
                       }`}
                     >
                       {scan.status === 'completed' && (
-                        <CheckCircle className="h-5 w-5 text-emerald-400" />
+                        <CheckCircle className="h-5 w-5 text-emerald-600" />
                       )}
                       {scan.status === 'running' && (
-                        <Loader2 className="h-5 w-5 text-amber-400 animate-spin" />
+                        <Loader2 className="h-5 w-5 text-amber-600 animate-spin" />
                       )}
                       {scan.status === 'failed' && (
-                        <XCircle className="h-5 w-5 text-red-400" />
+                        <XCircle className="h-5 w-5 text-red-600" />
                       )}
                       {scan.status === 'pending' && (
                         <Clock className="h-5 w-5 text-zinc-400" />
@@ -849,11 +921,11 @@ function ScannerContent() {
                           <Building2 className="h-4 w-4" />
                           <span className="font-semibold">{scan.companies_found}</span>
                         </div>
-                        <div className="flex items-center gap-1 text-red-400">
+                        <div className="flex items-center gap-1 text-red-600">
                           <Globe className="h-4 w-4" />
                           <span className="font-semibold">{scan.companies_without_site}</span>
                         </div>
-                        <div className="flex items-center gap-1 text-amber-400">
+                        <div className="flex items-center gap-1 text-amber-600">
                           <Wrench className="h-4 w-4" />
                           <span className="font-semibold">{scan.companies_needing_refonte}</span>
                         </div>
@@ -890,7 +962,7 @@ function ScannerContent() {
 export default function ScannerPage() {
   return (
     <Suspense fallback={
-      <div className="flex items-center justify-center min-h-screen bg-canvas">
+      <div className="flex items-center justify-center min-h-screen bg-[#09090b]">
         <div className="h-8 w-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
       </div>
     }>

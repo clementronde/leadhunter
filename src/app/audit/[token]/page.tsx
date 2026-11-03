@@ -13,8 +13,8 @@ export default async function PublicAuditPage({ params }: { params: Promise<{ to
 
   if (!lead) {
     return (
-      <main className="min-h-screen bg-canvas px-6 py-16 text-white">
-        <div className="mx-auto max-w-2xl rounded-xl border border-hairline-strong bg-zinc-900 p-8 text-center">
+      <main className="min-h-screen bg-[#09090b] px-6 py-16 text-white">
+        <div className="mx-auto max-w-2xl rounded-xl border border-white/[0.08] bg-zinc-900 p-8 text-center">
           <AlertTriangle className="mx-auto mb-3 h-8 w-8 text-amber-400" />
           <h1 className="text-2xl font-bold">Rapport introuvable</h1>
         </div>
@@ -25,7 +25,7 @@ export default async function PublicAuditPage({ params }: { params: Promise<{ to
   const audit = lead.website_audits?.[0]
 
   return (
-    <main className="min-h-screen bg-canvas px-6 py-12 text-white">
+    <main className="min-h-screen bg-[#09090b] px-6 py-12 text-white">
       <div className="mx-auto max-w-5xl space-y-8">
         <header className="space-y-3">
           <p className="text-sm font-medium text-amber-400">Rapport d&apos;audit web</p>
@@ -34,7 +34,7 @@ export default async function PublicAuditPage({ params }: { params: Promise<{ to
         </header>
 
         {!audit ? (
-          <section className="rounded-xl border border-hairline-strong bg-zinc-900 p-8">
+          <section className="rounded-xl border border-white/[0.08] bg-zinc-900 p-8">
             <p className="text-zinc-400">Aucun audit détaillé n&apos;est encore disponible pour ce site.</p>
           </section>
         ) : (
@@ -46,7 +46,7 @@ export default async function PublicAuditPage({ params }: { params: Promise<{ to
               <Score label="Mobile" value={audit.is_mobile_friendly ? 100 : 0} icon={<Smartphone className="h-5 w-5" />} />
             </section>
 
-            <section className="rounded-xl border border-hairline-strong bg-zinc-900 p-6">
+            <section className="rounded-xl border border-white/[0.08] bg-zinc-900 p-6">
               <h2 className="mb-4 text-xl font-semibold">Points à améliorer</h2>
               <div className="space-y-3">
                 {(audit.issues ?? []).length === 0 ? (
@@ -56,7 +56,7 @@ export default async function PublicAuditPage({ params }: { params: Promise<{ to
                   </div>
                 ) : (
                   audit.issues.map((issue: { title: string; message: string; recommendation: string }, index: number) => (
-                    <div key={index} className="rounded-lg border border-hairline bg-zinc-950 p-4">
+                    <div key={index} className="rounded-lg border border-white/[0.06] bg-zinc-950 p-4">
                       <p className="font-medium text-white">{issue.title}</p>
                       <p className="mt-1 text-sm text-zinc-400">{issue.message}</p>
                       <p className="mt-2 text-sm text-amber-300">{issue.recommendation}</p>
@@ -74,7 +74,7 @@ export default async function PublicAuditPage({ params }: { params: Promise<{ to
 
 function Score({ label, value, icon }: { label: string; value: number | null; icon: ReactNode }) {
   return (
-    <div className="rounded-xl border border-hairline-strong bg-zinc-900 p-5">
+    <div className="rounded-xl border border-white/[0.08] bg-zinc-900 p-5">
       <div className="mb-3 text-zinc-500">{icon}</div>
       <p className={`text-3xl font-bold ${getLighthouseColor(value)}`}>{value ?? '—'}</p>
       <p className="text-sm text-zinc-500">{label}</p>

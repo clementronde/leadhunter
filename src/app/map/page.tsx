@@ -96,7 +96,7 @@ function FilterGroup<T extends string>({
       value={value}
       onChange={(event) => onChange(event.target.value as T)}
       className={cn(
-        'rounded-lg border border-hairline-strong bg-zinc-900 px-3 py-1.5 text-sm text-zinc-200',
+        'rounded-lg border border-white/[0.08] bg-zinc-900 px-3 py-1.5 text-sm text-zinc-200',
         value !== 'all' && 'border-amber-500/40'
       )}
     >

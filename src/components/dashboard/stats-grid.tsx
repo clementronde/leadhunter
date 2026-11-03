@@ -68,13 +68,17 @@ function StatCard({ title, value, change, icon, accentColor, subtitle, href }: S
   const content = (
     <motion.div
       whileHover={{ y: -2, transition: { type: 'spring', stiffness: 500, damping: 30 } }}
-      className="relative rounded-xl border border-hairline bg-surface-1 overflow-hidden cursor-default group"
+      className="relative rounded-2xl border border-white/[0.07] bg-zinc-900/70 backdrop-blur-xl overflow-hidden cursor-default group"
     >
+      {/* Top highlight */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/[0.07] to-transparent" />
+      {/* Left color accent */}
+      <div className={cn('absolute left-0 top-0 bottom-0 w-[3px] rounded-l-2xl', accentColor)} />
 
       <div className="p-5 pl-6">
         <div className="flex items-start justify-between mb-3">
-          <p className="text-xs font-medium text-zinc-500 ">{title}</p>
-          <div className="h-9 w-9 rounded-xl flex items-center justify-center bg-surface-2 border border-hairline">
+          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide">{title}</p>
+          <div className="h-9 w-9 rounded-xl flex items-center justify-center bg-zinc-800/60 border border-white/[0.05]">
             {icon}
           </div>
         </div>

@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react'
 import { Header } from '@/components/layout'
 import { Card, CardHeader, CardTitle, CardContent, Button, CityAutocomplete } from '@/components/ui'
 import { AdminCityScan } from '@/types'
-import { Building2, Euro, History, Loader2, MapPin, Play, Shield, Users, Crown, UserCheck, Check } from 'lucide-react'
+import { Building2, Euro, History, Loader2, MapPin, Play, Shield, Users, Crown, UserCheck } from 'lucide-react'
 
 interface UserRow {
   id: string
@@ -160,7 +160,7 @@ export default function AdminPage() {
               <select
                 value={maxPerCategory}
                 onChange={(e) => setMaxPerCategory(e.target.value)}
-                className="rounded-lg border border-hairline-strong bg-surface-1 px-3 py-2 text-sm text-zinc-300 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                className="rounded-lg border border-white/[0.08] bg-zinc-900/60 px-3 py-2 text-sm text-zinc-300 focus:outline-none focus:ring-2 focus:ring-violet-500"
               >
                 <option value="10">10 / catégorie</option>
                 <option value="20">20 / catégorie</option>
@@ -183,7 +183,7 @@ export default function AdminPage() {
                     className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
                       selected
                         ? 'border-violet-500 bg-violet-500/20 text-violet-200'
-                        : 'border-hairline-strong bg-surface-2 text-zinc-500 hover:text-zinc-300'
+                        : 'border-white/[0.08] bg-zinc-800/50 text-zinc-500 hover:text-zinc-300'
                     }`}
                   >
                     {category}
@@ -224,7 +224,7 @@ export default function AdminPage() {
                 </div>
                 <div className="h-2 overflow-hidden rounded-full bg-zinc-800">
                   <div
-                    className="h-full rounded-full bg-violet-500 transition-all duration-500"
+                    className="h-full rounded-full bg-gradient-to-r from-violet-500 to-purple-500 transition-all duration-500"
                     style={{ width: `${liveScan?.progress ?? 0}%` }}
                   />
                 </div>
@@ -232,19 +232,19 @@ export default function AdminPage() {
 
               {/* Live counters */}
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <div className="rounded-lg border border-hairline bg-surface-2 px-3 py-2.5">
+                <div className="rounded-lg border border-white/[0.06] bg-zinc-800/40 px-3 py-2.5">
                   <p className="text-lg font-bold text-white">{liveScan?.places_found ?? 0}</p>
                   <p className="text-xs text-zinc-500">Lieux trouvés</p>
                 </div>
-                <div className="rounded-lg border border-hairline bg-surface-2 px-3 py-2.5">
+                <div className="rounded-lg border border-white/[0.06] bg-zinc-800/40 px-3 py-2.5">
                   <p className="text-lg font-bold text-emerald-400">{liveScan?.companies_created ?? 0}</p>
                   <p className="text-xs text-zinc-500">Créés</p>
                 </div>
-                <div className="rounded-lg border border-hairline bg-surface-2 px-3 py-2.5">
+                <div className="rounded-lg border border-white/[0.06] bg-zinc-800/40 px-3 py-2.5">
                   <p className="text-lg font-bold text-amber-400">{liveScan?.duplicates_skipped ?? 0}</p>
                   <p className="text-xs text-zinc-500">Doublons</p>
                 </div>
-                <div className="rounded-lg border border-hairline bg-surface-2 px-3 py-2.5">
+                <div className="rounded-lg border border-white/[0.06] bg-zinc-800/40 px-3 py-2.5">
                   <p className="text-lg font-bold text-zinc-300">{liveScan?.estimated_api_cost_eur ?? 0}€</p>
                   <p className="text-xs text-zinc-500">Coût réel</p>
                 </div>
@@ -261,10 +261,10 @@ export default function AdminPage() {
                         className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
                           done
                             ? 'bg-violet-500/20 text-violet-300'
-                            : 'bg-surface-2 text-zinc-600'
+                            : 'bg-zinc-800/60 text-zinc-600'
                         }`}
                       >
-                        {done && <Check className="mr-1 inline h-3 w-3" aria-hidden />}{cat}
+                        {done ? '✓ ' : ''}{cat}
                       </span>
                     )
                   })}
@@ -293,7 +293,7 @@ export default function AdminPage() {
             ) : (
               <div className="space-y-3">
                 {scans.map((scan) => (
-                  <div key={scan.id} className="rounded-xl border border-hairline bg-surface-1 p-4">
+                  <div key={scan.id} className="rounded-xl border border-white/[0.06] bg-zinc-900/50 p-4">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
                         <p className="font-semibold text-white">{scan.city}</p>
@@ -320,7 +320,7 @@ export default function AdminPage() {
                     {scan.category_results?.length > 0 && (
                       <div className="mt-3 grid gap-2 md:grid-cols-2">
                         {scan.category_results.map((result) => (
-                          <div key={result.category} className="flex items-center justify-between rounded-lg bg-surface-2 px-3 py-2 text-xs">
+                          <div key={result.category} className="flex items-center justify-between rounded-lg bg-zinc-800/40 px-3 py-2 text-xs">
                             <span className="font-medium text-zinc-300">{result.category}</span>
                             <span className="text-zinc-500">
                               {result.created} créés · {result.duplicates} doublons · {result.without_site} sans site
@@ -356,7 +356,7 @@ export default function AdminPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-hairline text-left text-zinc-500">
+                    <tr className="border-b border-white/[0.06] text-left text-zinc-500">
                       <th className="pb-3 font-medium">Email</th>
                       <th className="pb-3 font-medium">Plan</th>
                       <th className="pb-3 font-medium">Rôle</th>
@@ -429,7 +429,7 @@ function InfoTile({
   value: string | number
 }) {
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-hairline bg-surface-2 px-4 py-3">
+    <div className="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-zinc-800/40 px-4 py-3">
       {icon}
       <div>
         <p className="font-semibold text-white">{value}</p>
@@ -452,7 +452,7 @@ function Metric({
     emerald: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20',
     amber: 'bg-amber-500/10 text-amber-300 border-amber-500/20',
     blue: 'bg-blue-500/10 text-blue-300 border-blue-500/20',
-    zinc: 'bg-zinc-800 text-zinc-300 border-hairline-strong',
+    zinc: 'bg-zinc-800 text-zinc-300 border-white/[0.08]',
   }
 
   return (
@@ -471,7 +471,7 @@ function estimateUiCost(categories: number, maxPerCategory: number): string {
 function PlanBadge({ plan }: { plan: string }) {
   if (plan === 'pro') {
     return (
-      <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500 text-on-accent">
+      <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-600 text-white">
         <Crown className="h-2.5 w-2.5" />
         PRO
       </span>
@@ -487,7 +487,7 @@ function PlanBadge({ plan }: { plan: string }) {
 function RoleBadge({ role }: { role: string }) {
   if (role === 'admin') {
     return (
-      <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-600 text-white">
+      <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-gradient-to-r from-violet-600 to-purple-600 text-white">
         <Shield className="h-2.5 w-2.5" />
         ADMIN
       </span>

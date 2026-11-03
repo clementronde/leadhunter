@@ -114,14 +114,14 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[15vh] px-4" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/60" />
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
 
       <div
-        className="relative w-full max-w-lg rounded-xl border border-hairline-strong bg-surface-1 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.7)] overflow-hidden"
+        className="relative w-full max-w-lg rounded-2xl border border-white/[0.1] bg-zinc-900/95 backdrop-blur-xl shadow-2xl shadow-black/70 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Search input */}
-        <div className="flex items-center gap-3 px-4 py-3.5 border-b border-hairline">
+        <div className="flex items-center gap-3 px-4 py-3.5 border-b border-white/[0.06]">
           <Search className="h-4 w-4 text-zinc-500 shrink-0" />
           <input
             ref={inputRef}
@@ -129,14 +129,14 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Rechercher un lead, une page..."
-            className="flex-1 bg-transparent text-sm text-zinc-200 placeholder:text-zinc-500 focus:outline-none"
+            className="flex-1 bg-transparent text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none"
           />
           {query && (
             <button onClick={() => setQuery('')} className="text-zinc-600 hover:text-zinc-400">
               <X className="h-4 w-4" />
             </button>
           )}
-          <kbd className="hidden sm:inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-hairline-strong text-[10px] text-zinc-600 font-mono">
+          <kbd className="hidden sm:inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-white/[0.08] text-[10px] text-zinc-600 font-mono">
             ESC
           </kbd>
         </div>
@@ -153,7 +153,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
           {filteredNav.length > 0 && (
             <div>
               {query === '' && (
-                <p className="px-4 py-1.5 text-[11px] font-medium text-zinc-600">
+                <p className="px-4 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-zinc-600">
                   Navigation
                 </p>
               )}
@@ -185,7 +185,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
           {/* Leads group */}
           {(leads.length > 0 || loadingLeads) && (
             <div>
-              <p className="px-4 py-1.5 text-[11px] font-medium text-zinc-600">
+              <p className="px-4 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-zinc-600">
                 Leads
               </p>
               {loadingLeads && leads.length === 0 && (
@@ -221,7 +221,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
         </div>
 
         {/* Footer */}
-        <div className="border-t border-hairline px-4 py-2 flex items-center gap-4 text-[10px] text-zinc-600">
+        <div className="border-t border-white/[0.06] px-4 py-2 flex items-center gap-4 text-[10px] text-zinc-600">
           <span><kbd className="font-mono">↑↓</kbd> naviguer</span>
           <span><kbd className="font-mono">↵</kbd> ouvrir</span>
           <span><kbd className="font-mono">ESC</kbd> fermer</span>

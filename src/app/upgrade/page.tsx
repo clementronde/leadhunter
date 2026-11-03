@@ -18,7 +18,6 @@ import {
   BarChart2,
   Infinity,
   HeadphonesIcon,
-  X,
 } from 'lucide-react'
 
 const PRO_FEATURES = [
@@ -99,10 +98,9 @@ function UpgradeContent() {
           </div>
           <button
             onClick={() => router.replace('/upgrade')}
-            aria-label="Fermer"
-            className="ml-auto text-emerald-400 hover:text-emerald-300"
+            className="ml-auto text-xs text-emerald-400 hover:text-emerald-300"
           >
-            <X className="h-3.5 w-3.5" aria-hidden />
+            ✕
           </button>
         </div>
       )}
@@ -113,7 +111,7 @@ function UpgradeContent() {
         <Card className={`p-5 ${isPro ? 'opacity-60' : 'ring-2 ring-amber-400'}`}>
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-xs font-semibold text-zinc-500 mb-1">
+              <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-1">
                 Plan actuel
               </p>
               <h3 className="text-xl font-bold text-white">Gratuit</h3>
@@ -163,12 +161,12 @@ function UpgradeContent() {
         <Card className={`p-5 ${isPro ? 'ring-2 ring-amber-400' : ''}`}>
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-xs font-semibold text-amber-400 mb-1">
+              <p className="text-xs font-semibold text-amber-600 uppercase tracking-wide mb-1">
                 {isPro ? 'Plan actuel' : 'Recommandé'}
               </p>
               <h3 className="text-xl font-bold text-white">Pro</h3>
             </div>
-            <span className="text-xs font-bold text-on-accent bg-amber-500 px-2.5 py-1 rounded-full">
+            <span className="text-xs font-bold text-white bg-gradient-to-r from-amber-500 to-orange-600 px-2.5 py-1 rounded-full">
               PRO
             </span>
           </div>
@@ -215,7 +213,7 @@ function UpgradeContent() {
             <button
               onClick={handleCheckout}
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm bg-amber-500 text-on-accent hover:opacity-90 transition-opacity disabled:opacity-60"
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:opacity-90 transition-opacity disabled:opacity-60"
             >
               {loading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

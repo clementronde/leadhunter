@@ -11,20 +11,20 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="relative w-full">
         {icon && (
-          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 [&_svg]:size-4">
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400">
             {icon}
           </div>
         )}
         <input
           type={type}
           className={cn(
-            'flex h-9 w-full rounded-lg border border-hairline bg-surface-1 px-3 py-2 text-sm text-zinc-100 transition-colors hover:border-hairline-strong',
+            'flex h-10 w-full rounded-lg border border-white/[0.08] bg-zinc-800/60 px-3 py-2 text-sm text-zinc-200 transition-colors',
             'file:border-0 file:bg-transparent file:text-sm file:font-medium',
             'placeholder:text-zinc-500',
-            'focus:outline-none focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/20',
+            'focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-1 focus:ring-offset-zinc-950',
             'disabled:cursor-not-allowed disabled:opacity-50',
             icon && 'pl-10',
-            error && 'border-red-500/70 focus:border-red-500 focus:ring-red-500/20',
+            error && 'border-red-500 focus:ring-red-500',
             className
           )}
           ref={ref}
