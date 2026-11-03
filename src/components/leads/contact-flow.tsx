@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { CheckCircle, Loader2, Mail, Phone, RefreshCw, Search, Send, Sparkles } from 'lucide-react'
+import { CheckCircle, FlaskConical, Loader2, Mail, MessageCircle, Phone, RefreshCw, Search, Send, Smartphone, Sparkles } from 'lucide-react'
 import { Company, LeadStatus, OutreachSettings } from '@/types'
 import { usePlan } from '@/hooks/usePlan'
 import { Button, Card } from '@/components/ui'
@@ -11,6 +11,16 @@ interface ContactFlowProps {
   onLeadUpdate: (patch: Partial<Company>) => void
   onStatusChange: (status: LeadStatus) => void
   onUpgrade?: () => void
+}
+
+/** Numéro français en format international sans "+" (33612345678), et s'il s'agit d'un mobile */
+function toInternational(phone: string | null): { intl: string; mobile: boolean } | null {
+  if (!phone) return null
+  let digits = phone.replace(/\D/g, '')
+  if (digits.startsWith('0033')) digits = digits.slice(2)
+  if (digits.startsWith('0') && digits.length === 10) digits = `33${digits.slice(1)}`
+  if (!digits.startsWith('33') || digits.length !== 11) return null
+  return { intl: digits, mobile: /^33[67]/.test(digits) }
 }
 
 /**
@@ -31,6 +41,11 @@ export function ContactFlow({ lead, onLeadUpdate, onStatusChange, onUpgrade }: C
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [testing, setTesting] = useState(false)
+  const [testInfo, setTestInfo] = useState<string | null>(null)
+  const [shortDrafting, setShortDrafting] = useState(false)
+  const [shortText, setShortText] = useState('')
+  const [shortSent, setShortSent] = useState(false)
 
   useEffect(() => {
     fetch('/api/outreach/settings')
@@ -40,6 +55,7 @@ export function ContactFlow({ lead, onLeadUpdate, onStatusChange, onUpgrade }: C
   }, [])
 
   const missingContacts = !lead.email || !lead.phone
+  const phoneIntl = toInternational(lead.phone)
   const senderEmail = settings?.sender_email
   const alreadyContacted = lead.status !== 'new' || !!lead.last_contacted_at
 
@@ -76,6 +92,59 @@ export function ContactFlow({ lead, onLeadUpdate, onStatusChange, onUpgrade }: C
     } finally {
       setDrafting(false)
     }
+  }
+
+  const handleTestSend = async () => {
+    if (!subject.trim() || !body.trim()) return
+    setTesting(true)
+    setTestInfo(null)
+    setError(null)
+    try {
+      const res = await fetch('/api/outreach/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          companyId: lead.id,
+          recipientEmail: lead.email,
+          subject: subject.trim(),
+          body: body.trim(),
+          test: true,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Envoi du test impossible')
+      setTestInfo(`Test envoyé à ${data.sentTo}`)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Envoi du test impossible')
+    } finally {
+      setTesting(false)
+    }
+  }
+
+  const handleDraftShort = async () => {
+    if (!hasFullAccess) return onUpgrade?.()
+    setShortDrafting(true)
+    setError(null)
+    try {
+      const res = await fetch(`/api/leads/${lead.id}/draft-message`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ channel: 'short' }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Rédaction impossible')
+      setShortText(data.body)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Rédaction impossible')
+    } finally {
+      setShortDrafting(false)
+    }
+  }
+
+  // WhatsApp / SMS s'ouvrent avec le message pré-rempli ; l'envoi se fait depuis votre téléphone ou WhatsApp
+  const handleOpenShort = () => {
+    setShortSent(true)
+    if (lead.status === 'new') onStatusChange('contacted')
   }
 
   const handleSend = async () => {
@@ -171,6 +240,10 @@ export function ContactFlow({ lead, onLeadUpdate, onStatusChange, onUpgrade }: C
                   {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                   {sending ? 'Envoi…' : 'Envoyer'}
                 </Button>
+                <Button variant="outline" onClick={handleTestSend} disabled={testing}>
+                  {testing ? <Loader2 className="h-4 w-4 animate-spin" /> : <FlaskConical className="h-4 w-4" />}
+                  M&apos;envoyer un test
+                </Button>
                 <button
                   type="button"
                   onClick={handleDraft}
@@ -190,12 +263,61 @@ export function ContactFlow({ lead, onLeadUpdate, onStatusChange, onUpgrade }: C
                   Relancer à J+3 et J+7 sans réponse
                 </label>
               </div>
+              {testInfo && <p className="text-sm text-emerald-400">{testInfo}</p>}
               <p className="text-xs text-zinc-500">
                 {senderEmail ? (
                   <>Envoyé depuis <span className="text-zinc-300">{senderEmail}</span> vers <span className="text-zinc-300">{lead.email}</span></>
                 ) : (
                   <>Ajoutez votre adresse email pro dans <a href="/settings" className="text-amber-400 underline underline-offset-2">Paramètres</a> pour envoyer.</>
                 )}
+              </p>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* 3. WhatsApp / SMS (mobiles uniquement) */}
+      {phoneIntl?.mobile && (
+        <div className="space-y-3 border-t border-white/[0.06] pt-5">
+          {!shortText ? (
+            <Button variant="secondary" onClick={handleDraftShort} disabled={shortDrafting} className="w-full sm:w-auto">
+              {shortDrafting ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageCircle className="h-4 w-4" />}
+              {shortDrafting ? 'Rédaction…' : 'Écrire un message WhatsApp / SMS'}
+            </Button>
+          ) : (
+            <>
+              <textarea
+                value={shortText}
+                onChange={(e) => setShortText(e.target.value)}
+                aria-label="Message WhatsApp / SMS"
+                rows={4}
+                className="w-full rounded-lg border border-white/[0.08] bg-zinc-800/60 p-3 text-sm leading-relaxed text-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500"
+              />
+              <div className="flex flex-wrap items-center gap-3">
+                <a
+                  href={`https://wa.me/${phoneIntl.intl}?text=${encodeURIComponent(shortText)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={handleOpenShort}
+                  className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  Ouvrir dans WhatsApp
+                </a>
+                <a
+                  href={`sms:+${phoneIntl.intl}?&body=${encodeURIComponent(shortText)}`}
+                  onClick={handleOpenShort}
+                  className="inline-flex items-center gap-2 rounded-lg border border-white/[0.08] px-4 py-2 text-sm font-medium text-zinc-200 hover:border-white/[0.16]"
+                >
+                  <Smartphone className="h-4 w-4" />
+                  Envoyer par SMS
+                </a>
+                <span className="text-xs text-zinc-500">{shortText.length} caractères</span>
+              </div>
+              <p className="text-xs text-zinc-500">
+                {shortSent
+                  ? 'Lead marqué comme contacté. Pensez à appuyer sur Envoyer dans WhatsApp ou Messages.'
+                  : 'Le message s’ouvre pré-rempli : vous n’avez plus qu’à appuyer sur Envoyer. Le SMS s’ouvre sur téléphone (ou Mac / Lien avec Windows).'}
               </p>
             </>
           )}

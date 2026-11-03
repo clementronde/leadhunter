@@ -18,7 +18,8 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
 
   const { id } = await params
 
-  const rl = rateLimit(`find-contacts:${user.id}`, { windowMs: 60_000, max: 10 })
+  // 40/min : laisse passer la recherche groupée de la page Leads (3 en parallèle)
+  const rl = rateLimit(`find-contacts:${user.id}`, { windowMs: 60_000, max: 40 })
   if (!rl.success) {
     return NextResponse.json({ error: 'Trop de recherches, réessayez dans une minute' }, { status: 429 })
   }

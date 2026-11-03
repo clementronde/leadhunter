@@ -9,11 +9,13 @@ import type { Sector } from '@/types'
 export const maxDuration = 60
 
 /** Rédige un email de prospection personnalisé à partir de la fiche Google Maps et de l'audit du lead */
-export async function POST(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { supabase, user, response } = await requireUser()
   if (response || !user) return response
 
   const { id } = await params
+  const body = await request.json().catch(() => ({}))
+  const channel: 'email' | 'short' = body?.channel === 'short' ? 'short' : 'email'
 
   const rl = rateLimit(`draft-message:${user.id}`, { windowMs: 60_000, max: 15 })
   if (!rl.success) {
@@ -50,7 +52,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
         agency: settings?.agency_name,
         signature: buildSignature(settings),
       },
-    })
+    }, channel)
     return NextResponse.json(draft)
   } catch (error) {
     console.error('Rédaction IA échouée:', error instanceof Error ? error.message : error)

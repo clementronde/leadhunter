@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback, Suspense } from 'react'
+import { useEffect, useState, useCallback, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Header } from '@/components/layout'
 import { LeadsTable, LeadsFilters, LeadCard, CsvImport } from '@/components/leads'
@@ -494,7 +494,12 @@ function LeadsContent() {
   const [leads, setLeads] = useState<Company[]>([])
   const [loading, setLoading] = useState(true)
   const [exporting, setExporting] = useState(false)
-  const [bulkEnriching, setBulkEnriching] = useState(false)
+  const [contactSearch, setContactSearch] = useState<
+    | { phase: 'confirm'; ids: string[] }
+    | { phase: 'running'; total: number; done: number; found: number }
+    | null
+  >(null)
+  const stopContactSearch = useRef(false)
   const [auditing, setAuditing] = useState<{ done: number; total: number } | null>(null)
   const [segmentCounts, setSegmentCounts] = useState<Record<LeadSegment, number> | null>(null)
   const [actionBanner, setActionBanner] = useState<{ tone: 'success' | 'error'; message: string } | null>(null)
@@ -597,27 +602,68 @@ function LeadsContent() {
     }
   }
 
-  const handleBulkEnrichEmails = async () => {
-    setBulkEnriching(true)
+  // Recherche des contacts de tous les leads sans email (site, puis recherche web par l'IA)
+  const SEARCHED_KEY = 'lh-contacts-searched'
+  const readSearched = (): Set<string> => {
+    try { return new Set(JSON.parse(localStorage.getItem(SEARCHED_KEY) || '[]')) } catch { return new Set() }
+  }
+
+  const handlePrepareContactSearch = async () => {
+    if (!canAudit) {
+      setShowUpgradeModal(true)
+      return
+    }
     setActionBanner(null)
     try {
-      const res = await fetch('/api/enrich-email/bulk', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ limit: 25 }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Erreur enrichissement')
-      setActionBanner({
-        tone: 'success',
-        message: `${data.found} email${data.found > 1 ? 's' : ''} trouvé${data.found > 1 ? 's' : ''} sur ${data.processed} leads traités.`,
-      })
-      loadLeads(pagination.page)
-    } catch (err) {
-      setActionBanner({ tone: 'error', message: err instanceof Error ? err.message : 'Erreur enrichissement' })
-    } finally {
-      setBulkEnriching(false)
+      const searched = readSearched()
+      const ids = (await leadsApi.getIdsMissingEmail()).filter((id) => !searched.has(id))
+      if (ids.length === 0) {
+        setActionBanner({ tone: 'success', message: 'Tous vos leads ont déjà un email ou ont déjà été recherchés.' })
+        return
+      }
+      setContactSearch({ phase: 'confirm', ids })
+    } catch {
+      setActionBanner({ tone: 'error', message: 'Impossible de charger les leads sans email' })
     }
+  }
+
+  const handleRunContactSearch = async (ids: string[]) => {
+    stopContactSearch.current = false
+    let done = 0
+    let found = 0
+    setContactSearch({ phase: 'running', total: ids.length, done, found })
+    const searched = readSearched()
+    const queue = [...ids]
+
+    const worker = async () => {
+      while (queue.length > 0 && !stopContactSearch.current) {
+        const id = queue.shift()!
+        try {
+          const res = await fetch(`/api/leads/${id}/find-contacts`, { method: 'POST' })
+          const data = await res.json().catch(() => ({}))
+          if (res.status === 429) {
+            queue.push(id)
+            await new Promise((r) => setTimeout(r, 15_000))
+            continue
+          }
+          if (data?.found?.email) found++
+          searched.add(id)
+        } catch {
+          // lead ignoré, on continue
+        }
+        done++
+        setContactSearch({ phase: 'running', total: ids.length, done, found })
+      }
+    }
+
+    await Promise.all([worker(), worker(), worker()])
+    try { localStorage.setItem(SEARCHED_KEY, JSON.stringify([...searched])) } catch {}
+    setContactSearch(null)
+    setActionBanner({
+      tone: 'success',
+      message: `${found} email${found > 1 ? 's' : ''} trouvé${found > 1 ? 's' : ''} sur ${done} lead${done > 1 ? 's' : ''} recherché${done > 1 ? 's' : ''}${stopContactSearch.current ? ' (arrêté)' : ''}.`,
+    })
+    loadLeads(pagination.page)
   }
 
   // Audite les sites de la page affichée : PageSpeed + capture + avis design
@@ -706,6 +752,28 @@ function LeadsContent() {
           <button onClick={() => setCsvBanner(null)} className="text-amber-500 hover:text-amber-300">
             <X className="h-4 w-4" />
           </button>
+        </div>
+      )}
+
+      {contactSearch?.phase === 'confirm' && (
+        <div className="flex flex-wrap items-center gap-3 p-4 rounded-xl border border-amber-500/30 bg-amber-500/10 text-sm">
+          <span className="flex-1 text-amber-200">
+            <span className="font-semibold">{contactSearch.ids.length} leads sans email.</span>{' '}
+            L&apos;IA cherche sur leur site puis sur le web (Pages Jaunes, réseaux sociaux…).
+            Environ {Math.max(1, Math.round(contactSearch.ids.length * 0.03))} € et {Math.max(1, Math.round(contactSearch.ids.length / 12))} min. Gardez la page ouverte.
+          </span>
+          <Button size="sm" onClick={() => handleRunContactSearch(contactSearch.ids)}>Lancer la recherche</Button>
+          <Button size="sm" variant="outline" onClick={() => setContactSearch(null)}>Annuler</Button>
+        </div>
+      )}
+
+      {contactSearch?.phase === 'running' && (
+        <div className="flex flex-wrap items-center gap-3 p-4 rounded-xl border border-amber-500/30 bg-amber-500/10 text-sm">
+          <Loader2 className="h-4 w-4 animate-spin text-amber-400" />
+          <span className="flex-1 text-amber-200">
+            Recherche des contacts : {contactSearch.done}/{contactSearch.total} · {contactSearch.found} email{contactSearch.found > 1 ? 's' : ''} trouvé{contactSearch.found > 1 ? 's' : ''}
+          </span>
+          <Button size="sm" variant="outline" onClick={() => { stopContactSearch.current = true }}>Arrêter</Button>
         </div>
       )}
 
@@ -815,13 +883,13 @@ function LeadsContent() {
           <Button
             variant="outline"
             size="sm"
-            onClick={handleBulkEnrichEmails}
-            disabled={bulkEnriching || loading}
+            onClick={handlePrepareContactSearch}
+            disabled={!!contactSearch || loading}
             className="flex items-center gap-2"
-            title="Trouver les emails des leads avec site web"
+            title="L'IA cherche l'email et le téléphone de tous les leads qui n'en ont pas"
           >
-            {bulkEnriching ? <Loader2 className="h-4 w-4 animate-spin" /> : <AtSign className="h-4 w-4" />}
-            Emails
+            {contactSearch?.phase === 'running' ? <Loader2 className="h-4 w-4 animate-spin" /> : <AtSign className="h-4 w-4" />}
+            Trouver tous les contacts
           </Button>
 
           <Button

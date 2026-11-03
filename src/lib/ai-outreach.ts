@@ -208,11 +208,21 @@ Règles d'écriture :
 - Le corps commence par "Bonjour," et se termine exactement par cette signature :
 {signature}`
 
-export async function draftOutreachEmail(ctx: DraftContext): Promise<OutreachDraft> {
-  const anthropic = getClient()
-  const { company, audit } = ctx
+const SHORT_PROMPT = `Tu écris un premier message WhatsApp / SMS de prospection pour un freelance / une petite agence web française.
+Objectif : que le gérant accepte un court appel.
 
-  const facts = [
+Données réelles sur le prospect (n'invente rien d'autre) :
+{facts}
+
+Règles :
+- 280 caractères maximum, vouvoiement, ton simple et humain, comme écrit à la main. Pas d'emoji, pas de lien.
+- Commence par "Bonjour," puis une observation précise et vraie tirée des données, l'impact en une phrase, et une question pour un appel.
+- Termine par la signature courte : {sender}
+- "subject" : chaîne vide.`
+
+function buildFacts(ctx: DraftContext): string {
+  const { company, audit } = ctx
+  return [
     `Entreprise : ${company.name}${company.city ? ` (${company.city})` : ''}`,
     company.sector && `Activité : ${company.sector}`,
     company.google_rating != null && `Note Google : ${company.google_rating}/5${company.google_reviews_count ? ` sur ${company.google_reviews_count} avis` : ''}`,
@@ -232,6 +242,16 @@ export async function draftOutreachEmail(ctx: DraftContext): Promise<OutreachDra
     audit?.issues?.length && `Problèmes détectés : ${audit.issues.slice(0, 4).map((i) => `${i.title} (${i.message})`).join(' ; ')}`,
     ctx.sender.agency && `Expéditeur : ${ctx.sender.name ?? ''} ${ctx.sender.agency ? `de ${ctx.sender.agency}` : ''}`.trim(),
   ].filter(Boolean).join('\n')
+}
+
+/** channel 'email' : objet + corps signé ; 'short' : message WhatsApp / SMS de 280 caractères */
+export async function draftOutreachEmail(ctx: DraftContext, channel: 'email' | 'short' = 'email'): Promise<OutreachDraft> {
+  const anthropic = getClient()
+  const facts = buildFacts(ctx)
+  const shortSender = [ctx.sender.name, ctx.sender.agency].filter(Boolean).join(', ') || 'votre interlocuteur web'
+  const prompt = channel === 'short'
+    ? SHORT_PROMPT.replace('{facts}', facts).replace('{sender}', shortSender)
+    : DRAFT_PROMPT.replace('{facts}', facts).replace('{signature}', ctx.sender.signature || '(pas de signature)')
 
   const response = await anthropic.messages.parse({
     model: MODEL,
@@ -242,7 +262,7 @@ export async function draftOutreachEmail(ctx: DraftContext): Promise<OutreachDra
     },
     messages: [{
       role: 'user',
-      content: DRAFT_PROMPT.replace('{facts}', facts).replace('{signature}', ctx.sender.signature || '(pas de signature)'),
+      content: prompt,
     }],
   })
 

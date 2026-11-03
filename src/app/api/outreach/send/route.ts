@@ -13,6 +13,7 @@ const sendSchema = z.object({
   templateId: z.string().max(50).optional(),
   scheduledAt: z.string().datetime().optional().nullable(),
   followupDelays: z.array(z.number().int().min(1).max(60)).max(3).optional(),
+  test: z.boolean().optional(),
 })
 
 export async function POST(request: Request) {
@@ -39,6 +40,26 @@ export async function POST(request: Request) {
   }
 
   const input = parsed.data
+
+  // Envoi de test : à l'adresse du compte, sans toucher au lead (ni statut, ni relances, ni historique)
+  if (input.test) {
+    if (!user.email) return NextResponse.json({ error: 'Votre compte n’a pas d’adresse email' }, { status: 400 })
+    const { data: testSettings } = await supabase.from('outreach_settings').select('*').eq('user_id', user.id).maybeSingle()
+    const from = testSettings?.sender_email || user.email
+    try {
+      await sendEmail({
+        from: formatSender(testSettings?.sender_name || testSettings?.agency_name, from),
+        to: user.email,
+        subject: `[Test] ${input.subject}`,
+        body: input.body,
+        replyTo: testSettings?.reply_to || from,
+      })
+      return NextResponse.json({ test: true, sentTo: user.email })
+    } catch (error) {
+      return NextResponse.json({ error: error instanceof Error ? error.message : 'Envoi du test impossible' }, { status: 502 })
+    }
+  }
+
   const scheduledDate = input.scheduledAt ? new Date(input.scheduledAt) : null
   const isFutureSchedule = scheduledDate && scheduledDate.getTime() > Date.now() + 60_000
 

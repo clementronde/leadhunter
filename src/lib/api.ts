@@ -113,6 +113,19 @@ export const leadsApi = {
     }
   },
 
+  /** Leads sans email (et pas « ne pas contacter »), les plus récents d'abord */
+  async getIdsMissingEmail(limit = 1000): Promise<string[]> {
+    const { data, error } = await supabase
+      .from('companies')
+      .select('id')
+      .is('email', null)
+      .or('do_not_contact.is.null,do_not_contact.eq.false')
+      .order('created_at', { ascending: false })
+      .limit(limit)
+    if (error) throw error
+    return (data ?? []).map((row) => row.id as string)
+  },
+
   /** Nombre de leads par section (onglets de la page Leads) */
   async getSegmentCounts(): Promise<Record<LeadSegment, number>> {
     const segments: LeadSegment[] = ['no_site', 'redesign', 'seo', 'to_audit']
