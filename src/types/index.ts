@@ -68,6 +68,7 @@ export interface Company {
   notes: Note[]
   last_contacted_at: string | null
   replied_at?: string | null
+  triaged_at?: string | null      // Passé dans la file de validation
   do_not_contact?: boolean
   opt_out_at?: string | null
   opt_out_reason?: string | null
@@ -228,6 +229,9 @@ export interface WebsiteAudit {
 
   // Visuel
   screenshot_url: string | null
+  design_score?: number | null      // Note IA 1 (moderne) à 10 (très daté)
+  design_verdict?: string | null
+  design_reasons?: string[]
   
   // Problèmes détectés
   issues: AuditIssue[]

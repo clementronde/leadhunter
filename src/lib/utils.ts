@@ -23,6 +23,8 @@ export interface ScoreFactors {
   isMobileFriendly?: boolean
   isOutdated?: boolean
   copyrightYear?: number | null
+  // Note IA de 1 (moderne) à 10 (très daté) à partir de la capture d'écran
+  designDatedScore?: number | null
   issuesCount?: number
   // Signaux d'activité : une entreprise avec des avis tourne et peut payer
   googleReviewsCount?: number | null
@@ -88,6 +90,12 @@ export function scoreProspect(factors: ScoreFactors): { score: number; reasons: 
       const age = new Date().getFullYear() - factors.copyrightYear
       if (age >= 5) { score += 10; reasons.push(`Site pas mis à jour depuis ${factors.copyrightYear}`) }
       else if (age >= 3) score += 5
+    }
+
+    if (factors.designDatedScore) {
+      if (factors.designDatedScore >= 8) { score += 15; reasons.push(`Design très daté (${factors.designDatedScore}/10)`) }
+      else if (factors.designDatedScore >= 6) { score += 8; reasons.push(`Design vieillissant (${factors.designDatedScore}/10)`) }
+      else if (factors.designDatedScore <= 3) score -= 8
     }
 
     if (factors.issuesCount !== undefined) {

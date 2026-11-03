@@ -41,6 +41,7 @@ export async function GET(request: NextRequest) {
     keys: {
       GOOGLE_MAPS_API_KEY: keyStatus(process.env.GOOGLE_MAPS_API_KEY, 'VOTRE_CLE_API_GOOGLE_MAPS'),
       PAGESPEED_API_KEY: keyStatus(process.env.PAGESPEED_API_KEY),
+      ANTHROPIC_API_KEY: keyStatus(process.env.ANTHROPIC_API_KEY),
       INSEE_API_KEY: keyStatus(process.env.INSEE_API_KEY),
       HUNTER_API_KEY: keyStatus(process.env.HUNTER_API_KEY),
       RESEND_API_KEY: keyStatus(process.env.RESEND_API_KEY),

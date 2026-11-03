@@ -20,8 +20,8 @@ const DEFAULT_CATEGORIES = [
   'Agences immobilières',
 ]
 
-const COST_PER_TEXT_SEARCH_EUR = 0.03
-const COST_PER_PLACE_DETAILS_EUR = 0.02
+// Text Search (New) avec site web / téléphone = SKU Enterprise (~35 $ / 1000), sans Place Details
+const COST_PER_TEXT_SEARCH_EUR = 0.033
 
 const cityScanSchema = z.object({
   city: z.string().min(2).max(160),
@@ -131,7 +131,6 @@ export async function POST(request: Request) {
   }
 
   let textSearchCalls = 0
-  let detailsCalls = 0
   const categoryResults: {
     category: string
     found: number
@@ -198,7 +197,6 @@ export async function POST(request: Request) {
         }
 
         if (!nextPageToken || categoryPlaces.length >= maxPerCategory) break
-        await new Promise((resolve) => setTimeout(resolve, 2000))
         pageToken = nextPageToken
       }
 
@@ -209,12 +207,8 @@ export async function POST(request: Request) {
 
       for (let i = 0; i < categoryPlaces.length; i += 5) {
         const batch = categoryPlaces.slice(i, i + 5)
-        const enriched = await Promise.allSettled(batch.map((place) => enrichGooglePlace(place)))
-        detailsCalls += batch.length
 
-        for (const result of enriched) {
-          if (result.status !== 'fulfilled') continue
-          const place = result.value
+        for (const place of batch.map(enrichGooglePlace)) {
           const company = googlePlaceToCompany(place)
           const duplicateBusinessKey = businessKey(company.name, company.phone, company.city || city)
           if (duplicateBusinessKey && knownBusinessKeys.has(duplicateBusinessKey)) {
@@ -272,7 +266,6 @@ export async function POST(request: Request) {
           }
         }
 
-        if (i + 5 < categoryPlaces.length) await new Promise((resolve) => setTimeout(resolve, 300))
       }
 
       categoryResults.push({
@@ -291,7 +284,7 @@ export async function POST(request: Request) {
           places_found: placesFound,
           companies_created: created,
           duplicates_skipped: duplicates,
-          estimated_api_cost_eur: estimateCost(textSearchCalls, detailsCalls),
+          estimated_api_cost_eur: estimateCost(textSearchCalls),
           category_results: categoryResults,
         })
         .eq('id', scan.id)
@@ -306,7 +299,7 @@ export async function POST(request: Request) {
         places_found: placesFound,
         companies_created: created,
         duplicates_skipped: duplicates,
-        estimated_api_cost_eur: estimateCost(textSearchCalls, detailsCalls),
+        estimated_api_cost_eur: estimateCost(textSearchCalls),
         category_results: categoryResults,
         completed_at: completedAt,
       })
@@ -323,7 +316,7 @@ export async function POST(request: Request) {
         status: 'failed',
         error_message: message,
         category_results: categoryResults,
-        estimated_api_cost_eur: estimateCost(textSearchCalls, detailsCalls),
+        estimated_api_cost_eur: estimateCost(textSearchCalls),
         completed_at: new Date().toISOString(),
       })
       .eq('id', scan.id)
@@ -332,10 +325,8 @@ export async function POST(request: Request) {
   }
 }
 
-function estimateCost(textSearchCalls: number, detailsCalls: number): number {
-  return Number(
-    (textSearchCalls * COST_PER_TEXT_SEARCH_EUR + detailsCalls * COST_PER_PLACE_DETAILS_EUR).toFixed(2)
-  )
+function estimateCost(textSearchCalls: number): number {
+  return Number((textSearchCalls * COST_PER_TEXT_SEARCH_EUR).toFixed(2))
 }
 
 function businessKey(name?: string | null, phone?: string | null, city?: string | null): string | null {

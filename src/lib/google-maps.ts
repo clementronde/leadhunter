@@ -1,12 +1,10 @@
 /**
- * Service d'intégration avec Google Places API
- * Documentation : https://developers.google.com/maps/documentation/places/web-service
+ * Service d'intégration avec Google Places API (New)
+ * Documentation : https://developers.google.com/maps/documentation/places/web-service/text-search
  *
- * Utilise deux endpoints :
- * - Text Search : recherche d'entreprises par mot-clé + ville
- * - Place Details : récupération des détails (téléphone, site web, coordonnées)
+ * Un seul endpoint : Text Search (New), qui renvoie directement téléphone, site web et avis.
  *
- * Nécessite : GOOGLE_MAPS_API_KEY dans .env.local
+ * Nécessite : GOOGLE_MAPS_API_KEY dans .env.local, avec "Places API (New)" activée
  */
 
 import { Sector } from '@/types'
@@ -14,13 +12,15 @@ import { getPriorityFromScore, scoreProspect } from './utils'
 import { classifyWebsiteUrl, type WebPresence } from './web-presence'
 
 // ============================================
-// Types internes Google Places API
+// Types Google Places API (New)
 // ============================================
 
+/** Lieu tel que renvoyé par Text Search (New), normalisé pour LeadHunter */
 export interface PlaceSearchResult {
   place_id: string
   name: string
   formatted_address: string
+  address_components: AddressComponent[]
   geometry: {
     location: {
       lat: number
@@ -28,47 +28,66 @@ export interface PlaceSearchResult {
     }
   }
   types: string[]
+  primary_type?: string
   rating?: number
   user_ratings_total?: number
   business_status?: string
-  website?: string // Pas disponible dans le search, seulement dans details
-}
-
-interface PlaceDetailsResult {
-  place_id: string
-  name: string
-  formatted_address: string
-  formatted_phone_number?: string
-  international_phone_number?: string
   website?: string
-  url: string // Lien Google Maps
-  geometry: {
-    location: {
-      lat: number
-      lng: number
-    }
-  }
+  phone?: string
+  google_maps_url?: string
+}
+
+interface AddressComponent {
+  longText: string
+  shortText: string
   types: string[]
+}
+
+interface NewPlace {
+  id: string
+  displayName?: { text: string; languageCode?: string }
+  formattedAddress?: string
+  addressComponents?: AddressComponent[]
+  location?: { latitude: number; longitude: number }
+  types?: string[]
+  primaryType?: string
   rating?: number
-  user_ratings_total?: number
-  business_status?: string
-  opening_hours?: {
-    open_now: boolean
-  }
+  userRatingCount?: number
+  businessStatus?: string
+  websiteUri?: string
+  nationalPhoneNumber?: string
+  internationalPhoneNumber?: string
+  googleMapsUri?: string
 }
 
-interface PlaceTextSearchResponse {
-  status: string
-  results: PlaceSearchResult[]
-  next_page_token?: string
-  error_message?: string
+interface SearchTextResponse {
+  places?: NewPlace[]
+  nextPageToken?: string
 }
 
-interface PlaceDetailsResponse {
-  status: string
-  result: PlaceDetailsResult
-  error_message?: string
+interface GoogleApiError {
+  error?: { code: number; message: string; status: string }
 }
+
+// Google facture selon le champ le plus cher demandé (site web / téléphone = Enterprise),
+// mais cet appel unique remplace l'ancien couple Text Search + Place Details
+const SEARCH_FIELD_MASK = [
+  'places.id',
+  'places.displayName',
+  'places.formattedAddress',
+  'places.addressComponents',
+  'places.location',
+  'places.types',
+  'places.primaryType',
+  'places.rating',
+  'places.userRatingCount',
+  'places.businessStatus',
+  'places.websiteUri',
+  'places.nationalPhoneNumber',
+  'places.internationalPhoneNumber',
+  'places.googleMapsUri',
+  'nextPageToken',
+].join(',')
 
 // ============================================
 // Résultat enrichi d'un lieu
@@ -128,6 +147,9 @@ const googleTypesToSector: Record<string, Sector> = {
   // Santé
   doctor: 'health',
   dentist: 'health',
+  dental_clinic: 'health',
+  medical_clinic: 'health',
+  chiropractor: 'health',
   hospital: 'health',
   pharmacy: 'health',
   physiotherapist: 'health',
@@ -140,6 +162,11 @@ const googleTypesToSector: Record<string, Sector> = {
   hair_care: 'beauty',
   spa: 'beauty',
   nail_salon: 'beauty',
+  hair_salon: 'beauty',
+  barber_shop: 'beauty',
+  beautician: 'beauty',
+  massage: 'beauty',
+  tanning_studio: 'beauty',
 
   // BTP / Construction
   electrician: 'construction',
@@ -172,16 +199,24 @@ const googleTypesToSector: Record<string, Sector> = {
   school: 'education',
   university: 'education',
   gym: 'education',
+  fitness_center: 'education',
   library: 'education',
 }
 
 /**
- * Détermine le secteur à partir des types Google Places
+ * Détermine le secteur à partir des types Google Places (type principal en premier)
  */
-function googleTypesToOurSector(types: string[]): Sector {
-  for (const type of types) {
+function googleTypesToOurSector(types: string[], primaryType?: string): Sector {
+  const ordered = primaryType ? [primaryType, ...types] : types
+  for (const type of ordered) {
     const sector = googleTypesToSector[type]
     if (sector) return sector
+  }
+  // L'API New a des centaines de types fins (french_restaurant, shoe_store, ...)
+  for (const type of ordered) {
+    if (type.endsWith('_restaurant')) return 'restaurant'
+    if (type.endsWith('_store') || type.endsWith('_shop')) return 'retail'
+    if (type.endsWith('_contractor')) return 'construction'
   }
   return 'other'
 }
@@ -190,17 +225,28 @@ function googleTypesToOurSector(types: string[]): Sector {
  * Extrait la ville et le code postal depuis une adresse formatée Google
  * Format typique : "123 Rue Example, 75001 Paris, France"
  */
-function parseAddressComponents(formattedAddress: string): {
+function parseAddressComponents(formattedAddress: string, components: AddressComponent[] = []): {
   city: string
   postal_code: string
   street: string
 } {
+  // Adresse structurée de l'API New quand elle est complète
+  const component = (type: string) => components.find((c) => c.types.includes(type))?.longText
+  const componentCity = component('locality') || component('postal_town')
+  const componentPostal = component('postal_code')
+  if (componentCity && componentPostal) {
+    const street =
+      [component('street_number'), component('route')].filter(Boolean).join(' ') ||
+      formattedAddress.split(',')[0].trim()
+    return { city: componentCity, postal_code: componentPostal, street }
+  }
+
   // Séparer les parties de l'adresse
   const parts = formattedAddress.split(',').map((p) => p.trim())
 
   let city = ''
   let postal_code = ''
-  let street = parts[0] || ''
+  const street = parts[0] || ''
 
   // Chercher la partie avec code postal (5 chiffres)
   for (const part of parts) {
@@ -225,10 +271,11 @@ function parseAddressComponents(formattedAddress: string): {
 // ============================================
 
 /**
- * Recherche des entreprises via Google Places Text Search
+ * Recherche des entreprises via Google Places Text Search (New)
+ * Un appel renvoie jusqu'à 20 lieux avec site web, téléphone et avis : plus besoin de Place Details.
  * @param query - Terme de recherche (ex: "restaurants", "coiffeurs")
  * @param location - Ville ou localisation (ex: "Paris 15ème", "Boulogne-Billancourt")
- * @param pageToken - Token pour la page suivante (pagination)
+ * @param pageToken - Token pour la page suivante (pagination, 60 résultats max)
  */
 export async function searchGooglePlaces(params: {
   query: string
@@ -241,127 +288,103 @@ export async function searchGooglePlaces(params: {
   }
 
   const searchQuery = `${params.query} ${params.location}`
-
-  const url = new URL('https://maps.googleapis.com/maps/api/place/textsearch/json')
-  url.searchParams.set('query', searchQuery)
-  url.searchParams.set('language', 'fr')
-  url.searchParams.set('region', 'fr')
-  url.searchParams.set('key', apiKey)
-
-  if (params.pageToken) {
-    url.searchParams.set('pagetoken', params.pageToken)
-  }
-
   console.log(`🗺️ Google Places search: "${searchQuery}"`)
 
-  const response = await fetch(url.toString())
+  const response = await fetch('https://places.googleapis.com/v1/places:searchText', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Goog-Api-Key': apiKey,
+      'X-Goog-FieldMask': SEARCH_FIELD_MASK,
+    },
+    body: JSON.stringify({
+      textQuery: searchQuery,
+      languageCode: 'fr',
+      regionCode: 'FR',
+      pageSize: 20,
+      ...(params.pageToken ? { pageToken: params.pageToken } : {}),
+    }),
+  })
 
   if (!response.ok) {
-    throw new Error(`Google Places API error: ${response.status}`)
+    const body = (await response.json().catch(() => ({}))) as GoogleApiError
+    const message = body.error?.message || `HTTP ${response.status}`
+    if (response.status === 403) {
+      throw new Error(`Google Places API refusée : ${message} (activez "Places API (New)" pour cette clé)`)
+    }
+    if (response.status === 429) {
+      throw new Error('Quota Google Places API dépassé. Vérifiez votre facturation.')
+    }
+    if (response.status === 400) {
+      throw new Error(`Requête invalide : ${message}`)
+    }
+    throw new Error(`Google Places API error : ${message}`)
   }
 
-  const data: PlaceTextSearchResponse = await response.json()
-
-  if (data.status === 'REQUEST_DENIED') {
-    throw new Error(`Google Places API refusée: ${data.error_message || 'Clé API invalide ou non autorisée'}`)
-  }
-
-  if (data.status === 'INVALID_REQUEST') {
-    throw new Error(`Requête invalide: ${data.error_message || 'Paramètres incorrects'}`)
-  }
-
-  if (data.status === 'OVER_QUERY_LIMIT') {
-    throw new Error('Quota Google Places API dépassé. Vérifiez votre facturation.')
-  }
-
-  // ZERO_RESULTS est valide (pas d'erreur)
-  const places = data.results || []
+  const data: SearchTextResponse = await response.json()
+  const places = (data.places || []).map(normalizePlace)
 
   console.log(`📍 ${places.length} lieux trouvés`)
 
   return {
     places,
-    nextPageToken: data.next_page_token,
+    nextPageToken: data.nextPageToken,
+  }
+}
+
+function normalizePlace(place: NewPlace): PlaceSearchResult {
+  return {
+    place_id: place.id,
+    name: place.displayName?.text || '',
+    formatted_address: place.formattedAddress || '',
+    address_components: place.addressComponents || [],
+    geometry: {
+      location: {
+        lat: place.location?.latitude ?? 0,
+        lng: place.location?.longitude ?? 0,
+      },
+    },
+    types: place.types || [],
+    primary_type: place.primaryType,
+    rating: place.rating,
+    user_ratings_total: place.userRatingCount,
+    business_status: place.businessStatus,
+    website: place.websiteUri,
+    phone: place.nationalPhoneNumber || place.internationalPhoneNumber,
+    google_maps_url: place.googleMapsUri,
   }
 }
 
 /**
- * Récupère les détails complets d'un lieu (téléphone, site web, etc.)
+ * Convertit un lieu Google Places en format exploitable par LeadHunter
+ * (toutes les données viennent déjà de Text Search, aucun appel réseau)
  */
-export async function getPlaceDetails(placeId: string): Promise<PlaceDetailsResult | null> {
-  const apiKey = process.env.GOOGLE_MAPS_API_KEY
-  if (!apiKey) {
-    throw new Error('GOOGLE_MAPS_API_KEY non configurée')
-  }
-
-  const url = new URL('https://maps.googleapis.com/maps/api/place/details/json')
-  url.searchParams.set('place_id', placeId)
-  // Champs nécessaires uniquement (pour optimiser le coût API)
-  url.searchParams.set(
-    'fields',
-    'place_id,name,formatted_address,formatted_phone_number,international_phone_number,website,url,geometry,types,rating,user_ratings_total,business_status'
-  )
-  url.searchParams.set('language', 'fr')
-  url.searchParams.set('key', apiKey)
-
-  const response = await fetch(url.toString())
-
-  if (!response.ok) {
-    console.error(`Place Details API error: ${response.status} for place_id: ${placeId}`)
-    return null
-  }
-
-  const data: PlaceDetailsResponse = await response.json()
-
-  if (data.status !== 'OK') {
-    console.warn(`Place Details status: ${data.status} for place_id: ${placeId}`)
-    return null
-  }
-
-  return data.result
-}
-
-/**
- * Enrichit un lieu Google Places avec ses détails complets
- * et le convertit en format exploitable par LeadHunter
- */
-export async function enrichGooglePlace(
-  place: PlaceSearchResult
-): Promise<GooglePlaceEnriched> {
-  // Récupérer les détails (téléphone, site web précis)
-  const details = await getPlaceDetails(place.place_id)
-
+export function enrichGooglePlace(place: PlaceSearchResult): GooglePlaceEnriched {
   const { city, postal_code, street } = parseAddressComponents(
-    details?.formatted_address || place.formatted_address
+    place.formatted_address,
+    place.address_components
   )
 
-  const presence = classifyWebsiteUrl(details?.website)
+  const presence = classifyWebsiteUrl(place.website)
   const website = presence.website
-  const phone =
-    details?.formatted_phone_number ||
-    details?.international_phone_number ||
-    null
 
   return {
     place_id: place.place_id,
-    name: details?.name || place.name,
+    name: place.name,
     address: street,
     city,
     postal_code,
-    phone,
+    phone: place.phone || null,
     website,
     has_website: !!website,
     web_presence: presence.presence,
     social_url: presence.socialUrl,
-    coordinates: {
-      lat: details?.geometry?.location?.lat || place.geometry.location.lat,
-      lng: details?.geometry?.location?.lng || place.geometry.location.lng,
-    },
-    types: details?.types || place.types,
-    sector: googleTypesToOurSector(details?.types || place.types),
-    google_maps_url: details?.url || '',
-    rating: details?.rating ?? place.rating ?? null,
-    reviews_count: details?.user_ratings_total ?? place.user_ratings_total ?? null,
+    coordinates: place.geometry.location,
+    types: place.types,
+    sector: googleTypesToOurSector(place.types, place.primary_type),
+    google_maps_url: place.google_maps_url || '',
+    rating: place.rating ?? null,
+    reviews_count: place.user_ratings_total ?? null,
   }
 }
 
@@ -395,34 +418,15 @@ export async function searchAndEnrichGooglePlaces(params: {
 
     if (places.length === 0) break
 
-    // Traiter chaque lieu (jusqu'à la limite) — appels parallèles par batch de 5
     const toProcess = places
       .slice(0, maxResults - fetchedCount)
       .filter((p) => p.business_status !== 'CLOSED_PERMANENTLY')
-
-    const BATCH_SIZE = 5
-    for (let i = 0; i < toProcess.length; i += BATCH_SIZE) {
-      const batch = toProcess.slice(i, i + BATCH_SIZE)
-      const results = await Promise.allSettled(batch.map((p) => enrichGooglePlace(p)))
-      for (const result of results) {
-        if (result.status === 'fulfilled') {
-          enrichedPlaces.push(result.value)
-        } else {
-          console.warn('Erreur enrichissement:', result.reason)
-        }
-      }
-      // Petite pause entre les batches pour respecter les rate limits
-      if (i + BATCH_SIZE < toProcess.length) {
-        await new Promise((resolve) => setTimeout(resolve, 300))
-      }
-    }
+    enrichedPlaces.push(...toProcess.map(enrichGooglePlace))
 
     fetchedCount += toProcess.length
 
     if (!nextPageToken || fetchedCount >= maxResults) break
 
-    // Google impose une pause entre les pages (2 secondes minimum)
-    await new Promise((resolve) => setTimeout(resolve, 2000))
     pageToken = nextPageToken
   }
 

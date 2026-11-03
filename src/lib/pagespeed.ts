@@ -23,6 +23,7 @@ interface LighthouseAudit {
   score: number | null
   displayValue?: string
   numericValue?: number
+  details?: { type?: string; data?: string }
 }
 
 interface PageSpeedResponse {
@@ -62,6 +63,8 @@ interface PageSpeedResponse {
 export async function analyzeWebsite(url: string): Promise<{
   success: boolean
   data?: Partial<WebsiteAudit>
+  // Capture mobile de la page (data URI JPEG), à stocker à part : ce n'est pas une colonne
+  screenshot?: string
   error?: string
 }> {
   try {
@@ -235,8 +238,11 @@ export async function analyzeWebsite(url: string): Promise<{
       ? Math.round(avgScore.reduce((a, b) => a + b, 0) / avgScore.length)
       : 50
 
+    const screenshot = audits['final-screenshot']?.details?.data
+
     return {
       success: true,
+      screenshot,
       data: {
         url: lighthouse.finalUrl,
         performance_score: performanceScore,
@@ -384,6 +390,7 @@ export function scoreProspectFromAudit(
     isMobileFriendly: audit.is_mobile_friendly,
     isOutdated: audit.is_outdated,
     copyrightYear: audit.copyright_year,
+    designDatedScore: audit.design_score,
     issuesCount: audit.issues?.filter((issue) => issue.severity !== 'info').length,
     googleReviewsCount: company?.google_reviews_count,
     googleRating: company?.google_rating,

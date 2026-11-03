@@ -132,27 +132,13 @@ export async function POST(request: NextRequest) {
 
       if (!nextPageToken || newPlaces.length >= maxResults) break
 
-      await new Promise((resolve) => setTimeout(resolve, 2000))
       pageToken = nextPageToken
     }
 
     console.log(`📊 ${newPlaces.length} nouvelles fiches, ${skippedCount} déjà en base`)
 
-    // 3. Enrichir uniquement les nouvelles fiches (Place Details — coûteux)
-    const enrichedPlaces: GooglePlaceEnriched[] = []
-    const BATCH_SIZE = 5
-
-    for (let i = 0; i < newPlaces.length; i += BATCH_SIZE) {
-      const batch = newPlaces.slice(i, i + BATCH_SIZE)
-      const results = await Promise.allSettled(batch.map((p) => enrichGooglePlace(p)))
-      for (const result of results) {
-        if (result.status === 'fulfilled') enrichedPlaces.push(result.value)
-        else console.warn('Erreur enrichissement:', result.reason)
-      }
-      if (i + BATCH_SIZE < newPlaces.length) {
-        await new Promise((resolve) => setTimeout(resolve, 300))
-      }
-    }
+    // 3. Convertir les nouvelles fiches (Text Search New renvoie déjà site web et téléphone)
+    const enrichedPlaces: GooglePlaceEnriched[] = newPlaces.map(enrichGooglePlace)
 
     const withWebsite = enrichedPlaces.filter((p) => p.has_website).length
     const withoutWebsite = enrichedPlaces.filter((p) => !p.has_website).length

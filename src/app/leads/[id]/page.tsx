@@ -514,7 +514,41 @@ export default function LeadDetailPage() {
                       <p className="text-xs text-zinc-500">CMS</p>
                     </div>
                   </div>
-                  
+
+                  {/* Capture + avis design (IA) */}
+                  {(audit.screenshot_url || audit.design_score) && (
+                    <div className="flex gap-4 p-4 bg-zinc-800/60 rounded-lg mb-6">
+                      {audit.screenshot_url && (
+                        <a href={audit.screenshot_url} target="_blank" rel="noreferrer" className="shrink-0">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={audit.screenshot_url}
+                            alt={`Capture du site de ${lead.name}`}
+                            className="w-28 rounded-md border border-white/[0.08]"
+                          />
+                        </a>
+                      )}
+                      {audit.design_score ? (
+                        <div className="min-w-0">
+                          <p className="text-xs text-zinc-500 mb-1">Design (avis IA)</p>
+                          <p className={`font-semibold ${audit.design_score >= 7 ? 'text-red-400' : audit.design_score >= 5 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                            {audit.design_score >= 7 ? 'Daté' : audit.design_score >= 5 ? 'Vieillissant' : 'Moderne'} · {audit.design_score}/10
+                          </p>
+                          {audit.design_verdict && <p className="text-sm text-zinc-300 mt-1">{audit.design_verdict}</p>}
+                          {audit.design_reasons && audit.design_reasons.length > 0 && (
+                            <ul className="mt-2 space-y-1 text-xs text-zinc-400 list-disc pl-4">
+                              {audit.design_reasons.map((reason, i) => <li key={i}>{reason}</li>)}
+                            </ul>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-zinc-500 self-center">
+                          Avis design indisponible (ajoutez ANTHROPIC_API_KEY puis relancez l&apos;audit)
+                        </p>
+                      )}
+                    </div>
+                  )}
+
                   {/* Issues */}
                   {audit.issues.length > 0 && (
                     <div>
@@ -695,7 +729,7 @@ export default function LeadDetailPage() {
                     <p className="text-blue-400">💡 Suggéré: Relancer dans 3-5 jours</p>
                   )}
                   {lead.website && !lead.email && (
-                    <p className="text-amber-400">💡 Suggéré: Enrichir l'email du site web</p>
+                    <p className="text-amber-400">💡 Suggéré: Enrichir l&apos;email du site web</p>
                   )}
                   {!lead.email && !lead.website && (
                     <p className="text-zinc-500">⚠️ Infos à compléter (email ou site)</p>

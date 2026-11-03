@@ -23,6 +23,8 @@ import {
   Inbox,
   Combine,
   CalendarCheck,
+  ListChecks,
+  Map as MapIcon,
 } from 'lucide-react'
 
 const navigationGroups = [
@@ -37,6 +39,8 @@ const navigationGroups = [
     label: 'Prospection',
     items: [
       { name: 'Leads', href: '/leads', icon: Users },
+      { name: 'Tri', href: '/triage', icon: ListChecks },
+      { name: 'Carte', href: '/map', icon: MapIcon },
       { name: 'Campagnes', href: '/campaigns', icon: Send },
       { name: 'Inbox', href: '/inbox', icon: Inbox },
       { name: 'Scanner', href: '/scanner', icon: Radar },

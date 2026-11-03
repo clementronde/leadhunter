@@ -38,3 +38,20 @@ ALTER TABLE outreach_settings
 
 CREATE INDEX IF NOT EXISTS companies_user_status_score_idx
   ON companies (user_id, status, prospect_score DESC);
+
+-- Note "design daté" par IA à partir de la capture d'écran
+ALTER TABLE website_audits
+  ADD COLUMN IF NOT EXISTS design_score INTEGER CHECK (design_score BETWEEN 1 AND 10),
+  ADD COLUMN IF NOT EXISTS design_verdict TEXT,
+  ADD COLUMN IF NOT EXISTS design_reasons JSONB NOT NULL DEFAULT '[]';
+
+-- Captures d'écran des sites (bucket public, écrit par le serveur avec la clé service)
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('screenshots', 'screenshots', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- File de validation au clavier : lead déjà trié (gardé ou écarté)
+ALTER TABLE companies
+  ADD COLUMN IF NOT EXISTS triaged_at TIMESTAMPTZ;
+CREATE INDEX IF NOT EXISTS companies_untriaged_idx
+  ON companies (user_id, prospect_score DESC) WHERE triaged_at IS NULL AND status = 'new';

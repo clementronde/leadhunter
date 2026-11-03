@@ -685,7 +685,7 @@ function ScannerContent() {
                     {`GOOGLE_MAPS_API_KEY=votre_cle_api_google`}
                   </pre>
                   <p className="mt-2 text-xs text-red-300">
-                    Assurez-vous que <strong>Places API</strong> est activée dans Google Cloud Console.
+                    Assurez-vous que <strong>Places API (New)</strong> est activée dans Google Cloud Console.
                   </p>
                 </div>
               )}
