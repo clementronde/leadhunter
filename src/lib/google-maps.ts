@@ -38,9 +38,9 @@ export interface PlaceSearchResult {
 }
 
 interface AddressComponent {
-  longText: string
-  shortText: string
-  types: string[]
+  longText?: string
+  shortText?: string
+  types?: string[]
 }
 
 interface NewPlace {
@@ -231,7 +231,7 @@ function parseAddressComponents(formattedAddress: string, components: AddressCom
   street: string
 } {
   // Adresse structurée de l'API New quand elle est complète
-  const component = (type: string) => components.find((c) => c.types.includes(type))?.longText
+  const component = (type: string) => components.find((c) => c.types?.includes(type))?.longText
   const componentCity = component('locality') || component('postal_town')
   const componentPostal = component('postal_code')
   if (componentCity && componentPostal) {

@@ -143,7 +143,15 @@ export async function POST(request: NextRequest) {
       const firstPages: PlaceSearchResult[][] = []
       for (const category of categories) {
         if (newPlaces.length >= maxResults) break
-        const { places } = await searchGooglePlaces({ query: category, location: location.trim() })
+        let places: PlaceSearchResult[] = []
+        try {
+          places = (await searchGooglePlaces({ query: category, location: location.trim() })).places
+        } catch (err) {
+          // Une catégorie en échec ne doit pas faire échouer tout le scan (sauf clé/quota)
+          if (err instanceof Error && /refusée|Quota/.test(err.message)) throw err
+          console.warn(`Recherche "${category}" ignorée:`, err)
+          continue
+        }
         firstPages.push(places)
         takeNew(places, perCategory)
       }
