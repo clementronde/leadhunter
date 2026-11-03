@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, Button, Skeleton } from '@/co
 import { supabase } from '@/lib/supabase'
 import { leadsApi } from '@/lib/api'
 import { buildPersonalizedReason } from '@/lib/email-templates'
-import { cn, getScoreColor, sectorLabels, timeAgo } from '@/lib/utils'
+import { cn, getScoreColor, pickAudit, sectorLabels, timeAgo } from '@/lib/utils'
 import { webPresenceLabels } from '@/lib/web-presence'
 import type { Company, LeadStatus } from '@/types'
 import {
@@ -34,8 +34,8 @@ const EMPTY_SECTIONS: Sections = { replies: [], engaged: [], toCall: [], toEmail
 const LEAD_SELECT = '*, website_audits(*)'
 
 function toCompany(row: Record<string, unknown>): Company {
-  const audits = row.website_audits as Company['audit'][] | undefined
-  return { ...(row as unknown as Company), audit: audits?.[0] ?? null, notes: [] }
+  const audit = pickAudit(row.website_audits as Company['audit'] | Company['audit'][] | undefined)
+  return { ...(row as unknown as Company), audit, notes: [] }
 }
 
 export default function TodayPage() {

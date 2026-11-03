@@ -91,24 +91,26 @@ export async function analyzeWebsite(url: string): Promise<{
       apiUrl.searchParams.set('key', process.env.PAGESPEED_API_KEY)
     }
 
-    // Essayer jusqu'à 3 fois avec backoff progressif
+    // PageSpeed mobile prend souvent 25 à 45 s : 2 tentatives de 55 s max
     let response: Response | null = null
     let lastError = ''
-    for (let attempt = 1; attempt <= 3; attempt++) {
+    for (let attempt = 1; attempt <= 2; attempt++) {
       try {
         response = await fetch(apiUrl.toString(), {
           headers: { 'Accept': 'application/json' },
-          signal: AbortSignal.timeout(22000), // 22s max par tentative
+          signal: AbortSignal.timeout(55000),
         })
         if (response.ok) break
         lastError = `HTTP ${response.status}`
-        console.warn(`PageSpeed tentative ${attempt}/3 échouée: ${lastError}`)
+        console.warn(`PageSpeed tentative ${attempt}/2 échouée: ${lastError} (${normalizedUrl})`)
+        // 400 = site injoignable ou URL refusée : inutile de réessayer
+        if (response.status >= 400 && response.status < 500 && response.status !== 429) break
       } catch (e) {
         lastError = e instanceof Error ? e.message : 'timeout'
-        console.warn(`PageSpeed tentative ${attempt}/3 échouée: ${lastError}`)
+        console.warn(`PageSpeed tentative ${attempt}/2 échouée: ${lastError} (${normalizedUrl})`)
         response = null
       }
-      if (attempt < 3) await new Promise((r) => setTimeout(r, 2000 * attempt))
+      if (attempt < 2) await new Promise((r) => setTimeout(r, 2000))
     }
 
     if (!response?.ok) {

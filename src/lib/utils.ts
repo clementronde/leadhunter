@@ -188,6 +188,15 @@ export const severityColors: Record<IssueSeverity, string> = {
 // Date helpers
 // ============================================
 
+/**
+ * Audit embarqué par Supabase : website_audits a UNIQUE(company_id), donc PostgREST
+ * renvoie un objet (relation 1-1) et non un tableau. On accepte les deux formes.
+ */
+export function pickAudit<T>(embedded: T | T[] | null | undefined): T | null {
+  if (Array.isArray(embedded)) return embedded[0] ?? null
+  return embedded ?? null
+}
+
 /** Délai avant relance après un premier contact sans réponse */
 export const FOLLOWUP_DELAY_DAYS = 7
 

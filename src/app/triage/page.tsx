@@ -8,7 +8,7 @@ import { Header } from '@/components/layout'
 import { Card, CardContent, Button, Skeleton } from '@/components/ui'
 import { supabase } from '@/lib/supabase'
 import { leadsApi } from '@/lib/api'
-import { cn, getScoreColor, sectorLabels } from '@/lib/utils'
+import { cn, getScoreColor, pickAudit, sectorLabels } from '@/lib/utils'
 import { webPresenceLabels } from '@/lib/web-presence'
 import type { Company, UpdateCompanyInput } from '@/types'
 import {
@@ -59,8 +59,8 @@ const cardVariants = {
 }
 
 function toCompany(row: Record<string, unknown>): Company {
-  const audits = row.website_audits as Company['audit'][] | undefined
-  return { ...(row as unknown as Company), audit: audits?.[0] ?? null, notes: [] }
+  const audit = pickAudit(row.website_audits as Company['audit'] | Company['audit'][] | undefined)
+  return { ...(row as unknown as Company), audit, notes: [] }
 }
 
 export default function TriagePage() {

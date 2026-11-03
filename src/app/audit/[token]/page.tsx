@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import { getLighthouseColor } from '@/lib/utils'
+import { getLighthouseColor, pickAudit } from '@/lib/utils'
 import { AlertTriangle, CheckCircle, Globe, Gauge, Shield, Smartphone } from 'lucide-react'
 
 export default async function PublicAuditPage({ params }: { params: Promise<{ token: string }> }) {
@@ -22,7 +22,7 @@ export default async function PublicAuditPage({ params }: { params: Promise<{ to
     )
   }
 
-  const audit = lead.website_audits?.[0]
+  const audit = pickAudit(lead.website_audits)
 
   return (
     <main className="min-h-screen bg-[#09090b] px-6 py-12 text-white">

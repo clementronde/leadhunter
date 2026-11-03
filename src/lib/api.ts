@@ -10,21 +10,60 @@ import {
   CreateNoteInput,
   PaginatedResponse,
   LeadStatus,
-  Sector
+  Sector,
+  LeadSegment
 } from '@/types'
+import { pickAudit } from './utils'
 
 // ============================================
 // Leads / Companies API
 // ============================================
+
+// ============================================
+// Sections de la page Leads
+// ============================================
+// - no_site  : pas de vrai site (rien, réseau social ou annuaire)
+// - redesign : site audité, vieux ou moche (techno datée, copyright ancien, design jugé daté par l'IA)
+//              ou pas adapté au mobile
+// - seo      : site audité récent et propre : à référencer / maintenir
+// - to_audit : site pas encore audité
+function segmentSelect(segment?: LeadSegment, countOnly = false): string {
+  if (segment === 'redesign' || segment === 'seo') return countOnly ? 'id, website_audits!inner(id)' : '*, website_audits!inner(*)'
+  if (segment === 'to_audit') return countOnly ? 'id, website_audits(id)' : '*, website_audits(*)'
+  return countOnly ? 'id' : '*, website_audits(*)'
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function applySegment<Q extends { eq: any; or: any; is: any }>(query: Q, segment?: LeadSegment): Q {
+  switch (segment) {
+    case 'no_site':
+      return query.eq('has_website', false)
+    case 'redesign':
+      return query
+        .eq('has_website', true)
+        .or('is_outdated.eq.true,is_mobile_friendly.eq.false', { referencedTable: 'website_audits' })
+    case 'seo':
+      return query
+        .eq('has_website', true)
+        .eq('website_audits.is_outdated', false)
+        .eq('website_audits.is_mobile_friendly', true)
+    case 'to_audit':
+      return query.eq('has_website', true).is('website_audits', null)
+    default:
+      return query
+  }
+}
+
 export const leadsApi = {
   async getAll(
     filters?: LeadFilters,
     page = 1,
     perPage = 20
   ): Promise<PaginatedResponse<Company>> {
-    let query = supabase
-      .from('companies')
-      .select('*, website_audits(*)', { count: 'exact' })
+    let query = applySegment(
+      supabase.from('companies').select(segmentSelect(filters?.segment), { count: 'exact' }),
+      filters?.segment
+    )
 
     if (filters?.search) {
       query = query.or(`name.ilike.%${filters.search}%,city.ilike.%${filters.search}%`)
@@ -62,9 +101,9 @@ export const leadsApi = {
     if (error) throw error
 
     return {
-      data: (data || []).map(d => ({
+      data: ((data || []) as unknown as (Company & { website_audits?: Company['audit'] | Company['audit'][] })[]).map(d => ({
         ...d,
-        audit: d.website_audits?.[0] || null,
+        audit: pickAudit(d.website_audits),
         notes: []
       })),
       total: count || 0,
@@ -72,6 +111,19 @@ export const leadsApi = {
       per_page: perPage,
       total_pages: Math.ceil((count || 0) / perPage)
     }
+  },
+
+  /** Nombre de leads par section (onglets de la page Leads) */
+  async getSegmentCounts(): Promise<Record<LeadSegment, number>> {
+    const segments: LeadSegment[] = ['no_site', 'redesign', 'seo', 'to_audit']
+    const counts = await Promise.all(segments.map(async (segment) => {
+      const { count } = await applySegment(
+        supabase.from('companies').select(segmentSelect(segment, true), { count: 'exact', head: true }),
+        segment
+      )
+      return [segment, count ?? 0] as const
+    }))
+    return Object.fromEntries(counts) as Record<LeadSegment, number>
   },
 
   async getById(id: string): Promise<Company | null> {
@@ -85,7 +137,7 @@ export const leadsApi = {
 
     return data ? {
       ...data,
-      audit: data.website_audits?.[0] || null,
+      audit: pickAudit(data.website_audits),
       notes: data.notes || []
     } : null
   },

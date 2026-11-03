@@ -45,6 +45,8 @@ export async function runAuditForCompany({
       result.data.design_score = review.dated_score
       result.data.design_verdict = review.verdict
       result.data.design_reasons = review.reasons
+      // Jugé daté par l'IA : le lead passe dans la section Refonte
+      if (review.dated_score >= 6) result.data.is_outdated = true
       if (review.dated_score >= 7) {
         result.data.issues = [
           ...(result.data.issues ?? []),

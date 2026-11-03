@@ -348,7 +348,11 @@ export interface LeadFilters {
   max_score?: number
   needs_followup?: boolean
   sort?: 'recent' | 'score'
+  segment?: LeadSegment
 }
+
+/** Sections de la page Leads */
+export type LeadSegment = 'no_site' | 'redesign' | 'seo' | 'to_audit'
 
 // ============================================
 // Pagination

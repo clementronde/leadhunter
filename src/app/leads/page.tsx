@@ -7,7 +7,7 @@ import { LeadsTable, LeadsFilters, LeadCard, CsvImport } from '@/components/lead
 import { Card, Button, Skeleton, UpgradeModal, ProGate } from '@/components/ui'
 import { leadsApi } from '@/lib/api'
 import { exportLeadsToXLSX, exportLeadsToCSV, FREE_CSV_LIMIT } from '@/lib/export'
-import { Company, LeadFilters, LeadStatus, OutreachSettings } from '@/types'
+import { Company, LeadFilters, LeadSegment, LeadStatus, OutreachSettings } from '@/types'
 import { usePlan } from '@/hooks/usePlan'
 import { applyTemplate, CustomTemplate, loadTemplates, TemplateId } from '@/lib/email-templates'
 import {
@@ -28,7 +28,6 @@ import {
   Bell,
   AtSign,
   Gauge,
-  Play,
   Send,
 } from 'lucide-react'
 
@@ -469,6 +468,17 @@ function DueEmailsModal({ onClose }: { onClose: () => void }) {
 }
 
 // ============================================
+// Sections : sans site / refonte / SEO / à auditer
+// ============================================
+const SEGMENTS: { id: LeadSegment | 'all'; label: string; hint: string }[] = [
+  { id: 'all', label: 'Tous', hint: 'Tous vos leads' },
+  { id: 'no_site', label: 'Sans site', hint: 'Création de site' },
+  { id: 'redesign', label: 'Refonte', hint: 'Site vieux, daté ou pas mobile' },
+  { id: 'seo', label: 'SEO / maintenance', hint: 'Site récent à référencer' },
+  { id: 'to_audit', label: 'À auditer', hint: 'Site pas encore analysé' },
+]
+
+// ============================================
 // Leads Content
 // ============================================
 function LeadsContent() {
@@ -485,8 +495,8 @@ function LeadsContent() {
   const [loading, setLoading] = useState(true)
   const [exporting, setExporting] = useState(false)
   const [bulkEnriching, setBulkEnriching] = useState(false)
-  const [queueingAudits, setQueueingAudits] = useState(false)
-  const [processingAudits, setProcessingAudits] = useState(false)
+  const [auditing, setAuditing] = useState<{ done: number; total: number } | null>(null)
+  const [segmentCounts, setSegmentCounts] = useState<Record<LeadSegment, number> | null>(null)
   const [actionBanner, setActionBanner] = useState<{ tone: 'success' | 'error'; message: string } | null>(null)
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table')
   const [pagination, setPagination] = useState({
@@ -503,12 +513,14 @@ function LeadsContent() {
     const hasWebsite = searchParams.get('has_website')
     const search = searchParams.get('search')
     const sort = searchParams.get('sort')
+    const segment = searchParams.get('segment')
 
     if (status) initial.status = status as LeadStatus
     if (priority) initial.priority = priority as LeadFilters['priority']
     if (hasWebsite) initial.has_website = hasWebsite === 'true'
     if (search) initial.search = search
     if (sort === 'score' || sort === 'recent') initial.sort = sort
+    if (segment && SEGMENTS.some((s) => s.id === segment)) initial.segment = segment as LeadSegment
 
     return initial
   })
@@ -539,6 +551,14 @@ function LeadsContent() {
   useEffect(() => {
     loadLeads(1)
   }, [filters, loadLeads])
+
+  const loadSegmentCounts = useCallback(() => {
+    leadsApi.getSegmentCounts().then(setSegmentCounts).catch(() => setSegmentCounts(null))
+  }, [])
+
+  useEffect(() => {
+    loadSegmentCounts()
+  }, [loadSegmentCounts])
 
   const handleStatusChange = async (id: string, status: LeadStatus) => {
     try {
@@ -600,53 +620,50 @@ function LeadsContent() {
     }
   }
 
-  const handleQueueAudits = async () => {
+  // Audite les sites de la page affichée : PageSpeed + capture + avis design
+  const handleAuditSites = async () => {
     if (!canAudit) {
       setShowUpgradeModal(true)
       return
     }
-    setQueueingAudits(true)
+    const ids = leads.filter((lead) => lead.website && lead.has_website).map((lead) => lead.id)
+    if (ids.length === 0) return
     setActionBanner(null)
+    setAuditing({ done: 0, total: ids.length })
+    let ok = 0
+    let failed = 0
     try {
       const res = await fetch('/api/audit/queue', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ companyIds: leads.filter((lead) => lead.website).map((lead) => lead.id) }),
+        body: JSON.stringify({ companyIds: ids }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Erreur queue audit')
-      setActionBanner({ tone: 'success', message: `${data.created} audit${data.created > 1 ? 's' : ''} ajouté${data.created > 1 ? 's' : ''} à la queue.` })
-    } catch (err) {
-      setActionBanner({ tone: 'error', message: err instanceof Error ? err.message : 'Erreur queue audit' })
-    } finally {
-      setQueueingAudits(false)
-    }
-  }
+      if (!res.ok) throw new Error(data.error || 'Erreur audit')
 
-  const knownEmails = leads.filter((lead) => !!lead.email).length
-  const leadsWithWebsite = leads.filter((lead) => !!lead.website).length
-
-  const handleProcessAudits = async () => {
-    if (!canAudit) {
-      setShowUpgradeModal(true)
-      return
-    }
-    setProcessingAudits(true)
-    setActionBanner(null)
-    try {
-      const res = await fetch('/api/audit/queue', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ limit: 3 }),
+      for (let round = 0; round < Math.ceil(ids.length / 4) + 3; round++) {
+        const run = await fetch('/api/audit/queue', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ limit: 4 }),
+        })
+        if (!run.ok) break
+        const batch = await run.json() as { processed: number; results: { status: string }[] }
+        if (!batch.processed) break
+        ok += batch.results.filter((r) => r.status === 'completed').length
+        failed += batch.results.filter((r) => r.status !== 'completed').length
+        setAuditing({ done: Math.min(ok + failed, ids.length), total: ids.length })
+      }
+      setActionBanner({
+        tone: ok > 0 || failed === 0 ? 'success' : 'error',
+        message: `${ok} site${ok > 1 ? 's' : ''} audité${ok > 1 ? 's' : ''}${failed ? `, ${failed} en échec (site injoignable ou trop lent)` : ''}. Ouvrez une fiche pour voir la capture et l'avis design.`,
       })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Erreur traitement audit')
-      setActionBanner({ tone: 'success', message: `${data.processed} audit${data.processed > 1 ? 's' : ''} traité${data.processed > 1 ? 's' : ''}.` })
       loadLeads(pagination.page)
+      loadSegmentCounts()
     } catch (err) {
-      setActionBanner({ tone: 'error', message: err instanceof Error ? err.message : 'Erreur traitement audit' })
+      setActionBanner({ tone: 'error', message: err instanceof Error ? err.message : 'Erreur audit' })
     } finally {
-      setProcessingAudits(false)
+      setAuditing(null)
     }
   }
 
@@ -706,22 +723,30 @@ function LeadsContent() {
         </div>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Card className="p-4 border-white/[0.06] bg-zinc-900/70">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-zinc-500">Total</p>
-          <p className="mt-4 text-3xl font-semibold text-white">{loading ? '...' : pagination.total}</p>
-          <p className="mt-2 text-sm text-zinc-400">Leads affichés selon vos filtres</p>
-        </Card>
-        <Card className="p-4 border-white/[0.06] bg-zinc-900/70">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-zinc-500">Emails</p>
-          <p className="mt-4 text-3xl font-semibold text-white">{loading ? '...' : knownEmails}</p>
-          <p className="mt-2 text-sm text-zinc-400">Leads avec une adresse email connue</p>
-        </Card>
-        <Card className="p-4 border-white/[0.06] bg-zinc-900/70">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-zinc-500">Sites web</p>
-          <p className="mt-4 text-3xl font-semibold text-white">{loading ? '...' : leadsWithWebsite}</p>
-          <p className="mt-2 text-sm text-zinc-400">Leads avec un site web pour enrichissement</p>
-        </Card>
+      {/* Sections */}
+      <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
+        {SEGMENTS.map((segment) => {
+          const active = (filters.segment ?? 'all') === segment.id
+          const count = segment.id === 'all' ? null : segmentCounts?.[segment.id]
+          return (
+            <button
+              key={segment.id}
+              type="button"
+              onClick={() => setFilters((f) => ({ ...f, segment: segment.id === 'all' ? undefined : segment.id, has_website: undefined }))}
+              className={`text-left rounded-xl border p-4 transition-colors ${
+                active
+                  ? 'border-amber-500/50 bg-amber-500/10'
+                  : 'border-white/[0.06] bg-zinc-900/70 hover:border-white/[0.12]'
+              }`}
+            >
+              <p className={`text-sm font-semibold ${active ? 'text-amber-300' : 'text-zinc-200'}`}>{segment.label}</p>
+              <p className="mt-2 text-2xl font-semibold text-white tabular-nums">
+                {segment.id === 'all' ? (active && !loading ? pagination.total : '·') : count ?? '…'}
+              </p>
+              <p className="mt-1 text-xs text-zinc-500">{segment.hint}</p>
+            </button>
+          )
+        })}
       </div>
 
       {/* Filters */}
@@ -802,25 +827,13 @@ function LeadsContent() {
           <Button
             variant="outline"
             size="sm"
-            onClick={handleQueueAudits}
-            disabled={queueingAudits || loading || leads.every((lead) => !lead.website)}
+            onClick={handleAuditSites}
+            disabled={!!auditing || loading || leads.every((lead) => !lead.website || !lead.has_website)}
             className="flex items-center gap-2"
-            title="Ajouter les sites visibles à la queue d'audit"
+            title="PageSpeed, capture d'écran et avis design pour les sites de cette page"
           >
-            {queueingAudits ? <Loader2 className="h-4 w-4 animate-spin" /> : <Gauge className="h-4 w-4" />}
-            Queue audits
-          </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleProcessAudits}
-            disabled={processingAudits}
-            className="flex items-center gap-2"
-            title="Traiter 3 audits en attente"
-          >
-            {processingAudits ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-            Traiter audits
+            {auditing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Gauge className="h-4 w-4" />}
+            {auditing ? `Audit ${auditing.done}/${auditing.total}…` : 'Auditer les sites'}
           </Button>
 
           {/* Bulk contact */}
