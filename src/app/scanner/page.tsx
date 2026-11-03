@@ -108,6 +108,7 @@ function ScannerContent() {
   // Phase 2 : audits Speed Insights côté client
   const [auditPhase, setAuditPhase] = useState(false)
   const [auditProgress, setAuditProgress] = useState({ current: 0, total: 0 })
+  const [auditDone, setAuditDone] = useState<{ ok: number; failed: number } | null>(null)
 
   // Load scan history from Supabase on mount
   useEffect(() => {
@@ -125,7 +126,7 @@ function ScannerContent() {
   // Champs Google Maps
   const [gmQuery, setGmQuery] = useState(() => searchParams.get('query') || '')
   const [gmMaxResults, setGmMaxResults] = useState('20')
-  const [gmAuditWebsites, setGmAuditWebsites] = useState(false)
+  const [gmAuditWebsites, setGmAuditWebsites] = useState(true)
   const [showSuggestions, setShowSuggestions] = useState(false)
   const suggestionRef = useRef<HTMLDivElement>(null)
 
@@ -321,17 +322,38 @@ function ScannerContent() {
     if (toAudit.length === 0) return
 
     setAuditPhase(true)
+    setAuditDone(null)
     setAuditProgress({ current: 0, total: toAudit.length })
 
+    let ok = 0
+    let failed = 0
     try {
       const res = await fetch('/api/audit/queue', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ companyIds: toAudit.map((company) => company.id) }),
       })
-      if (res.ok) setAuditProgress({ current: toAudit.length, total: toAudit.length })
+      if (!res.ok) return
+
+      // Traiter la file tout de suite : PageSpeed + capture + avis design par IA
+      for (let round = 0; round < toAudit.length; round++) {
+        const run = await fetch('/api/audit/queue', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ limit: 2 }),
+        })
+        if (!run.ok) break
+        const data = await run.json() as { processed: number; results: { status: string }[] }
+        if (!data.processed) break
+        ok += data.results.filter((r) => r.status === 'completed').length
+        failed += data.results.filter((r) => r.status !== 'completed').length
+        setAuditProgress({ current: Math.min(ok + failed, toAudit.length), total: toAudit.length })
+        if (ok + failed >= toAudit.length) break
+      }
+      setAuditDone({ ok, failed })
     } catch (e) {
-      console.warn('Queue audit échouée', e)
+      console.warn('Audit après scan échoué', e)
+      setAuditDone({ ok, failed })
     } finally {
       setAuditPhase(false)
     }
@@ -784,7 +806,7 @@ function ScannerContent() {
                   <div className="flex items-center gap-3 mb-2">
                     <div className="h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin flex-shrink-0" />
                     <p className="text-sm font-medium text-blue-300">
-                      Ajout à la queue d&apos;audits... {auditProgress.current}/{auditProgress.total}
+                      Audit des sites : capture et avis design… {auditProgress.current}/{auditProgress.total}
                     </p>
                   </div>
                   <div className="h-1.5 bg-blue-500/20 rounded-full overflow-hidden">
@@ -794,8 +816,14 @@ function ScannerContent() {
                     />
                   </div>
                   <p className="text-xs text-blue-400 mt-1">
-                    Les audits seront traités côté serveur depuis la page Leads ou par cron.
+                    Environ 20 à 40 secondes par site. Si vous quittez la page, les audits restants seront faits demain matin.
                   </p>
+                </div>
+              )}
+              {!auditPhase && auditDone && auditDone.ok + auditDone.failed > 0 && (
+                <div className="mt-4 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-sm text-emerald-300">
+                  {auditDone.ok} site{auditDone.ok > 1 ? 's' : ''} audité{auditDone.ok > 1 ? 's' : ''} : captures et avis design visibles sur les fiches.
+                  {auditDone.failed > 0 && <span className="text-zinc-400"> {auditDone.failed} en échec (site injoignable ou trop lent).</span>}
                 </div>
               )}
 
