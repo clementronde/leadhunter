@@ -248,7 +248,11 @@ function buildFacts(ctx: DraftContext): string {
 export async function draftOutreachEmail(ctx: DraftContext, channel: 'email' | 'short' = 'email'): Promise<OutreachDraft> {
   const anthropic = getClient()
   const facts = buildFacts(ctx)
-  const shortSender = [ctx.sender.name, ctx.sender.agency].filter(Boolean).join(', ') || 'votre interlocuteur web'
+  // Nom + agence, sans doublon quand les deux sont identiques ("Artichaud studio, Artichaud Studio")
+  const senderParts = [ctx.sender.name, ctx.sender.agency].filter((part): part is string => !!part?.trim())
+  const shortSender = senderParts
+    .filter((part, i) => senderParts.findIndex((other) => other.trim().toLowerCase() === part.trim().toLowerCase()) === i)
+    .join(', ') || 'votre interlocuteur web'
   const prompt = channel === 'short'
     ? SHORT_PROMPT.replace('{facts}', facts).replace('{sender}', shortSender)
     : DRAFT_PROMPT.replace('{facts}', facts).replace('{signature}', ctx.sender.signature || '(pas de signature)')
