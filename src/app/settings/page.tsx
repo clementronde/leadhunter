@@ -86,9 +86,30 @@ export default function SettingsPage() {
 
     fetch('/api/outreach/settings')
       .then((r) => r.json())
-      .then((data) => setOutreachSettings(data.settings ?? {}))
+      .then((data) => {
+        setOutreachSettings(data.settings ?? {})
+        if (data.settings?.email_templates) setTemplates(loadTemplates(data.settings.email_templates))
+      })
       .catch(() => {})
   }, [])
+
+  const handleSaveTemplates = async () => {
+    saveTemplates(templates)
+    try {
+      const res = await fetch('/api/outreach/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...outreachSettings, email_templates: templates }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erreur sauvegarde')
+      setOutreachSettings(data.settings)
+      setTemplatesSaved(true)
+      setTimeout(() => setTemplatesSaved(false), 2000)
+    } catch (err) {
+      setOutreachError(err instanceof Error ? err.message : 'Erreur sauvegarde des templates')
+    }
+  }
 
   const handleSaveOutreach = async () => {
     setSavingOutreach(true)
@@ -564,11 +585,7 @@ export default function SettingsPage() {
 
             <div className="flex items-center gap-3">
               <Button
-                onClick={() => {
-                  saveTemplates(templates)
-                  setTemplatesSaved(true)
-                  setTimeout(() => setTemplatesSaved(false), 2000)
-                }}
+                onClick={handleSaveTemplates}
               >
                 {templatesSaved ? <CheckCircle className="h-4 w-4 text-emerald-400" /> : null}
                 {templatesSaved ? 'Sauvegardé !' : 'Sauvegarder les templates'}

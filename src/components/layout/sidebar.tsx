@@ -22,12 +22,16 @@ import {
   Send,
   Inbox,
   Combine,
+  CalendarCheck,
 } from 'lucide-react'
 
 const navigationGroups = [
   {
     label: null,
-    items: [{ name: 'Dashboard', href: '/', icon: LayoutDashboard }],
+    items: [
+      { name: "Aujourd'hui", href: '/today', icon: CalendarCheck },
+      { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+    ],
   },
   {
     label: 'Prospection',

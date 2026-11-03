@@ -10,6 +10,8 @@
  */
 
 import { Sector } from '@/types'
+import { getPriorityFromScore, scoreProspect } from './utils'
+import { classifyWebsiteUrl, type WebPresence } from './web-presence'
 
 // ============================================
 // Types internes Google Places API
@@ -81,6 +83,8 @@ export interface GooglePlaceEnriched {
   phone: string | null
   website: string | null
   has_website: boolean
+  web_presence: WebPresence
+  social_url: string | null
   coordinates: { lat: number; lng: number }
   types: string[]
   sector: Sector
@@ -161,7 +165,8 @@ const googleTypesToSector: Record<string, Sector> = {
   travel_agency: 'professional_services',
   bank: 'professional_services',
   finance: 'professional_services',
-  establishment: 'professional_services',
+  // Pas de mapping pour 'establishment' / 'point_of_interest' : presque toutes les fiches
+  // les portent, ils classaient à tort tout le monde en "Services"
 
   // Éducation
   school: 'education',
@@ -330,7 +335,8 @@ export async function enrichGooglePlace(
     details?.formatted_address || place.formatted_address
   )
 
-  const website = details?.website || null
+  const presence = classifyWebsiteUrl(details?.website)
+  const website = presence.website
   const phone =
     details?.formatted_phone_number ||
     details?.international_phone_number ||
@@ -345,6 +351,8 @@ export async function enrichGooglePlace(
     phone,
     website,
     has_website: !!website,
+    web_presence: presence.presence,
+    social_url: presence.socialUrl,
     coordinates: {
       lat: details?.geometry?.location?.lat || place.geometry.location.lat,
       lng: details?.geometry?.location?.lng || place.geometry.location.lng,
@@ -443,13 +451,24 @@ export function googlePlaceToCompany(place: GooglePlaceEnriched): {
   source: 'google_places'
   website: string | null
   has_website: boolean
+  web_presence: WebPresence
+  social_url: string | null
   google_rating: number | null
   google_reviews_count: number | null
   google_maps_url: string | null
   prospect_score: number
   priority: 'hot' | 'warm' | 'cold'
+  score_reasons: string[]
   status: 'new'
 } {
+  // Score initial ; les leads avec site seront affinés par l'audit
+  const { score, reasons } = scoreProspect({
+    hasWebsite: place.has_website,
+    webPresence: place.web_presence,
+    googleReviewsCount: place.reviews_count,
+    googleRating: place.rating,
+  })
+
   return {
     name: place.name,
     address: place.address || null,
@@ -461,12 +480,14 @@ export function googlePlaceToCompany(place: GooglePlaceEnriched): {
     source: 'google_places' as const,
     website: place.website,
     has_website: place.has_website,
+    web_presence: place.web_presence,
+    social_url: place.social_url,
     google_rating: place.rating,
     google_reviews_count: place.reviews_count,
     google_maps_url: place.google_maps_url || null,
-    // Score initial : sans site = 95 (hot), avec site = 50 (à affiner par l'audit)
-    prospect_score: place.has_website ? 50 : 95,
-    priority: place.has_website ? 'warm' : 'hot',
+    prospect_score: score,
+    priority: getPriorityFromScore(score),
+    score_reasons: reasons,
     status: 'new' as const,
   }
 }

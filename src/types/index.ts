@@ -49,6 +49,8 @@ export interface Company {
   // Website info
   website: string | null
   has_website: boolean
+  web_presence?: 'website' | 'social' | 'directory' | 'none' | 'unknown'
+  social_url?: string | null      // Page Facebook / Instagram / annuaire quand il n'y a pas de vrai site
 
   // Google Maps / Places data (présent si source === 'google_places')
   google_rating?: number | null         // Note Google (1-5)
@@ -59,11 +61,13 @@ export interface Company {
   // Scoring (0-100)
   prospect_score: number
   priority: Priority
-  
+  score_reasons?: string[]
+
   // CRM
   status: LeadStatus
   notes: Note[]
   last_contacted_at: string | null
+  replied_at?: string | null
   do_not_contact?: boolean
   opt_out_at?: string | null
   opt_out_reason?: string | null
@@ -89,6 +93,7 @@ export interface OutreachSettings {
   agency_phone: string | null
   signature: string | null
   reply_to: string | null
+  email_templates?: Record<string, { label?: string; subject?: string; body?: string }> | null
   created_at?: string
   updated_at?: string
 }
@@ -218,7 +223,9 @@ export interface WebsiteAudit {
   cms_version: string | null
   framework: string | null     // React, Vue, etc.
   is_outdated: boolean
-  
+  copyright_year?: number | null
+  site_signals?: import('@/lib/site-signals').SiteSignals
+
   // Visuel
   screenshot_url: string | null
   

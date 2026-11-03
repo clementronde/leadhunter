@@ -53,6 +53,7 @@ export async function POST(request: Request) {
     .from('companies')
     .select('id, website')
     .eq('user_id', user.id)
+    .eq('has_website', true)
     .not('website', 'is', null)
 
   if (parsed.data.companyIds?.length) {
@@ -64,7 +65,16 @@ export async function POST(request: Request) {
   const { data: companies, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  const jobs = (companies ?? []).map((company) => ({
+  // Ne pas empiler un 2e job pour un lead déjà en attente d'audit
+  const { data: pendingJobs } = await supabase
+    .from('audit_jobs')
+    .select('company_id')
+    .eq('user_id', user.id)
+    .in('status', ['pending', 'running'])
+    .in('company_id', (companies ?? []).map((company) => company.id))
+  const alreadyQueued = new Set((pendingJobs ?? []).map((job) => job.company_id))
+
+  const jobs = (companies ?? []).filter((company) => !alreadyQueued.has(company.id)).map((company) => ({
     user_id: user.id,
     company_id: company.id,
     url: company.website,

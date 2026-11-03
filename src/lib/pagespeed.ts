@@ -7,7 +7,8 @@
  */
 
 import { AuditIssue, WebsiteAudit } from '@/types'
-import { calculateProspectScore, getPriorityFromScore } from './utils'
+import { scoreProspect, type ScoreFactors } from './utils'
+import { analyzeSiteSignals, siteSignalsToIssues } from './site-signals'
 
 interface LighthouseCategory {
   id: string
@@ -70,6 +71,9 @@ export async function analyzeWebsite(url: string): Promise<{
       normalizedUrl = 'https://' + normalizedUrl
     }
 
+    // Signaux "site vieux" (HTML de la page d'accueil) en parallèle de PageSpeed
+    const signalsPromise = analyzeSiteSignals(normalizedUrl)
+
     // Construire l'URL de l'API
     const apiUrl = new URL('https://www.googleapis.com/pagespeedonline/v5/runPagespeed')
     apiUrl.searchParams.set('url', normalizedUrl)
@@ -113,41 +117,39 @@ export async function analyzeWebsite(url: string): Promise<{
     const categories = lighthouse.categories
     const audits = lighthouse.audits
 
-    // Extraire les scores (0-100)
-    const performanceScore = categories.performance?.score 
-      ? Math.round(categories.performance.score * 100) 
-      : null
-    const accessibilityScore = categories.accessibility?.score 
-      ? Math.round(categories.accessibility.score * 100) 
-      : null
-    const seoScore = categories.seo?.score 
-      ? Math.round(categories.seo.score * 100) 
-      : null
-    const bestPracticesScore = categories['best-practices']?.score 
-      ? Math.round(categories['best-practices'].score * 100) 
-      : null
+    // Extraire les scores (0-100) — attention : un score de 0 est un vrai score (site catastrophique)
+    const toPercent = (category?: LighthouseCategory) =>
+      typeof category?.score === 'number' ? Math.round(category.score * 100) : null
+    const performanceScore = toPercent(categories.performance)
+    const accessibilityScore = toPercent(categories.accessibility)
+    const seoScore = toPercent(categories.seo)
+    const bestPracticesScore = toPercent(categories['best-practices'])
 
     // Détecter HTTPS
     const isHttps = lighthouse.finalUrl.startsWith('https://')
 
-    // Détecter mobile-friendly
+    const signals = await signalsPromise
+
+    // Détecter mobile-friendly : audit viewport si présent, sinon le HTML, sinon on ne pénalise pas
     const viewportAudit = audits['viewport']
-    const isMobileFriendly = viewportAudit?.score === 1
+    const isMobileFriendly = typeof viewportAudit?.score === 'number'
+      ? viewportAudit.score === 1
+      : signals?.has_viewport ?? true
 
     // Temps de chargement (Speed Index en ms)
     const speedIndex = audits['speed-index']?.numericValue
     const loadTimeMs = speedIndex ? Math.round(speedIndex) : null
 
     // Détecter les technologies (via stackPacks)
-    let cms: string | null = null
-    let cmsVersion: string | null = null
+    let cms: string | null = signals?.cms ?? null
+    const cmsVersion: string | null = signals?.cms_version ?? null
     let framework: string | null = null
-    let isOutdated = false
+    const isOutdated = signals?.is_outdated ?? false
 
     if (lighthouse.stackPacks) {
       for (const pack of lighthouse.stackPacks) {
         const packId = pack.id.toLowerCase()
-        if (['wordpress', 'drupal', 'joomla', 'wix', 'squarespace', 'shopify', 'magento', 'prestashop'].includes(packId)) {
+        if (!cms && ['wordpress', 'drupal', 'joomla', 'wix', 'squarespace', 'shopify', 'magento', 'prestashop'].includes(packId)) {
           cms = pack.title
         }
         if (['react', 'vue', 'angular', 'next.js', 'nuxt', 'gatsby'].includes(packId)) {
@@ -157,7 +159,7 @@ export async function analyzeWebsite(url: string): Promise<{
     }
 
     // Construire la liste des problèmes
-    const issues: AuditIssue[] = []
+    const issues: AuditIssue[] = signals ? siteSignalsToIssues(signals) : []
 
     // Problème HTTPS
     if (!isHttps) {
@@ -248,6 +250,8 @@ export async function analyzeWebsite(url: string): Promise<{
         cms_version: cmsVersion,
         framework,
         is_outdated: isOutdated,
+        copyright_year: signals?.copyright_year ?? null,
+        site_signals: signals ?? undefined,
         issues,
         overall_score: overallScore,
         audited_at: new Date().toISOString()
@@ -365,16 +369,28 @@ export async function findWebsiteForCompany(companyName: string, city?: string):
 }
 
 /**
- * Calcule le score prospect à partir des données d'audit
+ * Calcule le score prospect à partir des données d'audit (et des avis Google du lead)
  */
-export function calculateProspectScoreFromAudit(audit: Partial<WebsiteAudit>): number {
-  return calculateProspectScore({
+export function scoreProspectFromAudit(
+  audit: Partial<WebsiteAudit>,
+  company?: { google_reviews_count?: number | null; google_rating?: number | null }
+): { score: number; reasons: string[] } {
+  const factors: ScoreFactors = {
     hasWebsite: true,
+    webPresence: 'website',
     performanceScore: audit.performance_score,
     seoScore: audit.seo_score,
     isHttps: audit.is_https,
     isMobileFriendly: audit.is_mobile_friendly,
     isOutdated: audit.is_outdated,
-    issuesCount: audit.issues?.length
-  })
+    copyrightYear: audit.copyright_year,
+    issuesCount: audit.issues?.filter((issue) => issue.severity !== 'info').length,
+    googleReviewsCount: company?.google_reviews_count,
+    googleRating: company?.google_rating,
+  }
+  return scoreProspect(factors)
+}
+
+export function calculateProspectScoreFromAudit(audit: Partial<WebsiteAudit>): number {
+  return scoreProspectFromAudit(audit).score
 }

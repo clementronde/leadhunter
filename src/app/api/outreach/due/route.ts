@@ -75,13 +75,19 @@ export async function POST(request: Request) {
       if (message.company_id) {
         const { data: company } = await supabase
           .from('companies')
-          .select('do_not_contact')
+          .select('do_not_contact, status, replied_at')
           .eq('id', message.company_id)
           .eq('user_id', user.id)
           .maybeSingle()
         if (company?.do_not_contact) {
           await supabase.from('email_messages').update({ status: 'cancelled', updated_at: now }).eq('id', message.id)
           results.push({ id: message.id, status: 'cancelled', error: 'Lead opt-out' })
+          continue
+        }
+        // Le prospect a répondu ou avance dans le pipeline : plus de relance automatique
+        if (message.followup_of && (company?.replied_at || ['meeting', 'proposal', 'won', 'lost'].includes(company?.status ?? ''))) {
+          await supabase.from('email_messages').update({ status: 'cancelled', updated_at: new Date().toISOString() }).eq('id', message.id)
+          results.push({ id: message.id, status: 'cancelled', error: 'Prospect a répondu' })
           continue
         }
       }

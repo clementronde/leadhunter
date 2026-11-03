@@ -21,6 +21,7 @@ import {
   timeAgo,
   severityColors
 } from '@/lib/utils'
+import { webPresenceLabels } from '@/lib/web-presence'
 import {
   ArrowLeft,
   Globe,
@@ -101,6 +102,16 @@ export default function LeadDetailPage() {
       setLead(updated)
     } catch (error) {
       console.error('Error updating status:', error)
+    }
+  }
+
+  const handleMarkReplied = async () => {
+    if (!lead) return
+    try {
+      const updated = await leadsApi.markReplied(lead.id)
+      setLead(updated)
+    } catch (error) {
+      console.error('Error marking reply:', error)
     }
   }
 
@@ -345,6 +356,12 @@ export default function LeadDetailPage() {
                         {lead.website.replace(/^https?:\/\//, '')}
                       </a>
                     )}
+                    {!lead.website && lead.social_url && (
+                      <a href={lead.social_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm text-amber-500 hover:text-amber-400">
+                        <ExternalLink className="h-4 w-4" />
+                        {lead.web_presence ? webPresenceLabels[lead.web_presence] : 'Page'} : {lead.social_url.replace(/^https?:\/\/(www\.)?/, '').slice(0, 40)}
+                      </a>
+                    )}
                     {googleMyBusinessUrl && (
                       <a
                         href={googleMyBusinessUrl}
@@ -357,6 +374,17 @@ export default function LeadDetailPage() {
                       </a>
                     )}
                   </div>
+
+                  {/* Pourquoi ce lead : à lire avant d'appeler */}
+                  {(lead.score_reasons?.length ?? 0) > 0 && (
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {lead.score_reasons!.map((reason) => (
+                        <span key={reason} className="rounded-full bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-400">
+                          {reason}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
               
@@ -382,6 +410,13 @@ export default function LeadDetailPage() {
                       <option key={value} value={value}>{label}</option>
                     ))}
                   </select>
+                  {lead.replied_at ? (
+                    <span className="text-xs text-emerald-400">A répondu · relances stoppées</span>
+                  ) : (
+                    <Button size="sm" variant="secondary" onClick={handleMarkReplied}>
+                      A répondu
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>

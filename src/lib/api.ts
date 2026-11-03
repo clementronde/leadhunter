@@ -145,6 +145,21 @@ export const leadsApi = {
     return updated
   },
 
+  // Le prospect a répondu : on stoppe les relances automatiques et on le garde en tête de liste
+  async markReplied(id: string): Promise<Company> {
+    const now = new Date().toISOString()
+    const updated = await this.update(id, { replied_at: now, last_contacted_at: now })
+
+    await supabase
+      .from('email_messages')
+      .update({ status: 'cancelled', updated_at: now })
+      .eq('company_id', id)
+      .eq('status', 'scheduled')
+      .not('followup_of', 'is', null)
+
+    return updated
+  },
+
   async addNote(input: CreateNoteInput): Promise<Note> {
     const { data, error } = await supabase
       .from('notes')

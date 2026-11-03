@@ -1,9 +1,16 @@
 /**
  * Service d'intégration avec l'API Sirene de l'INSEE v3.11
- * Documentation : https://api.insee.fr/catalogue/site/themes/wso2/subthemes/insee/pages/item-info.jag?name=Sirene&version=V3.11
- * 
- * Authentification : Clé API simple (Bearer token)
+ * Documentation : https://portail-api.insee.fr/
+ *
+ * Authentification : clé d'intégration (en-tête X-INSEE-Api-Key-Integration).
+ * L'ancienne passerelle (api.insee.fr/entreprises/sirene/V3.11 + Bearer) a été remplacée en 2024 ;
+ * INSEE_API_BASE permet de surcharger l'URL si l'INSEE la change à nouveau.
  */
+
+import { getPriorityFromScore, scoreProspect } from './utils'
+
+const SIRENE_API_BASE = (process.env.INSEE_API_BASE || 'https://api.insee.fr/api-sirene/3.11').replace(/\/$/, '')
+const UNVERIFIED_SCORE = scoreProspect({ hasWebsite: false, webPresence: 'unknown' }).score
 
 interface SireneEtablissement {
   siren: string
@@ -47,7 +54,8 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
   }
 
   return {
-    'Authorization': `Bearer ${apiKey}`,
+    // Portail API INSEE (depuis 2024) : clé passée dans cet en-tête
+    'X-INSEE-Api-Key-Integration': apiKey,
     'Accept': 'application/json',
   }
 }
@@ -97,7 +105,7 @@ export async function searchEtablissements(params: {
 
   console.log(`🔍 INSEE Query: ${query}`)
 
-  const url = new URL('https://api.insee.fr/entreprises/sirene/V3.11/siret')
+  const url = new URL(`${SIRENE_API_BASE}/siret`)
   url.searchParams.set('q', query)
   url.searchParams.set('nombre', nombre.toString())
   url.searchParams.set('debut', debut.toString())
@@ -130,7 +138,7 @@ export async function searchEtablissements(params: {
 export async function getEtablissementBySiret(siret: string): Promise<SireneEtablissement | null> {
   const headers = await getAuthHeaders()
 
-  const response = await fetch(`https://api.insee.fr/entreprises/sirene/V3.11/siret/${siret}`, {
+  const response = await fetch(`${SIRENE_API_BASE}/siret/${siret}`, {
     headers,
   })
 
@@ -283,6 +291,7 @@ export function etablissementToCompany(etab: SireneEtablissement): {
   source: 'sirene'
   website: string | null
   has_website: boolean
+  web_presence: 'website' | 'unknown'
   prospect_score: number
   priority: 'hot' | 'warm' | 'cold'
   status: 'new'
@@ -308,8 +317,10 @@ export function etablissementToCompany(etab: SireneEtablissement): {
     source: 'sirene' as const,
     website: null as string | null,
     has_website: false,
-    prospect_score: 95, // Sans site = score élevé par défaut
-    priority: 'hot' as const,
+    web_presence: 'unknown' as 'website' | 'unknown',
+    // Sirene ne sait rien du site web : score prudent tant que la présence web n'est pas vérifiée
+    prospect_score: UNVERIFIED_SCORE,
+    priority: getPriorityFromScore(UNVERIFIED_SCORE),
     status: 'new' as const,
   }
 }

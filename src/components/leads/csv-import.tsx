@@ -4,6 +4,8 @@ import { useState, useRef } from 'react'
 import { Upload, FileText, Check, X, Loader2, AlertTriangle } from 'lucide-react'
 import { leadsApi } from '@/lib/api'
 import { CreateCompanyInput } from '@/types'
+import { getPriorityFromScore, scoreProspect } from '@/lib/utils'
+import { classifyWebsiteUrl } from '@/lib/web-presence'
 
 interface ParsedRow {
   name: string
@@ -88,7 +90,9 @@ export function CsvImport({ onImported, onClose }: CsvImportProps) {
     let count = 0
     for (const row of rows) {
       try {
-        const hasWebsite = !!(row.website && row.website !== '')
+        const presence = classifyWebsiteUrl(row.website)
+        const hasWebsite = presence.presence === 'website'
+        const { score, reasons } = scoreProspect({ hasWebsite, webPresence: row.website ? presence.presence : 'unknown' })
         const input: CreateCompanyInput = {
           name: row.name,
           city: row.city,
@@ -100,10 +104,13 @@ export function CsvImport({ onImported, onClose }: CsvImportProps) {
           siret: null,
           sector: null,
           source: 'import',
-          website: row.website || null,
+          website: presence.website,
           has_website: hasWebsite,
-          prospect_score: hasWebsite ? 40 : 70,
-          priority: hasWebsite ? 'warm' : 'hot',
+          web_presence: row.website ? presence.presence : 'unknown',
+          social_url: presence.socialUrl,
+          prospect_score: score,
+          priority: getPriorityFromScore(score),
+          score_reasons: reasons,
           status: 'new',
           last_contacted_at: null,
         }

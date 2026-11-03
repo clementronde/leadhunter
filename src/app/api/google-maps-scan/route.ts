@@ -197,12 +197,15 @@ export async function POST(request: NextRequest) {
             source: company.source,
             website: company.website,
             has_website: company.has_website,
+            web_presence: company.web_presence,
+            social_url: company.social_url,
             google_place_id: place.place_id,
             google_rating: place.rating,
             google_reviews_count: place.reviews_count,
             google_maps_url: place.google_maps_url,
             prospect_score: company.prospect_score,
             priority: company.priority,
+            score_reasons: company.score_reasons,
             status: 'new',
           })
           .select('id')
@@ -221,7 +224,21 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 5. Enregistrer le scan
+    // 5. Mettre automatiquement en file d'audit les nouveaux leads qui ont un vrai site
+    const auditJobs = savedCompanies
+      .filter((company) => company.id && company.has_website && company.website)
+      .map((company) => ({
+        user_id: user.id,
+        company_id: company.id as string,
+        url: company.website as string,
+        status: 'pending',
+      }))
+    if (hasFullAccess && auditJobs.length > 0) {
+      const { error: queueError } = await supabase.from('audit_jobs').insert(auditJobs)
+      if (queueError) console.warn('Mise en file des audits impossible:', queueError.message)
+    }
+
+    // 6. Enregistrer le scan
     await supabase.from('search_scans').insert({
       user_id: user.id,
       query: `${query} - ${location}`,

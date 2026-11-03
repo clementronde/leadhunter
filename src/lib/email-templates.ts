@@ -2,7 +2,8 @@ import type { Company, OutreachSettings } from '@/types'
 
 /**
  * Gestion des templates email personnalisables
- * Stockés en localStorage — pas de migration SQL nécessaire
+ * Stockés en base (outreach_settings.email_templates) pour être partagés entre appareils ;
+ * le localStorage sert de cache / de repli si la base n'a encore rien.
  */
 
 const STORAGE_KEY = 'leadhunter:email_templates'
@@ -110,26 +111,36 @@ const SECTOR_COPY: Partial<Record<NonNullable<Company['sector']>, { pain: string
   },
 }
 
-export function loadTemplates(): Record<TemplateId, CustomTemplate> {
+export function loadTemplates(
+  saved?: Partial<Record<string, Partial<CustomTemplate>>> | null
+): Record<TemplateId, CustomTemplate> {
+  if (saved) return mergeTemplates(saved)
   if (typeof window === 'undefined') return DEFAULT_TEMPLATES
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return DEFAULT_TEMPLATES
-    const parsed = JSON.parse(raw)
-    // Merge with defaults to handle missing keys
-    return {
-      'sans-site': { ...DEFAULT_TEMPLATES['sans-site'], ...parsed['sans-site'] },
-      refonte: { ...DEFAULT_TEMPLATES.refonte, ...parsed.refonte },
-      generique: { ...DEFAULT_TEMPLATES.generique, ...parsed.generique },
-    }
+    return mergeTemplates(JSON.parse(raw))
   } catch {
     return DEFAULT_TEMPLATES
   }
 }
 
+function mergeTemplates(parsed: Partial<Record<string, Partial<CustomTemplate>>>): Record<TemplateId, CustomTemplate> {
+  // Merge with defaults to handle missing keys
+  return {
+    'sans-site': { ...DEFAULT_TEMPLATES['sans-site'], ...parsed['sans-site'] },
+    refonte: { ...DEFAULT_TEMPLATES.refonte, ...parsed.refonte },
+    generique: { ...DEFAULT_TEMPLATES.generique, ...parsed.generique },
+  }
+}
+
 export function saveTemplates(templates: Record<TemplateId, CustomTemplate>): void {
   if (typeof window === 'undefined') return
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(templates))
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(templates))
+  } catch {
+    // stockage indisponible (navigation privée…) : la base reste la source de vérité
+  }
 }
 
 export function applyTemplate(

@@ -207,7 +207,7 @@ function CampaignModal({ filters, onClose }: { filters: LeadFilters; onClose: ()
   const [creating, setCreating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [settings, setSettings] = useState<OutreachSettings | null>(null)
-  const templates = loadTemplates()
+  const templates = loadTemplates(settings?.email_templates)
 
   useEffect(() => {
     Promise.all([

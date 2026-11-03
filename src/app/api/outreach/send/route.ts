@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { requireUser } from '@/lib/server-auth'
 import { appendOptOutFooter, formatSender, sendEmail } from '@/lib/outreach-provider'
 import { assertCanContactEmail, assertDailySendLimit, normalizeEmail } from '@/lib/outreach-guards'
+import { buildAuditUrl, buildFollowup, buildSignature } from '@/lib/followups'
 
 const sendSchema = z.object({
   companyId: z.string().uuid(),
@@ -43,7 +44,7 @@ export async function POST(request: Request) {
 
   const { data: company } = await supabase
     .from('companies')
-    .select('id, do_not_contact')
+    .select('id, name, has_website, audit_share_token, do_not_contact')
     .eq('id', input.companyId)
     .eq('user_id', user.id)
     .single()
@@ -109,8 +110,13 @@ export async function POST(request: Request) {
       baseMessageId: message.id,
       recipientEmail: input.recipientEmail,
       senderEmail,
-      subject: `Relance - ${input.subject}`,
-      body: input.body,
+      followupContext: {
+        originalSubject: input.subject,
+        companyName: company.name,
+        hasWebsite: company.has_website,
+        auditUrl: buildAuditUrl(process.env.NEXT_PUBLIC_APP_URL || new URL(request.url).origin, company.audit_share_token),
+        signature: buildSignature(settings),
+      },
       templateId: input.templateId ?? null,
       startDate: scheduledDate,
       delays: input.followupDelays ?? [],
@@ -173,8 +179,13 @@ export async function POST(request: Request) {
       baseMessageId: message.id,
       recipientEmail: input.recipientEmail,
       senderEmail,
-      subject: `Relance - ${input.subject}`,
-      body: input.body,
+      followupContext: {
+        originalSubject: input.subject,
+        companyName: company.name,
+        hasWebsite: company.has_website,
+        auditUrl: buildAuditUrl(process.env.NEXT_PUBLIC_APP_URL || new URL(request.url).origin, company.audit_share_token),
+        signature: buildSignature(settings),
+      },
       templateId: input.templateId ?? null,
       startDate: new Date(),
       delays: input.followupDelays ?? [],
@@ -210,8 +221,7 @@ async function createFollowups({
   baseMessageId,
   recipientEmail,
   senderEmail,
-  subject,
-  body,
+  followupContext,
   templateId,
   startDate,
   delays,
@@ -222,15 +232,15 @@ async function createFollowups({
   baseMessageId: string
   recipientEmail: string
   senderEmail: string
-  subject: string
-  body: string
+  followupContext: Parameters<typeof buildFollowup>[2]
   templateId: string | null
   startDate: Date
   delays: number[]
 }) {
   if (delays.length === 0) return
 
-  const followups = delays.map((days) => {
+  const followups = delays.map((days, index) => {
+    const { subject, body } = buildFollowup(index, delays.length, followupContext)
     const scheduledAt = new Date(startDate)
     scheduledAt.setDate(scheduledAt.getDate() + days)
 

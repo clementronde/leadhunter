@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { searchEtablissements, etablissementToCompany } from '@/lib/insee'
-import { checkWebsiteExists, findWebsiteForCompany, analyzeWebsite, calculateProspectScoreFromAudit } from '@/lib/pagespeed'
-import { getPriorityFromScore } from '@/lib/utils'
+import { checkWebsiteExists, findWebsiteForCompany } from '@/lib/pagespeed'
+import { getPriorityFromScore, scoreProspect } from '@/lib/utils'
 import { z } from 'zod'
 import { rateLimit } from '@/lib/rate-limit'
 
@@ -144,7 +144,8 @@ export async function POST(request: NextRequest) {
         const checkResult = await checkWebsiteExists(website)
 
         if (checkResult.exists) {
-          company.prospect_score = checkResult.isHttps ? 50 : 65
+          company.web_presence = 'website'
+          company.prospect_score = scoreProspect({ hasWebsite: true, webPresence: 'website', isHttps: checkResult.isHttps }).score
           company.priority = getPriorityFromScore(company.prospect_score)
 
           if (!checkResult.isHttps) {
@@ -176,6 +177,7 @@ export async function POST(request: NextRequest) {
             source: company.source,
             website: company.website,
             has_website: company.has_website,
+            web_presence: company.web_presence,
             prospect_score: company.prospect_score,
             priority: company.priority,
             status: 'new',

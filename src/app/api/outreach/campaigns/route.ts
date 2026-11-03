@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { requireUser } from '@/lib/server-auth'
 import { assertDailySendLimit, normalizeEmail } from '@/lib/outreach-guards'
+import { buildAuditUrl, buildFollowup, buildSignature } from '@/lib/followups'
 
 const messageSchema = z.object({
   companyId: z.string().uuid(),
@@ -124,8 +125,28 @@ export async function POST(request: Request) {
   if (messagesError) return NextResponse.json({ error: messagesError.message }, { status: 500 })
 
   if (followupDelays.length > 0 && insertedMessages) {
+    const [{ data: companies }, { data: settings }] = await Promise.all([
+      supabase
+        .from('companies')
+        .select('id, name, has_website, audit_share_token')
+        .eq('user_id', user.id)
+        .in('id', insertedMessages.map((message) => message.company_id)),
+      supabase.from('outreach_settings').select('*').eq('user_id', user.id).maybeSingle(),
+    ])
+    const companiesById = new Map((companies ?? []).map((company) => [company.id, company]))
+    const signature = buildSignature(settings)
+    const origin = process.env.NEXT_PUBLIC_APP_URL || new URL(request.url).origin
+
     const followups = insertedMessages.flatMap((message) =>
-      followupDelays.map((days) => {
+      followupDelays.map((days, index) => {
+        const company = companiesById.get(message.company_id)
+        const { subject, body } = buildFollowup(index, followupDelays.length, {
+          originalSubject: message.subject,
+          companyName: company?.name ?? '',
+          hasWebsite: company?.has_website ?? false,
+          auditUrl: buildAuditUrl(origin, company?.audit_share_token),
+          signature,
+        })
         const followupDate = new Date(message.scheduled_at)
         followupDate.setDate(followupDate.getDate() + days)
 
@@ -134,8 +155,8 @@ export async function POST(request: Request) {
           campaign_id: campaign.id,
           company_id: message.company_id,
           recipient_email: message.recipient_email,
-          subject: `Relance - ${message.subject}`,
-          body: message.body,
+          subject,
+          body,
           template_id: message.template_id,
           status: 'scheduled',
           scheduled_at: followupDate.toISOString(),

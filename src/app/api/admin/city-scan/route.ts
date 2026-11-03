@@ -227,7 +227,7 @@ export async function POST(request: Request) {
           if (company.has_website) withSite++
           else withoutSite++
 
-          const { error } = await supabase.from('companies').insert({
+          const { data: inserted, error } = await supabase.from('companies').insert({
             user_id: user.id,
             name: company.name,
             address: company.address,
@@ -239,14 +239,29 @@ export async function POST(request: Request) {
             source: company.source,
             website: company.website,
             has_website: company.has_website,
+            web_presence: company.web_presence,
+            social_url: company.social_url,
             google_place_id: place.place_id,
             google_rating: place.rating,
             google_reviews_count: place.reviews_count,
             google_maps_url: place.google_maps_url,
             prospect_score: company.prospect_score,
             priority: company.priority,
+            score_reasons: company.score_reasons,
             status: 'new',
           })
+            .select('id')
+            .single()
+
+          if (!error && inserted && company.has_website && company.website) {
+            // Audit automatique en arrière-plan (cron)
+            await supabase.from('audit_jobs').insert({
+              user_id: user.id,
+              company_id: inserted.id,
+              url: company.website,
+              status: 'pending',
+            })
+          }
 
           if (!error) {
             created++

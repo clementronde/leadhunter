@@ -10,6 +10,14 @@ const settingsSchema = z.object({
   agency_phone: z.string().max(50).nullable().optional(),
   signature: z.string().max(2000).nullable().optional(),
   reply_to: z.string().email().nullable().optional().or(z.literal('')),
+  email_templates: z.record(
+    z.string().max(50),
+    z.object({
+      label: z.string().max(120).optional(),
+      subject: z.string().max(300).optional(),
+      body: z.string().max(10000).optional(),
+    })
+  ).nullable().optional(),
 })
 
 export async function GET() {
@@ -53,6 +61,8 @@ export async function PUT(request: Request) {
     agency_phone: input.agency_phone || null,
     signature: input.signature || null,
     reply_to: input.reply_to || null,
+    // Absent = on ne touche pas aux templates déjà enregistrés
+    ...(input.email_templates !== undefined ? { email_templates: input.email_templates } : {}),
     updated_at: new Date().toISOString(),
   }
 

@@ -33,7 +33,7 @@ export function OutreachPanel({ lead, onStatusChange, onNoteAdded, compact }: Ou
   const { isPro, isAdmin } = usePlan()
   const hasFullAccess = isPro || isAdmin
 
-  const templates = loadTemplates()
+  const templates = loadTemplates(settings?.email_templates)
   const template = templates[selectedTemplate]
   const { subject, body } = applyTemplate(template, lead, undefined, settings)
   const leadEmail = lead.email || enrichedEmail

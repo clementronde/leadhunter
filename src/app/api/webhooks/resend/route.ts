@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { blockRecipient } from '@/lib/outreach-guards'
 
 export async function POST(request: Request) {
   const webhookSecret = process.env.RESEND_WEBHOOK_SECRET
@@ -41,6 +42,30 @@ export async function POST(request: Request) {
     .eq('provider_message_id', messageId)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Adresse invalide ou plainte spam : on bloque l'adresse et on annule les relances prévues
+  if (updates.bounced_at || updates.complained_at) {
+    const { data: message } = await supabaseAdmin
+      .from('email_messages')
+      .select('user_id, recipient_email')
+      .eq('provider_message_id', messageId)
+      .maybeSingle()
+
+    if (message) {
+      await blockRecipient({
+        supabase: supabaseAdmin,
+        userId: message.user_id,
+        email: message.recipient_email,
+        reason: updates.complained_at ? 'Plainte spam' : 'Adresse en échec (bounce)',
+      })
+      await supabaseAdmin
+        .from('email_messages')
+        .update({ status: 'cancelled', updated_at: now })
+        .eq('user_id', message.user_id)
+        .eq('recipient_email', message.recipient_email)
+        .eq('status', 'scheduled')
+    }
+  }
 
   return NextResponse.json({ ok: true })
 }
