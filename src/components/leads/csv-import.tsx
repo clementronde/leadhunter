@@ -126,13 +126,13 @@ export function CsvImport({ onImported, onClose }: CsvImportProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-black/60" />
       <div
-        className="relative w-full max-w-lg rounded-2xl border border-white/[0.08] bg-zinc-900/95 backdrop-blur-xl shadow-2xl shadow-black/60 overflow-hidden"
+        className="relative w-full max-w-lg rounded-xl border border-hairline-strong bg-surface-1 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.7)] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-hairline">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/15">
               <FileText className="h-5 w-5 text-blue-400" />
@@ -150,14 +150,14 @@ export function CsvImport({ onImported, onClose }: CsvImportProps) {
         <div className="p-6 space-y-4">
           {done ? (
             <div className="text-center py-6">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/20 mx-auto mb-3">
+              <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-emerald-500/20 mx-auto mb-3">
                 <Check className="h-7 w-7 text-emerald-400" />
               </div>
               <p className="font-semibold text-white text-lg">{importedCount} leads importés</p>
               <p className="text-sm text-zinc-500 mt-1">Ils sont maintenant dans votre liste de leads.</p>
               <button
                 onClick={onClose}
-                className="mt-5 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white text-sm font-semibold hover:opacity-90 transition-opacity"
+                className="mt-5 px-5 py-2.5 rounded-xl bg-amber-500 text-on-accent text-sm font-semibold hover:opacity-90 transition-opacity"
               >
                 Voir mes leads
               </button>
@@ -170,7 +170,7 @@ export function CsvImport({ onImported, onClose }: CsvImportProps) {
                   onDrop={handleDrop}
                   onDragOver={(e) => e.preventDefault()}
                   onClick={() => fileRef.current?.click()}
-                  className="flex flex-col items-center justify-center gap-3 p-8 rounded-xl border-2 border-dashed border-white/[0.1] hover:border-amber-500/40 hover:bg-amber-500/[0.03] cursor-pointer transition-all"
+                  className="flex flex-col items-center justify-center gap-3 p-8 rounded-xl border-2 border-dashed border-hairline-strong hover:border-amber-500/40 hover:bg-amber-500/[0.03] cursor-pointer transition-all"
                 >
                   <Upload className="h-8 w-8 text-zinc-600" />
                   <div className="text-center">
@@ -206,9 +206,9 @@ export function CsvImport({ onImported, onClose }: CsvImportProps) {
                   </div>
 
                   {/* Preview */}
-                  <div className="rounded-lg border border-white/[0.06] overflow-hidden max-h-48 overflow-y-auto">
+                  <div className="rounded-lg border border-hairline overflow-hidden max-h-48 overflow-y-auto">
                     <table className="w-full text-xs">
-                      <thead className="bg-zinc-800/60">
+                      <thead className="bg-surface-2">
                         <tr>
                           {['Nom', 'Ville', 'CP', 'Email', 'Site'].map((h) => (
                             <th key={h} className="px-3 py-2 text-left font-medium text-zinc-500">{h}</th>
@@ -224,7 +224,7 @@ export function CsvImport({ onImported, onClose }: CsvImportProps) {
                             <td className="px-3 py-2 text-zinc-500 truncate max-w-[100px]">{row.email || '—'}</td>
                             <td className="px-3 py-2">
                               {row.website
-                                ? <span className="text-emerald-400">✓</span>
+                                ? <Check className="h-3.5 w-3.5 text-zinc-300" aria-label="Oui" />
                                 : <span className="text-zinc-700">—</span>}
                             </td>
                           </tr>
@@ -232,7 +232,7 @@ export function CsvImport({ onImported, onClose }: CsvImportProps) {
                       </tbody>
                     </table>
                     {rows.length > 8 && (
-                      <p className="px-3 py-2 text-xs text-zinc-600 bg-zinc-800/40">
+                      <p className="px-3 py-2 text-xs text-zinc-600 bg-surface-2">
                         + {rows.length - 8} lignes supplémentaires
                       </p>
                     )}
@@ -241,7 +241,7 @@ export function CsvImport({ onImported, onClose }: CsvImportProps) {
                   <button
                     onClick={handleImport}
                     disabled={importing}
-                    className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-60"
+                    className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-amber-500 text-on-accent text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-60"
                   >
                     {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
                     {importing ? 'Import en cours...' : `Importer ${rows.length} leads`}

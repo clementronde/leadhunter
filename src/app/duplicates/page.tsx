@@ -90,7 +90,7 @@ export default function DuplicatesPage() {
           <button
             onClick={loadDuplicates}
             disabled={loading}
-            className="inline-flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-sm font-medium text-zinc-300 hover:bg-white/[0.04] disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-lg border border-hairline-strong px-3 py-2 text-sm font-medium text-zinc-300 hover:bg-white/[0.04] disabled:opacity-50"
           >
             <RefreshCw className="h-4 w-4" />
             Rechercher
@@ -110,11 +110,11 @@ export default function DuplicatesPage() {
         )}
 
         {loading ? (
-          <div className="rounded-xl border border-white/10 bg-white/[0.03] p-8 text-center text-sm text-zinc-500">
+          <div className="rounded-xl border border-hairline-strong bg-white/[0.03] p-8 text-center text-sm text-zinc-500">
             Analyse des doublons...
           </div>
         ) : groups.length === 0 ? (
-          <div className="rounded-xl border border-white/10 bg-white/[0.03] p-8 text-center">
+          <div className="rounded-xl border border-hairline-strong bg-white/[0.03] p-8 text-center">
             <ShieldCheck className="mx-auto h-8 w-8 text-emerald-400" />
             <p className="mt-3 font-medium text-white">Aucun doublon évident.</p>
             <p className="mt-1 text-sm text-zinc-500">La base est propre sur les critères principaux.</p>
@@ -124,8 +124,8 @@ export default function DuplicatesPage() {
             {groups.map((group) => {
               const keep = group[0]
               return (
-                <section key={group.map((lead) => lead.id).join('-')} className="rounded-xl border border-white/10 bg-white/[0.03]">
-                  <div className="flex flex-col gap-3 border-b border-white/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <section key={group.map((lead) => lead.id).join('-')} className="rounded-xl border border-hairline-strong bg-white/[0.03]">
+                  <div className="flex flex-col gap-3 border-b border-hairline-strong px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <h2 className="font-semibold text-white">{group.length} fiches proches</h2>
                       <p className="text-sm text-zinc-500">Fiche conservée proposée: {keep.name}</p>

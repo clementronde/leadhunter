@@ -60,7 +60,7 @@ export default function LeadsMap({ leads }: { leads: MapLead[] }) {
                 <p>{lead.city} · score {lead.prospect_score}</p>
                 <p>{statusLabels[lead.status]} · {webPresenceLabels[lead.web_presence ?? (lead.has_website ? 'website' : 'unknown')]}</p>
                 {lead.phone && <p>{lead.phone}</p>}
-                <Link href={`/leads/${lead.id}`} className="font-medium text-amber-600">
+                <Link href={`/leads/${lead.id}`} className="font-medium text-amber-400">
                   Ouvrir la fiche →
                 </Link>
               </div>

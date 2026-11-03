@@ -28,12 +28,12 @@ import {
 const PIPELINE_STAGES: LeadStatus[] = ['new', 'contacted', 'meeting', 'proposal', 'won', 'lost']
 
 const stageAccents: Record<LeadStatus, string> = {
-  new: 'border-t-blue-500',
-  contacted: 'border-t-yellow-500',
-  meeting: 'border-t-purple-500',
-  proposal: 'border-t-orange-500',
-  won: 'border-t-emerald-500',
-  lost: 'border-t-zinc-600'
+  new: 'bg-zinc-400',
+  contacted: 'bg-sky-400',
+  meeting: 'bg-violet-400',
+  proposal: 'bg-amber-400',
+  won: 'bg-emerald-400',
+  lost: 'bg-zinc-600'
 }
 
 export default function PipelinePage() {
@@ -153,9 +153,10 @@ export default function PipelinePage() {
                 onDrop={(e) => handleDrop(e, status)}
               >
                 {/* Column header */}
-                <div className={`rounded-t-xl border border-b-0 border-white/[0.08] bg-zinc-900/60 p-3 ${stageAccents[status]} border-t-2`}>
+                <div className="rounded-t-xl border border-b-0 border-hairline bg-surface-1 p-3">
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-2">
+                      <span className={`h-1.5 w-1.5 rounded-full ${stageAccents[status]}`} aria-hidden />
                       <h3 className="font-semibold text-white text-sm">
                         {statusLabels[status]}
                       </h3>
@@ -180,14 +181,14 @@ export default function PipelinePage() {
                         </span>
                       )}
                       {hotCount > 0 && (
-                        <span>🔥 {hotCount} chaud{hotCount > 1 ? 's' : ''}</span>
+                        <span className="inline-flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-red-400" aria-hidden />{hotCount} chaud{hotCount > 1 ? 's' : ''}</span>
                       )}
                     </div>
                   )}
                 </div>
 
                 {/* Column content */}
-                <div className={`rounded-b-xl border border-t-0 border-white/[0.08] bg-zinc-900/30 p-2 min-h-[500px] transition-colors ${
+                <div className={`rounded-b-xl border border-t-0 border-hairline-strong bg-zinc-900/30 p-2 min-h-[500px] transition-colors ${
                   isDropTarget ? 'bg-amber-500/5 border-amber-500/30' : ''
                 }`}>
                   <div className="space-y-2">
@@ -197,7 +198,7 @@ export default function PipelinePage() {
                         draggable
                         onDragStart={(e) => handleDragStart(e, lead.id)}
                         onDragEnd={handleDragEnd}
-                        className={`rounded-xl border border-white/[0.06] bg-zinc-900/80 p-3 cursor-grab active:cursor-grabbing hover:border-white/[0.12] hover:bg-zinc-800/80 transition-all ${
+                        className={`rounded-xl border border-hairline bg-surface-1 p-3 cursor-grab active:cursor-grabbing hover:border-white/[0.12] hover:bg-zinc-800/80 transition-all ${
                           draggingId === lead.id ? 'opacity-40' : ''
                         }`}
                       >
@@ -234,7 +235,7 @@ export default function PipelinePage() {
                           </div>
                         )}
 
-                        <div className="flex items-center justify-between pt-2 border-t border-white/[0.05]">
+                        <div className="flex items-center justify-between pt-2 border-t border-hairline">
                           <div className="flex items-center gap-2">
                             {lead.website ? (
                               <a href={lead.website} target="_blank" rel="noopener noreferrer" title="Voir le site">
@@ -260,7 +261,7 @@ export default function PipelinePage() {
                               className={`${priorityColors[lead.priority]} text-[10px] px-1.5 py-0`}
                               variant="outline"
                             >
-                              {lead.priority === 'hot' ? '🔥' : lead.priority === 'warm' ? '🌤️' : '❄️'}
+                              {lead.priority === 'hot' ? 'Chaud' : lead.priority === 'warm' ? 'Tiède' : 'Froid'}
                             </Badge>
                             <span className={`text-sm font-bold ${getScoreColor(lead.prospect_score)}`}>
                               {lead.prospect_score}
@@ -290,10 +291,10 @@ export default function PipelinePage() {
           })}
         </div>
 
-        <div className="mt-6 p-4 rounded-xl border border-white/[0.06] bg-zinc-900/40">
+        <div className="mt-6 p-4 rounded-xl border border-hairline bg-surface-1">
           <p className="text-sm text-zinc-500">
             <span className="text-zinc-400 font-medium">Astuce :</span> Glissez-déposez les cartes pour changer le statut d&apos;un lead.
-            Les leads &quot;chauds&quot; 🔥 ont un score élevé et sont prioritaires pour le contact.
+            Les leads chauds ont un score élevé et sont prioritaires pour le contact.
           </p>
         </div>
       </div>

@@ -193,19 +193,18 @@ export default function TriagePage() {
   return (
     <div className="min-h-screen">
       <Header
-        title="Tri des leads"
-        subtitle="Validez les nouveaux leads un par un, au clavier ou en glissant la carte"
+        title="Tri"
+        subtitle="Gardez ou écartez chaque nouveau lead, au clavier ou en glissant la carte"
       />
 
-      <div className="p-6">
+      <div className="p-4 md:p-6">
         <div className="mx-auto max-w-2xl space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-zinc-400">
-            <span>
+          <div className="flex flex-wrap items-center justify-between gap-2 text-[13px] text-zinc-500">
+            <span className="text-zinc-300">
               {remaining === null ? '…' : `${remaining} lead${remaining > 1 ? 's' : ''} à trier`}
             </span>
-            <span>
-              Cette session : <span className="text-emerald-400">{sessionCount.kept} gardé(s)</span> ·{' '}
-              <span className="text-red-400">{sessionCount.rejected} écarté(s)</span>
+            <span className="tabular-nums">
+              {sessionCount.kept} gardé{sessionCount.kept > 1 ? 's' : ''} · {sessionCount.rejected} écarté{sessionCount.rejected > 1 ? 's' : ''}
             </span>
           </div>
 
@@ -215,8 +214,8 @@ export default function TriagePage() {
             ) : !current ? (
               <Card>
                 <CardContent className="py-16 text-center">
-                  <CheckCircle2 className="mx-auto mb-3 h-10 w-10 text-emerald-500" />
-                  <p className="font-semibold text-white">Tous les nouveaux leads sont triés</p>
+                  <CheckCircle2 className="mx-auto mb-3 h-6 w-6 text-zinc-500" />
+                  <p className="font-medium text-white">Tous les nouveaux leads sont triés</p>
                   <p className="mt-1 text-sm text-zinc-500">Les leads gardés sont prêts dans « Aujourd&apos;hui ».</p>
                   <div className="mt-4 flex justify-center gap-2">
                     <Link href="/today"><Button>Voir mes actions du jour</Button></Link>
@@ -247,14 +246,14 @@ export default function TriagePage() {
 
           {current && (
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              <Button variant="outline" onClick={() => decide('reject')} className="text-red-400">
-                <ArrowLeft className="h-4 w-4" /> Écarter
+              <Button variant="outline" onClick={() => decide('reject')}>
+                <ArrowLeft className="h-4 w-4 text-zinc-500" /> Écarter
               </Button>
               <Button variant="outline" onClick={() => decide('skip')}>
-                <ArrowDown className="h-4 w-4" /> Passer
+                <ArrowDown className="h-4 w-4 text-zinc-500" /> Passer
               </Button>
-              <Button variant="outline" onClick={() => decide('hot')} className="text-amber-400">
-                <ArrowUp className="h-4 w-4" /> Prioritaire
+              <Button variant="outline" onClick={() => decide('hot')}>
+                <ArrowUp className="h-4 w-4 text-zinc-500" /> Prioritaire
               </Button>
               <Button onClick={() => decide('keep')}>
                 Garder <ArrowRight className="h-4 w-4" />
@@ -262,7 +261,7 @@ export default function TriagePage() {
             </div>
           )}
 
-          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-zinc-500">
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[12px] text-zinc-500">
             <Shortcut keys="→">garder</Shortcut>
             <Shortcut keys="←">écarter</Shortcut>
             <Shortcut keys="↑">prioritaire</Shortcut>
@@ -286,7 +285,7 @@ export default function TriagePage() {
 function Shortcut({ keys, children }: { keys: string; children: React.ReactNode }) {
   return (
     <span>
-      <kbd className="rounded border border-white/[0.1] bg-zinc-800 px-1.5 py-0.5 font-mono text-zinc-300">{keys}</kbd>{' '}
+      <kbd className="rounded-md border border-hairline-strong bg-surface-2 px-1.5 py-0.5 font-mono text-[11px] text-zinc-300 shadow-[0_1px_0_#34343a]">{keys}</kbd>{' '}
       {children}
     </span>
   )
@@ -302,7 +301,7 @@ function LeadCard({ lead }: { lead: Company }) {
       <CardContent className="space-y-4 pt-6">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <h2 className="truncate text-xl font-bold text-white">{lead.name}</h2>
+            <h2 className="truncate text-[20px] font-semibold tracking-[-0.02em] text-white">{lead.name}</h2>
             <p className="mt-1 flex items-center gap-1.5 text-sm text-zinc-400">
               <MapPin className="h-3.5 w-3.5 shrink-0" />
               {[lead.address, lead.postal_code, lead.city].filter(Boolean).join(' · ')}
@@ -310,27 +309,27 @@ function LeadCard({ lead }: { lead: Company }) {
             {lead.sector && <p className="mt-1 text-xs text-zinc-500">{sectorLabels[lead.sector]}</p>}
           </div>
           <div className="text-right">
-            <p className={cn('text-3xl font-bold', getScoreColor(lead.prospect_score))}>{lead.prospect_score}</p>
-            <p className="text-xs text-zinc-500">score</p>
+            <p className={cn('font-mono text-[32px] font-medium leading-none tabular-nums', getScoreColor(lead.prospect_score))}>{lead.prospect_score}</p>
+            <p className="mt-1 text-[12px] text-zinc-500">score</p>
           </div>
         </div>
 
         <div className="flex flex-wrap gap-2 text-xs">
           <span className={cn(
-            'rounded-full border px-2.5 py-1',
-            presence === 'website' ? 'border-white/[0.1] text-zinc-300' : 'border-amber-500/30 text-amber-400'
+            'rounded-md border px-2 py-1',
+            presence === 'website' ? 'border-hairline-strong text-zinc-300' : 'border-amber-500/30 text-amber-400'
           )}>
             <Globe className="mr-1 inline h-3 w-3" />
             {webPresenceLabels[presence]}
           </span>
           {lead.google_reviews_count != null && (
-            <span className="rounded-full border border-white/[0.1] px-2.5 py-1 text-zinc-300">
-              <Star className="mr-1 inline h-3 w-3 text-amber-400" />
+            <span className="rounded-md border border-hairline-strong px-2 py-1 text-zinc-300">
+              <Star className="mr-1 inline h-3 w-3 text-zinc-500" />
               {lead.google_rating ?? '–'} · {lead.google_reviews_count} avis
             </span>
           )}
           {lead.priority === 'hot' && (
-            <span className="rounded-full border border-red-500/30 px-2.5 py-1 text-red-400">
+            <span className="rounded-md border border-red-500/30 px-2 py-1 text-red-300">
               <Flame className="mr-1 inline h-3 w-3" /> Chaud
             </span>
           )}
@@ -340,21 +339,21 @@ function LeadCard({ lead }: { lead: Company }) {
           <ul className="space-y-1 text-sm text-zinc-300">
             {lead.score_reasons.map((reason) => (
               <li key={reason} className="flex gap-2">
-                <span className="text-amber-500">•</span> {reason}
+                <span className="mt-[9px] h-1 w-1 shrink-0 rounded-full bg-zinc-500" aria-hidden /> {reason}
               </li>
             ))}
           </ul>
         )}
 
         {audit && (audit.screenshot_url || audit.design_verdict) && (
-          <div className="flex gap-3 rounded-lg bg-zinc-800/60 p-3">
+          <div className="flex gap-3 rounded-lg bg-surface-2 p-3">
             {audit.screenshot_url && (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={audit.screenshot_url}
                 alt=""
                 draggable={false}
-                className="max-h-40 w-24 rounded border border-white/[0.08] object-cover object-top"
+                className="max-h-40 w-24 rounded border border-hairline-strong object-cover object-top"
               />
             )}
             <div className="min-w-0 text-sm">
@@ -366,7 +365,7 @@ function LeadCard({ lead }: { lead: Company }) {
           </div>
         )}
 
-        <div className="flex flex-wrap gap-x-4 gap-y-1 border-t border-white/[0.05] pt-3 text-sm text-zinc-400">
+        <div className="flex flex-wrap gap-x-4 gap-y-1 border-t border-hairline pt-3 text-sm text-zinc-400">
           {lead.phone && <span><Phone className="mr-1 inline h-3.5 w-3.5" />{lead.phone}</span>}
           {lead.email && <span><Mail className="mr-1 inline h-3.5 w-3.5" />{lead.email}</span>}
           {siteLink && (

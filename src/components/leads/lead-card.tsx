@@ -44,7 +44,7 @@ export function LeadCard({ lead, onStatusChange }: LeadCardProps) {
       {/* Score bar */}
       <div className="h-1.5 w-full bg-zinc-800">
         <div
-          className="h-full transition-all bg-gradient-to-r from-amber-400 to-orange-500"
+          className="h-full transition-all bg-amber-500"
           style={{ width: `${lead.prospect_score}%` }}
         />
       </div>
@@ -123,7 +123,7 @@ export function LeadCard({ lead, onStatusChange }: LeadCardProps) {
                 href={lead.google_maps_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="ml-auto text-xs text-blue-400 hover:underline flex items-center gap-1"
+                className="ml-auto text-xs text-zinc-300 hover:text-white hover:underline flex items-center gap-1"
               >
                 <ExternalLink className="h-3.5 w-3.5" />
                 Fiche Maps
@@ -154,7 +154,7 @@ export function LeadCard({ lead, onStatusChange }: LeadCardProps) {
               Voir le site
             </a>
           ) : (
-            <span className="flex items-center gap-1.5 text-amber-600 font-medium">
+            <span className="flex items-center gap-1.5 text-amber-400 font-medium">
               <Globe2 className="h-4 w-4" />
               Pas de site web
             </span>
@@ -163,7 +163,7 @@ export function LeadCard({ lead, onStatusChange }: LeadCardProps) {
 
         {/* Scores Lighthouse (si audit disponible) */}
         {audit && (
-          <div className="grid grid-cols-4 gap-2 p-3 bg-zinc-800/40 rounded-lg mb-4 border border-white/[0.06]">
+          <div className="grid grid-cols-4 gap-2 p-3 bg-surface-2 rounded-lg mb-4 border border-hairline">
             <div className="text-center">
               <Gauge className="h-4 w-4 mx-auto text-zinc-400 mb-1" />
               <p className={`text-sm font-semibold ${getLighthouseColor(audit.performance_score)}`}>
@@ -197,7 +197,7 @@ export function LeadCard({ lead, onStatusChange }: LeadCardProps) {
               <Clock className="h-4 w-4 mx-auto text-zinc-400 mb-1" />
               <p
                 className={`text-sm font-semibold ${
-                  (audit.load_time_ms || 0) > 3000 ? 'text-red-600' : 'text-emerald-600'
+                  (audit.load_time_ms || 0) > 3000 ? 'text-red-400' : 'text-emerald-400'
                 }`}
               >
                 {audit.load_time_ms ? `${(audit.load_time_ms / 1000).toFixed(1)}s` : '—'}
@@ -208,7 +208,7 @@ export function LeadCard({ lead, onStatusChange }: LeadCardProps) {
         )}
 
         {/* Footer */}
-        <div className="flex items-center justify-between pt-3 border-t border-white/[0.06]">
+        <div className="flex items-center justify-between pt-3 border-t border-hairline">
           <Badge className={statusColors[lead.status]}>{statusLabels[lead.status]}</Badge>
 
           <div className="flex items-center gap-2">

@@ -13,7 +13,7 @@ export default function Icon() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: 'linear-gradient(135deg, #f59e0b, #ea580c)',
+          background: '#e2a336',
           borderRadius: '7px',
         }}
       >
@@ -28,9 +28,9 @@ export default function Icon() {
             height: 20,
           }}
         >
-          <div style={{ position: 'absolute', width: 20, height: 20, borderRadius: '50%', border: '2px solid white' }} />
-          <div style={{ position: 'absolute', width: 12, height: 12, borderRadius: '50%', border: '2px solid white' }} />
-          <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'white' }} />
+          <div style={{ position: 'absolute', width: 20, height: 20, borderRadius: '50%', border: '2px solid #1a1204' }} />
+          <div style={{ position: 'absolute', width: 12, height: 12, borderRadius: '50%', border: '2px solid #1a1204' }} />
+          <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#1a1204' }} />
         </div>
       </div>
     ),

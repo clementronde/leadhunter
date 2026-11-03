@@ -9,7 +9,7 @@ interface ProgressProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 const colorVariants = {
-  default: 'bg-zinc-900',
+  default: 'bg-zinc-300',
   success: 'bg-emerald-500',
   warning: 'bg-amber-500',
   danger: 'bg-red-500',
@@ -27,7 +27,7 @@ function Progress({
 
   return (
     <div className={cn('relative', className)} {...props}>
-      <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-200">
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-800">
         <div
           className={cn(
             'h-full transition-all duration-500 ease-out rounded-full',
@@ -37,7 +37,7 @@ function Progress({
         />
       </div>
       {showLabel && (
-        <span className="absolute -top-6 right-0 text-xs font-medium text-zinc-600">
+        <span className="absolute -top-6 right-0 text-xs font-medium tabular-nums text-zinc-400">
           {Math.round(percentage)}%
         </span>
       )}

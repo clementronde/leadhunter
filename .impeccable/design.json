@@ -1,0 +1,179 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-03T12:00:00Z",
+  "title": "Design System: LeadHunter",
+  "extensions": {
+    "colorMeta": {
+      "canvas": { "role": "neutral", "displayName": "Canvas Black", "canonical": "#08090a", "tonalRamp": ["#08090a", "#111214", "#1a1b1e", "#2c2e33", "#62666d", "#8a8f98", "#c9ced6", "#f7f8f8"] },
+      "sidebar-well": { "role": "neutral", "displayName": "Sidebar Well", "canonical": "#0b0c0d" },
+      "surface-1": { "role": "neutral", "displayName": "Charcoal 1", "canonical": "#0f1011", "tonalRamp": ["#08090a", "#0f1011", "#141516", "#18191a", "#1a1b1e", "#23252a", "#2c2e33", "#34343a"] },
+      "surface-2": { "role": "neutral", "displayName": "Charcoal 2", "canonical": "#141516" },
+      "surface-3": { "role": "neutral", "displayName": "Charcoal 3", "canonical": "#18191a" },
+      "track": { "role": "neutral", "displayName": "Track", "canonical": "#1a1b1e" },
+      "hairline": { "role": "neutral", "displayName": "Hairline", "canonical": "#23252a" },
+      "hairline-strong": { "role": "neutral", "displayName": "Strong Hairline", "canonical": "#34343a" },
+      "ink": { "role": "neutral", "displayName": "Ink", "canonical": "#f7f8f8", "tonalRamp": ["#2c2e33", "#62666d", "#8a8f98", "#a2a7b0", "#c9ced6", "#d0d6e0", "#eceef0", "#f7f8f8"] },
+      "ink-muted": { "role": "neutral", "displayName": "Muted Ink", "canonical": "#d0d6e0" },
+      "ink-subtle": { "role": "neutral", "displayName": "Subtle Ink", "canonical": "#8a8f98" },
+      "ink-tertiary": { "role": "neutral", "displayName": "Tertiary Ink", "canonical": "#62666d" },
+      "accent": { "role": "primary", "displayName": "Sober Amber", "canonical": "#e2a336", "tonalRamp": ["#22180a", "#3d2a0c", "#6e4a13", "#9c6a19", "#c98b22", "#e2a336", "#ebc27a", "#f6ead0"] },
+      "accent-hover": { "role": "primary", "displayName": "Lit Amber", "canonical": "#ebb757" },
+      "accent-text": { "role": "primary", "displayName": "Amber Ink", "canonical": "#e6b04f" },
+      "accent-soft-text": { "role": "primary", "displayName": "Soft Amber Text", "canonical": "#ebc27a" },
+      "on-accent": { "role": "primary", "displayName": "Burnt Ink", "canonical": "#1a1204" },
+      "state-hot": { "role": "state", "displayName": "Hot Red", "canonical": "oklch(70.4% 0.191 22.216)", "tonalRamp": ["oklch(25.8% 0.092 26.042)", "oklch(39.6% 0.141 25.723)", "oklch(50.5% 0.213 27.518)", "oklch(57.7% 0.245 27.325)", "oklch(63.7% 0.237 25.331)", "oklch(70.4% 0.191 22.216)", "oklch(80.8% 0.114 19.571)", "oklch(93.6% 0.032 17.717)"] },
+      "state-hot-text": { "role": "state", "displayName": "Hot Red Text", "canonical": "oklch(80.8% 0.114 19.571)" },
+      "state-cold": { "role": "state", "displayName": "Cold Sky", "canonical": "oklch(74.6% 0.16 232.661)", "tonalRamp": ["oklch(29.3% 0.066 243.157)", "oklch(39.1% 0.09 240.876)", "oklch(50% 0.134 242.749)", "oklch(58.8% 0.158 241.966)", "oklch(68.5% 0.169 237.323)", "oklch(74.6% 0.16 232.661)", "oklch(82.8% 0.111 230.318)", "oklch(95.1% 0.026 236.824)"] },
+      "state-cold-text": { "role": "state", "displayName": "Cold Sky Text", "canonical": "oklch(82.8% 0.111 230.318)" },
+      "state-success": { "role": "state", "displayName": "Success Emerald", "canonical": "oklch(76.5% 0.177 163.223)", "tonalRamp": ["oklch(26.2% 0.051 172.552)", "oklch(37.8% 0.077 168.94)", "oklch(50.8% 0.118 165.612)", "oklch(59.6% 0.145 163.225)", "oklch(69.6% 0.17 162.48)", "oklch(76.5% 0.177 163.223)", "oklch(84.5% 0.143 164.978)", "oklch(95% 0.052 163.051)"] },
+      "state-success-text": { "role": "state", "displayName": "Success Emerald Text", "canonical": "oklch(84.5% 0.143 164.978)" },
+      "state-meeting-text": { "role": "state", "displayName": "Meeting Violet", "canonical": "oklch(81.1% 0.111 293.571)" },
+      "destructive": { "role": "state", "displayName": "Destructive Red", "canonical": "oklch(57.7% 0.245 27.325)" }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Landing hero headline only; 64 / 56 / 40px responsive." },
+      "headline": { "displayName": "Headline", "purpose": "Landing section heads; 40 / 32px." },
+      "figure": { "displayName": "Figure", "purpose": "Prices and headline numbers." },
+      "page-title": { "displayName": "Page Title", "purpose": "Standalone pages such as login." },
+      "lede": { "displayName": "Lede", "purpose": "Hero subhead, ink-subtle, max 640px." },
+      "body-lg": { "displayName": "Body Large", "purpose": "Marketing section copy, max ~520px." },
+      "title": { "displayName": "Title", "purpose": "Card titles, app header h1, wordmark." },
+      "body": { "displayName": "Body", "purpose": "Default app text, buttons, inputs, table cells." },
+      "ui": { "displayName": "UI 13", "purpose": "Nav items, small buttons, secondary lines." },
+      "meta": { "displayName": "Meta 12", "purpose": "Field labels, timestamps, counts, reasons heading." },
+      "micro": { "displayName": "Micro 11", "purpose": "Badges, column heads, nav group labels. Sentence case." },
+      "score-lg": { "displayName": "Score", "purpose": "Selected lead score in Geist Mono, tabular." },
+      "mono": { "displayName": "Mono Data", "purpose": "Scores in rows, phones, URLs, keys." }
+    },
+    "shadows": [
+      { "name": "panel-highlight", "value": "inset 0 1px 0 rgba(255,255,255,0.03)", "purpose": "Top edge of every card (0.04 on landing panels)." },
+      { "name": "floating", "value": "0 16px 40px -12px rgba(0,0,0,0.7)", "purpose": "Popovers, notification panel, menus, command palette." },
+      { "name": "showcase-drop", "value": "inset 0 1px 0 rgba(255,255,255,0.04), 0 30px 80px -40px rgba(0,0,0,0.9)", "purpose": "Landing results panel only." },
+      { "name": "key-cap", "value": "0 1px 0 #34343a", "purpose": "Keyboard keys." }
+    ],
+    "motion": [
+      { "name": "ease-out-expo", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Page enter and landing motion." },
+      { "name": "hover-fast", "value": "100ms ease-out", "purpose": "Sidebar item colour changes." },
+      { "name": "state", "value": "150ms ease-out", "purpose": "Button colour and press, icon nudges." },
+      { "name": "page-enter", "value": "180ms fade + 4px rise", "purpose": "Route change in the app shell; landing detail cross-fade." },
+      { "name": "panel", "value": "200ms ease-out", "purpose": "Sidebar width / slide, triage card exit." },
+      { "name": "landing-stagger", "value": "400ms per row, 60ms apart, 150ms delay; layout 300ms", "purpose": "The one authored landing moment: example results enter and re-sort." },
+      { "name": "reduced-motion", "value": "durations clamped to 0.01ms; useReducedMotion disables initial/layout/exit", "purpose": "Always honoured." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one amber action per view.",
+      "html": "<button class=\"ds-btn-primary\">Scanner la zone <svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5 12h14\"/><path d=\"m12 5 7 7-7 7\"/></svg></button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 14px; border: 0; border-radius: 8px; background: var(--color-accent, #e2a336); color: var(--color-on-accent, #1a1204); font: 500 14px/1 var(--font-sans, Geist, sans-serif); cursor: pointer; transition: background-color 150ms ease-out, transform 150ms ease-out; } .ds-btn-primary:hover { background: var(--color-accent-hover, #ebb757); } .ds-btn-primary:active { transform: translateY(1px); } .ds-btn-primary:focus-visible { outline: 2px solid rgba(226,163,54,0.75); outline-offset: 2px; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Neutral action on charcoal with a hairline.",
+      "html": "<button class=\"ds-btn-secondary\">Commencer gratuitement</button>",
+      "css": ".ds-btn-secondary { display: inline-flex; align-items: center; height: 36px; padding: 0 14px; border: 1px solid var(--color-hairline, #23252a); border-radius: 8px; background: var(--color-surface-2, #141516); color: #dde1e6; font: 500 14px/1 var(--font-sans, Geist, sans-serif); cursor: pointer; transition: background-color 150ms ease-out, color 150ms ease-out; } .ds-btn-secondary:hover { background: var(--color-surface-3, #18191a); color: #fff; } .ds-btn-secondary:focus-visible { outline: 2px solid rgba(226,163,54,0.75); outline-offset: 2px; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Tertiary action, white wash on hover.",
+      "html": "<button class=\"ds-btn-ghost\">Annuler</button>",
+      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; height: 36px; padding: 0 14px; border: 0; border-radius: 8px; background: transparent; color: #a2a7b0; font: 500 14px/1 var(--font-sans, Geist, sans-serif); cursor: pointer; transition: background-color 150ms ease-out, color 150ms ease-out; } .ds-btn-ghost:hover { background: rgba(255,255,255,0.05); color: #fff; } .ds-btn-ghost:focus-visible { outline: 2px solid rgba(226,163,54,0.75); outline-offset: 2px; }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "36px charcoal field; amber border and soft ring on focus.",
+      "html": "<input class=\"ds-input\" placeholder=\"Rechercher un lead\" />",
+      "css": ".ds-input { height: 36px; width: 260px; padding: 8px 12px; border: 1px solid var(--color-hairline, #23252a); border-radius: 8px; background: var(--color-surface-1, #0f1011); color: #eceef0; font: 400 14px/1.4 var(--font-sans, Geist, sans-serif); caret-color: #e2a336; transition: border-color 150ms ease-out, box-shadow 150ms ease-out; } .ds-input::placeholder { color: #8a8f98; } .ds-input:hover { border-color: var(--color-hairline-strong, #34343a); } .ds-input:focus { outline: none; border-color: rgba(226,163,54,0.6); box-shadow: 0 0 0 2px rgba(226,163,54,0.2); }"
+    },
+    {
+      "name": "Temperature Chips",
+      "kind": "chip",
+      "refersTo": "badge",
+      "description": "Hot / warm / cold chips using the 10% tint, 25% border recipe.",
+      "html": "<span class=\"ds-chip ds-chip-hot\"><i></i>Chaud</span> <span class=\"ds-chip ds-chip-warm\"><i></i>Tiède</span> <span class=\"ds-chip ds-chip-cold\"><i></i>Froid</span> <span class=\"ds-chip\">Exemple</span>",
+      "css": ".ds-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px; border: 1px solid var(--color-hairline, #23252a); border-radius: 6px; background: var(--color-surface-2, #141516); color: #c9ced6; font: 500 11px/16px var(--font-sans, Geist, sans-serif); } .ds-chip i { width: 6px; height: 6px; border-radius: 9999px; background: currentColor; display: none; } .ds-chip-hot, .ds-chip-warm, .ds-chip-cold { } .ds-chip-hot i, .ds-chip-warm i, .ds-chip-cold i { display: inline-block; } .ds-chip-hot { background: oklch(63.7% 0.237 25.331 / 0.1); border-color: oklch(63.7% 0.237 25.331 / 0.25); color: oklch(80.8% 0.114 19.571); } .ds-chip-warm { background: rgba(226,163,54,0.1); border-color: rgba(226,163,54,0.25); color: #ebc27a; } .ds-chip-cold { background: oklch(68.5% 0.169 237.323 / 0.1); border-color: oklch(68.5% 0.169 237.323 / 0.25); color: oklch(82.8% 0.111 230.318); }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Charcoal panel, hairline border, inner top highlight.",
+      "html": "<div class=\"ds-card\"><h3>Leads à contacter</h3><p>Priorités haute et tiède non contactés</p></div>",
+      "css": ".ds-card { width: 300px; padding: 20px; border: 1px solid var(--color-hairline, #23252a); border-radius: 12px; background: var(--color-surface-1, #0f1011); box-shadow: inset 0 1px 0 rgba(255,255,255,0.03); font-family: var(--font-sans, Geist, sans-serif); } .ds-card h3 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -0.01em; color: #fff; } .ds-card p { margin: 4px 0 0; font-size: 14px; color: #8a8f98; }"
+    },
+    {
+      "name": "Sidebar Nav",
+      "kind": "nav",
+      "refersTo": "nav-item",
+      "description": "32px items; active gets a white wash and an amber icon.",
+      "html": "<nav class=\"ds-nav\"><p class=\"ds-nav-group\">Prospection</p><a class=\"ds-nav-item is-active\" href=\"#\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M12 7v5l3 2\"/></svg>Aujourd'hui</a><a class=\"ds-nav-item\" href=\"#\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"11\" cy=\"11\" r=\"7\"/><path d=\"m20 20-3.5-3.5\"/></svg>Scanner</a></nav>",
+      "css": ".ds-nav { width: 224px; padding: 8px; background: #0b0c0d; border-right: 1px solid var(--color-hairline, #23252a); font-family: var(--font-sans, Geist, sans-serif); } .ds-nav-group { margin: 0; padding: 0 10px 4px; font-size: 11px; font-weight: 500; color: #62666d; } .ds-nav-item { display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; border-radius: 6px; font-size: 13px; font-weight: 500; color: #a2a7b0; text-decoration: none; transition: background-color 100ms ease-out, color 100ms ease-out; } .ds-nav-item svg { color: #8a8f98; } .ds-nav-item:hover { background: rgba(255,255,255,0.04); color: #eceef0; } .ds-nav-item.is-active { background: rgba(255,255,255,0.07); color: #fff; } .ds-nav-item.is-active svg { color: #e6b04f; } .ds-nav-item:focus-visible { outline: 2px solid rgba(226,163,54,0.75); outline-offset: 2px; }"
+    },
+    {
+      "name": "Scored Result Row",
+      "kind": "custom",
+      "refersTo": "showcase-panel",
+      "description": "Signature row: temperature dot, name, presence reason, amber score bar, Mono score.",
+      "html": "<div class=\"ds-row is-active\"><span class=\"ds-row-name\"><i class=\"hot\"></i>Plomberie Garnier</span><span class=\"ds-row-reason\">Facebook uniquement</span><span class=\"ds-row-score\"><b style=\"width:90%\"></b>90</span></div><div class=\"ds-row\"><span class=\"ds-row-name\"><i class=\"cold\"></i>Dubois Thermique</span><span class=\"ds-row-reason\">Site récent et rapide</span><span class=\"ds-row-score\"><b style=\"width:30%\"></b>30</span></div>",
+      "css": ".ds-row { display: grid; grid-template-columns: 1fr 170px 88px; gap: 16px; align-items: center; width: 520px; padding: 12px 20px; background: var(--color-surface-1, #0f1011); border-bottom: 1px solid rgba(35,37,42,0.6); font-family: var(--font-sans, Geist, sans-serif); transition: background-color 150ms ease-out; } .ds-row:hover { background: rgba(255,255,255,0.025); } .ds-row.is-active { background: rgba(255,255,255,0.045); } .ds-row-name { display: flex; align-items: center; gap: 10px; font-size: 14px; color: #eceef0; } .ds-row-name i { width: 6px; height: 6px; border-radius: 9999px; } .ds-row-name i.hot { background: oklch(70.4% 0.191 22.216); } .ds-row-name i.cold { background: oklch(74.6% 0.16 232.661); } .ds-row-reason { font-size: 13px; color: #a2a7b0; } .ds-row-score { display: flex; align-items: center; justify-content: flex-end; gap: 8px; font: 500 14px/1 var(--font-mono, 'Geist Mono', monospace); font-variant-numeric: tabular-nums; color: #fff; } .ds-row-score b { display: block; height: 4px; max-width: 40px; border-radius: 9999px; background: #e2a336; opacity: 0.8; }"
+    },
+    {
+      "name": "Keyboard Key",
+      "kind": "custom",
+      "refersTo": "kbd",
+      "description": "Mono key cap used wherever a shortcut is taught.",
+      "html": "<span class=\"ds-kbd-row\"><kbd class=\"ds-kbd\">→</kbd> Garder</span>",
+      "css": ".ds-kbd-row { display: inline-flex; align-items: center; gap: 10px; font: 400 13px/1 var(--font-sans, Geist, sans-serif); color: #c9ced6; } .ds-kbd { display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 24px; padding: 0 6px; border: 1px solid var(--color-hairline-strong, #34343a); border-radius: 6px; background: var(--color-surface-2, #141516); box-shadow: 0 1px 0 #34343a; color: #dde1e6; font: 400 11px/1 var(--font-mono, 'Geist Mono', monospace); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Sorted Ledger",
+    "overview": "LeadHunter is a dark workbench where the list arrives already sorted. Everything sits on a near-black canvas, in charcoal panels separated by 1px hairlines; depth comes from stepping the surface a shade lighter, not from shadow or colour. Type is Geist at 600 with tight negative tracking for headings and a dense 11/12/13/14px ladder for the working UI; Geist Mono is reserved for the things you compare or dial: scores, phone numbers, URLs, keys.\n\nColour carries meaning, not mood. One sober amber marks the primary action, the current selection and the score; red, amber and sky speak lead temperature (hot, warm, cold); emerald speaks success. Nothing else is chromatic. The marketing page is product-UI-led: its proof is a working scan form feeding a real-looking scored result list, framed in the same panels the app uses.\n\nLineage: the structure (canvas, charcoal ladder, hairlines, product-UI marketing) descends from Linear; the accent, fonts and state vocabulary are LeadHunter's own.",
+    "keyCharacteristics": [
+      "Near-black canvas, three-step charcoal surface ladder, 1px hairlines.",
+      "One amber accent, dark ink on amber fills; never a second warm hue (orange is remapped onto amber).",
+      "Temperature colours (red / amber / sky) and success (emerald) only as state, at 10% tint with 25% border.",
+      "Geist 600 with negative tracking for headings; Geist Mono with tabular numerals for scores and data.",
+      "Flat: no gradients, glows or atmospheric light. Motion is short and state-driven."
+    ],
+    "rules": [
+      { "name": "The One Amber Rule", "body": "Amber is the only hue that is not a state. It marks the primary action, the selection and the score, nothing decorative. One amber fill per view.", "section": "colors" },
+      { "name": "The Temperature Rule", "body": "Red means hot, amber means warm, sky means cold, emerald means success. A hue used outside its meaning is a bug, not a variation.", "section": "colors" },
+      { "name": "The Tint Recipe Rule", "body": "Coloured chips and badges are 10% tint, 25% border, light text. Never a solid saturated chip.", "section": "colors" },
+      { "name": "The Mono-Is-Data Rule", "body": "Geist Mono appears only on scores, phone numbers, URLs/domains, counts and keyboard keys, always with tabular numerals. Never on prose or headings.", "section": "typography" },
+      { "name": "The Sentence-Case Label Rule", "body": "Labels and section markers are sentence case at 11–12px in ink-subtle or ink-tertiary. No uppercase, no letter-spacing on labels.", "section": "typography" },
+      { "name": "The No-Light Rule", "body": "Nothing glows. No coloured shadows, no radial light behind content, no gradient fills or gradient text. Depth is a surface step and a hairline.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do keep one amber fill per view, with burnt-ink (#1a1204) text on it.",
+      "Do build depth with the surface ladder (canvas → surface-1 → surface-2 → surface-3) and 1px hairlines.",
+      "Do use red / amber / sky strictly for hot / warm / cold, emerald for success, via the 10% tint / 25% border recipe.",
+      "Do set scores, phones, URLs and keys in Geist Mono with tabular numerals.",
+      "Do label demo data as \"Exemple\" and prove the product with the product itself.",
+      "Do keep app transitions between 100ms and 250ms and honour prefers-reduced-motion."
+    ],
+    "donts": [
+      "Don't use gradient fills, gradient text or radial light washes behind content.",
+      "Don't use glow blobs, coloured shadows, particles or shimmer badges.",
+      "Don't use emoji or text glyphs (✓ ✕) as icons; use lucide icons at 14–16px.",
+      "Don't set uppercase, letter-spaced eyebrows or kickers above headings.",
+      "Don't mark state with a coloured side border on cards, rows or alerts; use a dot or a tinted chip.",
+      "Don't introduce a second accent hue (orange, blue, purple) or put white text on amber.",
+      "Don't use Geist Mono for prose or headings."
+    ]
+  }
+}

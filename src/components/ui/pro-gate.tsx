@@ -36,7 +36,7 @@ export function ProGate({
         <div className="pointer-events-none opacity-60 select-none">{children}</div>
         <button
           onClick={handleClick}
-          className="absolute -top-1.5 -right-1.5 flex items-center gap-0.5 bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-sm hover:bg-amber-600 transition-colors z-10"
+          className="absolute -top-1.5 -right-1.5 flex items-center gap-0.5 bg-amber-500 text-on-accent text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-sm hover:bg-amber-600 transition-colors z-10"
           title="Fonctionnalité Pro"
         >
           <Lock className="h-2.5 w-2.5" />
@@ -53,7 +53,7 @@ export function ProGate({
       <div className="absolute inset-0 flex items-center justify-center">
         <button
           onClick={handleClick}
-          className="flex items-center gap-2 bg-zinc-900/90 backdrop-blur-sm border border-amber-500/30 text-amber-400 text-sm font-semibold px-4 py-2 rounded-xl shadow-lg hover:bg-zinc-800/90 transition-colors"
+          className="flex items-center gap-2 bg-surface-1 border border-amber-500/30 text-amber-400 text-sm font-semibold px-4 py-2 rounded-xl shadow-lg hover:bg-zinc-800/90 transition-colors"
         >
           <Lock className="h-4 w-4" />
           Fonctionnalité Pro

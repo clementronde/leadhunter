@@ -82,11 +82,11 @@ export function UpgradeModal({ open, onClose, reason }: UpgradeModalProps) {
       onClick={onClose}
     >
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-zinc-900/50 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-surface-1" />
 
       {/* Modal */}
       <div
-        className="relative w-full max-w-md bg-zinc-900/95 backdrop-blur-xl border border-white/[0.08] rounded-2xl shadow-2xl shadow-black/60 p-6"
+        className="relative w-full max-w-md bg-surface-1 border border-hairline-strong rounded-xl shadow-[0_16px_40px_-12px_rgba(0,0,0,0.7)] p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <button
@@ -106,7 +106,7 @@ export function UpgradeModal({ open, onClose, reason }: UpgradeModalProps) {
 
         {/* Features */}
         <div className="bg-amber-500/[0.08] border border-amber-500/20 rounded-xl p-4 mb-6">
-          <p className="text-xs font-semibold text-amber-400 uppercase tracking-wide mb-3">
+          <p className="text-xs font-semibold text-amber-400 mb-3">
             Plan Pro inclut
           </p>
           <ul className="space-y-2">
@@ -127,7 +127,7 @@ export function UpgradeModal({ open, onClose, reason }: UpgradeModalProps) {
         <button
           onClick={handleCheckout}
           disabled={loading}
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:opacity-90 transition-opacity disabled:opacity-60"
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm bg-amber-500 text-on-accent hover:opacity-90 transition-opacity disabled:opacity-60"
         >
           {loading ? (
             <Loader2 className="h-4 w-4 animate-spin" />

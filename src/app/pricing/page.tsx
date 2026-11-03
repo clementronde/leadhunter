@@ -74,22 +74,14 @@ function PricingContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#09090b] text-white">
+    <div className="min-h-screen bg-canvas text-white">
       {/* Ambient */}
-      <div className="pointer-events-none fixed inset-0 -z-10">
-        <div
-          className="absolute inset-0"
-          style={{
-            background: 'radial-gradient(ellipse 70% 40% at 50% 0%, rgba(251,146,60,0.10) 0%, transparent 60%)',
-          }}
-        />
-      </div>
 
       {/* Navbar */}
-      <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-[#09090b]/80 backdrop-blur-xl">
+      <header className="sticky top-0 z-50 border-b border-hairline bg-canvas/80">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
           <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-orange-600">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500">
               <Target className="h-4 w-4 text-white" />
             </div>
             <span className="text-lg font-bold">Lead<span className="text-amber-400">Hunter</span></span>
@@ -100,7 +92,7 @@ function PricingContent() {
             </Link>
             <Link
               href="/login"
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-orange-600 text-white text-sm font-semibold hover:opacity-90 transition-opacity"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-amber-500 text-on-accent text-sm font-semibold hover:opacity-90 transition-opacity"
             >
               Commencer gratuitement
               <ArrowRight className="h-3.5 w-3.5" />
@@ -139,7 +131,7 @@ function PricingContent() {
         {/* Plans */}
         <div className="grid sm:grid-cols-2 gap-6 mb-20">
           {/* Free */}
-          <div className="rounded-2xl border border-white/[0.08] bg-zinc-900/60 p-8 flex flex-col">
+          <div className="rounded-xl border border-hairline-strong bg-surface-1 p-8 flex flex-col">
             <div className="mb-8">
               <p className="text-zinc-400 text-sm font-medium mb-2">Gratuit</p>
               <p className="text-5xl font-bold">0€<span className="text-lg font-normal text-zinc-500">/mois</span></p>
@@ -157,16 +149,16 @@ function PricingContent() {
             </ul>
             <Link
               href="/login"
-              className="block text-center py-3 rounded-xl text-sm font-medium border border-white/10 text-zinc-300 hover:border-white/20 hover:text-white transition-all"
+              className="block text-center py-3 rounded-xl text-sm font-medium border border-hairline-strong text-zinc-300 hover:border-white/20 hover:text-white transition-all"
             >
               Commencer gratuitement
             </Link>
           </div>
 
           {/* Pro */}
-          <div className="relative rounded-2xl border border-amber-500/40 bg-gradient-to-b from-amber-500/[0.07] to-transparent p-8 flex flex-col">
+          <div className="relative rounded-xl border border-amber-500/40 bg-surface-2 p-8 flex flex-col">
             <div className="absolute -top-3 left-6">
-              <span className="bg-gradient-to-r from-amber-500 to-orange-600 text-white text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wide">
+              <span className="bg-amber-500 text-on-accent text-[11px] font-bold px-3 py-1 rounded-full ">
                 Populaire
               </span>
             </div>
@@ -186,7 +178,7 @@ function PricingContent() {
             <button
               onClick={handleCheckout}
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:opacity-90 transition-opacity disabled:opacity-60"
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold bg-amber-500 text-on-accent hover:opacity-90 transition-opacity disabled:opacity-60"
             >
               {loading ? 'Redirection...' : <>Passer à Pro — 29€/mois <ArrowRight className="h-4 w-4" /></>}
             </button>
@@ -199,7 +191,7 @@ function PricingContent() {
           <h2 className="text-2xl font-bold text-center mb-8">Questions fréquentes</h2>
           <div className="space-y-4">
             {FAQ.map(({ q, a }) => (
-              <div key={q} className="p-5 rounded-xl border border-white/[0.06] bg-zinc-900/40">
+              <div key={q} className="p-5 rounded-xl border border-hairline bg-surface-1">
                 <p className="font-semibold text-white mb-2">{q}</p>
                 <p className="text-sm text-zinc-400">{a}</p>
               </div>
@@ -212,7 +204,7 @@ function PricingContent() {
           <p className="text-zinc-400 mb-6">Prêt à trouver vos prochains clients ?</p>
           <Link
             href="/login"
-            className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold text-lg hover:opacity-90 transition-opacity shadow-xl shadow-amber-900/30"
+            className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-amber-500 text-on-accent font-semibold text-lg hover:opacity-90 transition-opacity"
           >
             Créer mon compte gratuitement
             <ArrowRight className="h-5 w-5" />

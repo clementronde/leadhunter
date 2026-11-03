@@ -269,7 +269,7 @@ export default function LeadDetailPage() {
           {!showDeleteConfirm ? (
             <button
               onClick={() => setShowDeleteConfirm(true)}
-              className="flex items-center gap-1.5 text-xs text-zinc-600 hover:text-red-400 border border-white/[0.05] hover:border-red-500/20 rounded-lg px-2.5 py-1.5 transition-all"
+              className="flex items-center gap-1.5 text-xs text-zinc-600 hover:text-red-400 border border-hairline hover:border-red-500/20 rounded-lg px-2.5 py-1.5 transition-all"
             >
               <Trash2 className="h-3.5 w-3.5" />
               Supprimer
@@ -300,7 +300,7 @@ export default function LeadDetailPage() {
             <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
               {/* Left: Company info */}
               <div className="flex items-start gap-4">
-                <div className={`flex h-16 w-16 items-center justify-center rounded-2xl ${
+                <div className={`flex h-16 w-16 items-center justify-center rounded-xl ${
                   lead.has_website ? 'bg-zinc-800/80' : 'bg-amber-500/10'
                 }`}>
                   {lead.has_website ? (
@@ -351,7 +351,7 @@ export default function LeadDetailPage() {
                       />
                     ) : null}
                     {lead.website && (
-                      <a href={lead.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm text-amber-600 hover:text-amber-700">
+                      <a href={lead.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm text-amber-400 hover:text-amber-400">
                         <ExternalLink className="h-4 w-4" />
                         {lead.website.replace(/^https?:\/\//, '')}
                       </a>
@@ -367,7 +367,7 @@ export default function LeadDetailPage() {
                         href={googleMyBusinessUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-1.5 text-sm text-blue-400 hover:text-blue-300"
+                        className="flex items-center gap-1.5 text-sm text-zinc-200 hover:text-white"
                       >
                         <MapPin className="h-4 w-4" />
                         Fiche Google My Business
@@ -442,7 +442,7 @@ export default function LeadDetailPage() {
                         href={`/audit/${lead.audit_share_token}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-1.5 text-xs font-medium text-blue-400 hover:text-blue-300 border border-blue-500/20 rounded-lg px-2.5 py-1.5 transition-colors"
+                        className="flex items-center gap-1.5 text-xs font-medium text-zinc-200 hover:text-white border border-blue-500/20 rounded-lg px-2.5 py-1.5 transition-colors"
                       >
                         <ExternalLink className="h-3.5 w-3.5" />
                         Rapport public
@@ -455,7 +455,7 @@ export default function LeadDetailPage() {
                         try { await generateAuditPDF(lead) } finally { setGeneratingPdf(false) }
                       }}
                       disabled={generatingPdf}
-                      className="flex items-center gap-1.5 text-xs font-medium text-zinc-400 hover:text-amber-400 border border-white/[0.08] rounded-lg px-2.5 py-1.5 transition-colors disabled:opacity-50"
+                      className="flex items-center gap-1.5 text-xs font-medium text-zinc-400 hover:text-amber-400 border border-hairline-strong rounded-lg px-2.5 py-1.5 transition-colors disabled:opacity-50"
                     >
                       <FileDown className="h-3.5 w-3.5" />
                       {generatingPdf ? 'Génération...' : 'Télécharger PDF'}
@@ -488,7 +488,7 @@ export default function LeadDetailPage() {
                   </div>
                   
                   {/* Technical info */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-zinc-800/60 rounded-lg mb-6">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-surface-2 rounded-lg mb-6">
                     <TechItem
                       label="HTTPS"
                       value={audit.is_https}
@@ -517,14 +517,14 @@ export default function LeadDetailPage() {
 
                   {/* Capture + avis design (IA) */}
                   {(audit.screenshot_url || audit.design_score) && (
-                    <div className="flex gap-4 p-4 bg-zinc-800/60 rounded-lg mb-6">
+                    <div className="flex gap-4 p-4 bg-surface-2 rounded-lg mb-6">
                       {audit.screenshot_url && (
                         <a href={audit.screenshot_url} target="_blank" rel="noreferrer" className="shrink-0">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src={audit.screenshot_url}
                             alt={`Capture du site de ${lead.name}`}
-                            className="w-28 rounded-md border border-white/[0.08]"
+                            className="w-28 rounded-md border border-hairline-strong"
                           />
                         </a>
                       )}
@@ -590,7 +590,7 @@ export default function LeadDetailPage() {
                   Ce site n&apos;a pas encore été analysé.
                 </p>
                 {auditError && (
-                  <p className="text-sm text-red-600 mb-3">{auditError}</p>
+                  <p className="text-sm text-red-400 mb-3">{auditError}</p>
                 )}
                 <Button onClick={handleLaunchAudit} loading={auditing} disabled={auditing}>
                   {auditing ? 'Analyse en cours...' : 'Lancer un audit'}
@@ -652,7 +652,7 @@ export default function LeadDetailPage() {
                 <div className="space-y-3 max-h-96 overflow-y-auto">
                   {lead.notes.length > 0 ? (
                     lead.notes.map((note) => (
-                      <div key={note.id} className="p-3 bg-zinc-800/60 rounded-lg">
+                      <div key={note.id} className="p-3 bg-surface-2 rounded-lg">
                         <p className="text-sm text-zinc-300">{note.content}</p>
                         <p className="text-xs text-zinc-400 mt-2">
                           {timeAgo(note.created_at)}
@@ -701,7 +701,7 @@ export default function LeadDetailPage() {
                 </div>
 
                 {/* Contact timeline */}
-                <div className="space-y-2 border-t border-white/[0.06] pt-3">
+                <div className="space-y-2 border-t border-hairline pt-3">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-zinc-500">Status CRM</span>
                     <Badge className={statusColors[lead.status]} variant="outline">
@@ -721,18 +721,18 @@ export default function LeadDetailPage() {
                 </div>
 
                 {/* Next step suggestion */}
-                <div className="border-t border-white/[0.06] pt-3 text-xs">
+                <div className="border-t border-hairline pt-3 text-xs">
                   {lead.email && lead.status === 'new' && (
-                    <p className="text-amber-400">💡 Suggéré: Envoyer un premier email</p>
+                    <p className="text-zinc-300"><span className="text-zinc-500">Prochaine étape :</span> envoyer un premier email</p>
                   )}
                   {lead.email && lead.status === 'contacted' && lead.last_contacted_at && (
-                    <p className="text-blue-400">💡 Suggéré: Relancer dans 3-5 jours</p>
+                    <p className="text-zinc-300"><span className="text-zinc-500">Prochaine étape :</span> relancer dans 3 à 5 jours</p>
                   )}
                   {lead.website && !lead.email && (
-                    <p className="text-amber-400">💡 Suggéré: Enrichir l&apos;email du site web</p>
+                    <p className="text-zinc-300"><span className="text-zinc-500">Prochaine étape :</span> trouver l&apos;email sur le site web</p>
                   )}
                   {!lead.email && !lead.website && (
-                    <p className="text-zinc-500">⚠️ Infos à compléter (email ou site)</p>
+                    <p className="text-zinc-500">Ajoutez un email ou un site pour pouvoir le contacter.</p>
                   )}
                 </div>
               </CardContent>
@@ -759,7 +759,7 @@ export default function LeadDetailPage() {
 // Helper components
 function ScoreBox({ label, score, icon }: { label: string; score: number | null; icon: React.ReactNode }) {
   return (
-    <div className="text-center p-4 bg-zinc-800/60 border border-white/[0.06] rounded-lg">
+    <div className="text-center p-4 bg-surface-2 border border-hairline rounded-lg">
       <div className="text-zinc-400 mb-2">{icon}</div>
       <p className={`text-2xl font-bold ${getLighthouseColor(score)}`}>
         {score ?? '-'}
@@ -830,7 +830,7 @@ function AuditComparison({ audits }: { audits: WebsiteAudit[] }) {
           <select
             value={selectedIdx}
             onChange={(e) => setSelectedIdx(Number(e.target.value))}
-            className="text-xs bg-zinc-800 border border-white/[0.08] rounded-lg px-2 py-1 text-zinc-400"
+            className="text-xs bg-zinc-800 border border-hairline-strong rounded-lg px-2 py-1 text-zinc-400"
           >
             {audits.slice(1).map((a, i) => (
               <option key={a.id} value={i + 1}>
@@ -861,7 +861,7 @@ function AuditComparison({ audits }: { audits: WebsiteAudit[] }) {
             const prev = previous[key] as number | null
             const curr = latest[key] as number | null
             return (
-              <div key={key} className="grid grid-cols-3 gap-2 items-center px-2 py-1.5 rounded-lg hover:bg-zinc-800/40">
+              <div key={key} className="grid grid-cols-3 gap-2 items-center px-2 py-1.5 rounded-lg hover:bg-surface-2">
                 <span className="text-sm text-zinc-400">{label}</span>
                 <span className={`text-center text-sm font-medium ${getLighthouseColor(prev)}`}>
                   {prev ?? '—'}
@@ -932,7 +932,7 @@ function EnrichEmailButton({
       <button
         onClick={handleEnrich}
         disabled={loading}
-        className="flex items-center gap-1.5 text-xs font-medium text-zinc-500 hover:text-amber-400 border border-white/[0.08] rounded-lg px-2.5 py-1 transition-colors disabled:opacity-50"
+        className="flex items-center gap-1.5 text-xs font-medium text-zinc-500 hover:text-amber-400 border border-hairline-strong rounded-lg px-2.5 py-1 transition-colors disabled:opacity-50"
       >
         <Mail className="h-3.5 w-3.5" />
         {loading ? 'Recherche...' : 'Trouver l\'email'}

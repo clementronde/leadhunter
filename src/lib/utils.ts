@@ -145,43 +145,43 @@ export const statusLabels: Record<LeadStatus, string> = {
 }
 
 export const statusColors: Record<LeadStatus, string> = {
-  new: 'bg-blue-100 text-blue-800',
-  contacted: 'bg-yellow-100 text-yellow-800',
-  meeting: 'bg-purple-100 text-purple-800',
-  proposal: 'bg-orange-100 text-orange-800',
-  won: 'bg-green-100 text-green-800',
-  lost: 'bg-gray-100 text-gray-800'
+  new: 'bg-zinc-500/10 text-zinc-300 border-zinc-500/25',
+  contacted: 'bg-sky-500/10 text-sky-300 border-sky-500/25',
+  meeting: 'bg-violet-500/10 text-violet-300 border-violet-500/25',
+  proposal: 'bg-amber-500/10 text-amber-300 border-amber-500/25',
+  won: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/25',
+  lost: 'bg-zinc-500/5 text-zinc-500 border-zinc-500/20'
 }
 
 export const priorityLabels: Record<Priority, string> = {
-  hot: '🔥 Chaud',
-  warm: '🌤️ Tiède',
-  cold: '❄️ Froid'
+  hot: 'Chaud',
+  warm: 'Tiède',
+  cold: 'Froid'
 }
 
 export const priorityColors: Record<Priority, string> = {
-  hot: 'bg-red-100 text-red-800 border-red-200',
-  warm: 'bg-amber-100 text-amber-800 border-amber-200',
-  cold: 'bg-sky-100 text-sky-800 border-sky-200'
+  hot: 'bg-red-500/10 text-red-300 border-red-500/25',
+  warm: 'bg-amber-500/10 text-amber-300 border-amber-500/25',
+  cold: 'bg-sky-500/10 text-sky-300 border-sky-500/25'
 }
 
 export const sectorLabels: Record<Sector, string> = {
-  restaurant: '🍽️ Restaurant',
-  retail: '🛍️ Commerce',
-  health: '🏥 Santé',
-  beauty: '💇 Beauté',
-  construction: '🏗️ BTP',
-  professional_services: '💼 Services',
-  real_estate: '🏠 Immobilier',
-  automotive: '🚗 Automobile',
-  education: '📚 Éducation',
-  other: '📦 Autre'
+  restaurant: 'Restaurant',
+  retail: 'Commerce',
+  health: 'Santé',
+  beauty: 'Beauté',
+  construction: 'BTP',
+  professional_services: 'Services',
+  real_estate: 'Immobilier',
+  automotive: 'Automobile',
+  education: 'Éducation',
+  other: 'Autre'
 }
 
 export const severityColors: Record<IssueSeverity, string> = {
-  critical: 'bg-red-100 text-red-800 border-red-200',
-  warning: 'bg-amber-100 text-amber-800 border-amber-200',
-  info: 'bg-blue-100 text-blue-800 border-blue-200'
+  critical: 'bg-red-500/10 text-red-300 border-red-500/25',
+  warning: 'bg-amber-500/10 text-amber-300 border-amber-500/25',
+  info: 'bg-sky-500/10 text-sky-300 border-sky-500/25'
 }
 
 // ============================================
@@ -272,22 +272,22 @@ export function isValidSiret(siret: string): boolean {
 // ============================================
 
 export function getScoreColor(score: number): string {
-  if (score >= 80) return 'text-red-600'   // Hot prospect
-  if (score >= 60) return 'text-amber-600' // Warm
-  if (score >= 40) return 'text-blue-600'  // Lukewarm
-  return 'text-gray-400'                   // Cold
+  // Same thresholds as getPriorityFromScore
+  if (score >= 75) return 'text-red-400'   // Hot
+  if (score >= 50) return 'text-amber-400' // Warm
+  return 'text-sky-400'                    // Cold
 }
 
 export function getScoreBackground(score: number): string {
   if (score >= 80) return 'bg-red-500'
   if (score >= 60) return 'bg-amber-500'
-  if (score >= 40) return 'bg-blue-500'
-  return 'bg-gray-300'
+  if (score >= 40) return 'bg-sky-500'
+  return 'bg-zinc-600'
 }
 
 export function getLighthouseColor(score: number | null | undefined): string {
-  if (score === null || score === undefined) return 'text-gray-400'
-  if (score >= 90) return 'text-green-600'
-  if (score >= 50) return 'text-amber-600'
-  return 'text-red-600'
+  if (score === null || score === undefined) return 'text-zinc-500'
+  if (score >= 90) return 'text-emerald-400'
+  if (score >= 50) return 'text-amber-400'
+  return 'text-red-400'
 }

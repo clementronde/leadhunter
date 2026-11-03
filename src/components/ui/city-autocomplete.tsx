@@ -103,7 +103,7 @@ export function CityAutocomplete({
         disabled={disabled}
         placeholder={placeholder}
         className={cn(
-          'flex h-10 w-full rounded-lg border border-white/[0.08] bg-zinc-800/60 px-3 py-2 pl-10 text-sm text-zinc-200 transition-colors',
+          'flex h-10 w-full rounded-lg border border-hairline-strong bg-surface-2 px-3 py-2 pl-10 text-sm text-zinc-200 transition-colors',
           'placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-1 focus:ring-offset-zinc-950',
           'disabled:cursor-not-allowed disabled:opacity-50',
           inputClassName
@@ -111,7 +111,7 @@ export function CityAutocomplete({
       />
 
       {open && (
-        <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 overflow-hidden rounded-lg border border-white/[0.08] bg-zinc-950 shadow-xl shadow-black/50">
+        <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 overflow-hidden rounded-lg border border-hairline-strong bg-zinc-950 shadow-[0_12px_32px_-12px_rgba(0,0,0,0.6)]">
           {loading && suggestions.length === 0 ? (
             <div className="px-3 py-2 text-sm text-zinc-500">Recherche...</div>
           ) : suggestions.length === 0 ? (

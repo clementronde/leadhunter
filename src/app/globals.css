@@ -1,87 +1,172 @@
 @import "tailwindcss";
 
-:root {
-  --background: #09090b;
-  --foreground: #fafafa;
-}
+/*
+ * LeadHunter — tokens
+ * World: DESIGN.md (Linear structure) with one sober amber accent.
+ * The default zinc / amber / orange scales are remapped here so every screen
+ * inherits the system without per-file colour rewrites.
+ */
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+@theme {
+  /* Neutrals: near-black canvas, charcoal surfaces, cool grey ink */
+  --color-zinc-50: #f7f8f8;
+  --color-zinc-100: #eceef0;
+  --color-zinc-200: #dde1e6;
+  --color-zinc-300: #c9ced6;
+  --color-zinc-400: #a2a7b0;
+  --color-zinc-500: #8a8f98;
+  --color-zinc-600: #62666d;
+  --color-zinc-700: #2c2e33;
+  --color-zinc-800: #1a1b1e;
+  --color-zinc-900: #111214;
+  --color-zinc-950: #08090a;
+
+  /* Accent: one sober amber. 500 = action fill, 400 = accent text on dark */
+  --color-amber-50: #fbf6ec;
+  --color-amber-100: #f6ead0;
+  --color-amber-200: #efd6a3;
+  --color-amber-300: #ebc27a;
+  --color-amber-400: #e6b04f;
+  --color-amber-500: #e2a336;
+  --color-amber-600: #c98b22;
+  --color-amber-700: #9c6a19;
+  --color-amber-800: #6e4a13;
+  --color-amber-900: #3d2a0c;
+  --color-amber-950: #22180a;
+
+  /* Orange collapses onto amber: no second warm hue */
+  --color-orange-100: #f6ead0;
+  --color-orange-300: #ebc27a;
+  --color-orange-400: #e6b04f;
+  --color-orange-500: #e2a336;
+  --color-orange-600: #c98b22;
+  --color-orange-800: #6e4a13;
+
+  /* Semantic */
+  --color-canvas: #08090a;
+  --color-surface-1: #0f1011;
+  --color-surface-2: #141516;
+  --color-surface-3: #18191a;
+  --color-hairline: #23252a;
+  --color-hairline-strong: #34343a;
+  --color-ink: #f7f8f8;
+  --color-ink-muted: #d0d6e0;
+  --color-ink-subtle: #8a8f98;
+  --color-ink-tertiary: #62666d;
+  --color-accent: #e2a336;
+  --color-accent-hover: #ebb757;
+  --color-on-accent: #1a1204;
+
+  --color-background: var(--color-canvas);
+  --color-foreground: var(--color-ink);
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", Menlo, monospace;
 }
 
 html {
-  scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  color-scheme: dark;
+  background: var(--color-canvas);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
 }
 
 body {
-  background: #09090b;
-  color: var(--foreground);
-  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01", "cv11";
 }
 
-/* Custom scrollbar — ultra fine */
+h1, h2, h3 {
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+/* Tabular numerals wherever numbers are compared */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #2c2e33 transparent;
+}
 ::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #27272a;
+  background: #2c2e33;
   border-radius: 9999px;
+  border: 2px solid var(--color-canvas);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #3f3f46;
+  background: #3e3e44;
 }
 
-/* Selection */
 ::selection {
-  background: rgba(245, 158, 11, 0.18);
-  color: #fef3c7;
+  background: rgba(226, 163, 54, 0.28);
+  color: #f7f8f8;
 }
 
-/* Focus ring — amber */
+input, textarea {
+  caret-color: var(--color-accent);
+}
+
 *:focus-visible {
-  outline: 2px solid rgba(245, 158, 11, 0.7);
+  outline: 2px solid rgba(226, 163, 54, 0.75);
   outline-offset: 2px;
 }
 
-/* Ambient glow utilities */
-.glow-amber {
-  box-shadow: 0 0 24px rgba(251, 146, 60, 0.15), 0 0 48px rgba(251, 146, 60, 0.06);
-}
-.glow-amber-sm {
-  box-shadow: 0 0 12px rgba(251, 146, 60, 0.2);
+a {
+  text-underline-offset: 3px;
 }
 
-/* Page transition */
+/* Legacy utilities kept as no-ops so older markup stays valid */
+.glow-amber,
+.glow-amber-sm {
+  box-shadow: none;
+}
+
+/* Page enter: short, state-only */
 @keyframes fade-up {
-  from { opacity: 0; transform: translateY(6px); }
+  from { opacity: 0; transform: translateY(4px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 .animate-fade-up {
-  animation: fade-up 0.2s ease-out both;
+  animation: fade-up 0.18s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-/* Shimmer for loading states */
+/* Loading placeholder */
 @keyframes shimmer {
   from { background-position: -200% center; }
   to   { background-position: 200% center; }
 }
 .shimmer {
-  background: linear-gradient(
-    90deg,
-    #18181b 25%,
-    #27272a 50%,
-    #18181b 75%
-  );
+  background: linear-gradient(90deg, #141516 25%, #1a1b1e 50%, #141516 75%);
   background-size: 200% auto;
-  animation: shimmer 1.8s linear infinite;
+  animation: shimmer 1.6s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

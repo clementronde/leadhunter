@@ -179,16 +179,35 @@ export default function TodayPage() {
 
   return (
     <div className="min-h-screen">
-      <Header title="Aujourd'hui" subtitle="Vos actions de prospection du jour, par ordre d'importance" />
+      <Header
+        title="Aujourd'hui"
+        subtitle={`${new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })} · par ordre d'importance`}
+      />
 
-      <div className="p-6 space-y-6">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-          <Counter icon={<MessageSquareReply className="h-5 w-5 text-emerald-400" />} label="Réponses à traiter" value={sections.replies.length} loading={loading} />
-          <Counter icon={<Flame className="h-5 w-5 text-red-400" />} label="Prospects chauds" value={sections.engaged.length} loading={loading} />
-          <Counter icon={<PhoneCall className="h-5 w-5 text-amber-400" />} label="À appeler" value={sections.toCall.length} loading={loading} />
-          <Counter icon={<Mail className="h-5 w-5 text-blue-400" />} label="À contacter par email" value={sections.toEmail.length} loading={loading} />
-          <Counter icon={<Send className="h-5 w-5 text-violet-400" />} label="Emails programmés aujourd'hui" value={dueCount} loading={loading} />
-        </div>
+      <div className="mx-auto max-w-[1100px] space-y-6 p-4 md:p-6">
+        <nav aria-label="Sections du jour" className="flex flex-wrap gap-1.5">
+          {[
+            { id: 'replies', label: 'Ont répondu', value: sections.replies.length, dot: 'bg-emerald-400' },
+            { id: 'engaged', label: 'Chauds', value: sections.engaged.length, dot: 'bg-red-400' },
+            { id: 'to-call', label: 'À appeler', value: sections.toCall.length, dot: 'bg-amber-400' },
+            { id: 'to-email', label: 'À écrire', value: sections.toEmail.length, dot: 'bg-sky-400' },
+            { id: 'follow-up', label: 'À relancer', value: sections.toFollowUp.length, dot: 'bg-zinc-400' },
+          ].map((item) => (
+            <a
+              key={item.id}
+              href={`#${item.id}`}
+              aria-disabled={item.value === 0}
+              className={cn(
+                'inline-flex h-8 items-center gap-2 rounded-md border border-hairline bg-surface-1 px-2.5 text-[13px] transition-colors',
+                item.value === 0 ? 'pointer-events-none text-zinc-600' : 'text-zinc-300 hover:border-hairline-strong hover:text-white'
+              )}
+            >
+              <span className={cn('h-1.5 w-1.5 rounded-full', item.value === 0 ? 'bg-zinc-700' : item.dot)} aria-hidden />
+              {item.label}
+              <span className="font-mono text-[12px] tabular-nums text-zinc-500">{loading ? '–' : item.value}</span>
+            </a>
+          ))}
+        </nav>
 
         {dueCount > 0 && (
           <Card>
@@ -217,9 +236,9 @@ export default function TodayPage() {
         ) : total === 0 ? (
           <Card>
             <CardContent className="py-16 text-center">
-              <CheckCircle2 className="mx-auto mb-3 h-10 w-10 text-emerald-500" />
-              <p className="font-semibold text-white">Rien en attente pour aujourd&apos;hui</p>
-              <p className="mt-1 text-sm text-zinc-500">Lancez un scan pour trouver de nouveaux prospects.</p>
+              <CheckCircle2 className="mx-auto mb-3 h-6 w-6 text-zinc-500" />
+              <p className="font-medium text-white">Rien en attente aujourd&apos;hui</p>
+              <p className="mt-1 text-[13px] text-zinc-500">Les relances apparaîtront ici. En attendant, trouvez de nouveaux prospects.</p>
               <Link href="/scanner" className="mt-4 inline-block">
                 <Button>Lancer un scan</Button>
               </Link>
@@ -228,13 +247,14 @@ export default function TodayPage() {
         ) : (
           <>
             <Section
+              id="replies"
               title="Ils ont répondu"
               hint="Proposez un rendez-vous dans l'heure."
-              icon={<MessageSquareReply className="h-5 w-5 text-emerald-400" />}
+              icon={<MessageSquareReply className="h-4 w-4 text-zinc-500" />}
               leads={sections.replies}
               renderActions={(lead) => (
                 <>
-                  <Button size="sm" variant="success" onClick={() => handleStatus(lead, 'meeting', 'RDV planifié')}>
+                  <Button size="sm" onClick={() => handleStatus(lead, 'meeting', 'RDV planifié')}>
                     <CalendarCheck className="h-4 w-4" /> RDV pris
                   </Button>
                   <Button size="sm" variant="outline" onClick={() => handleStatus(lead, 'lost', 'Pas intéressé (après réponse)')}>
@@ -245,9 +265,10 @@ export default function TodayPage() {
             />
 
             <Section
+              id="engaged"
               title="Prospects chauds"
               hint="Ils ont ouvert ou cliqué votre email ces 3 derniers jours : appelez-les maintenant."
-              icon={<Flame className="h-5 w-5 text-red-400" />}
+              icon={<Flame className="h-4 w-4 text-zinc-500" />}
               leads={sections.engaged}
               renderActions={(lead) => (
                 <CallActions lead={lead} onStatus={handleStatus} onReplied={handleReplied} />
@@ -255,9 +276,10 @@ export default function TodayPage() {
             />
 
             <Section
+              id="to-call"
               title="À appeler"
               hint="Les meilleurs prospects sans email connu. Le téléphone reste le canal qui convertit le mieux."
-              icon={<PhoneCall className="h-5 w-5 text-amber-400" />}
+              icon={<PhoneCall className="h-4 w-4 text-zinc-500" />}
               leads={sections.toCall}
               renderActions={(lead) => (
                 <CallActions lead={lead} onStatus={handleStatus} onReplied={handleReplied} />
@@ -265,9 +287,10 @@ export default function TodayPage() {
             />
 
             <Section
+              id="to-email"
               title="À contacter par email"
               hint="Email connu, jamais contactés. Ouvrez la fiche pour envoyer l'email personnalisé."
-              icon={<Mail className="h-5 w-5 text-blue-400" />}
+              icon={<Mail className="h-4 w-4 text-zinc-500" />}
               leads={sections.toEmail}
               renderActions={(lead) => (
                 <Link href={`/leads/${lead.id}`}>
@@ -279,9 +302,10 @@ export default function TodayPage() {
             />
 
             <Section
+              id="follow-up"
               title="À relancer"
               hint="Contactés il y a plus de 7 jours, sans réponse."
-              icon={<Clock className="h-5 w-5 text-zinc-400" />}
+              icon={<Clock className="h-4 w-4 text-zinc-500" />}
               leads={sections.toFollowUp}
               renderActions={(lead) => (
                 <CallActions lead={lead} onStatus={handleStatus} onReplied={handleReplied} />
@@ -307,34 +331,36 @@ function CallActions({
     <>
       {lead.phone && (
         <a href={`tel:${lead.phone.replace(/\s/g, '')}`}>
-          <Button size="sm">
+          <Button size="sm" className="font-mono tabular-nums">
             <Phone className="h-4 w-4" /> {lead.phone}
           </Button>
         </a>
       )}
-      <Button size="sm" variant="success" onClick={() => onStatus(lead, 'meeting', 'RDV pris par téléphone')}>
-        <CalendarCheck className="h-4 w-4" /> RDV
+      <Button size="sm" variant="outline" onClick={() => onStatus(lead, 'meeting', 'RDV pris par téléphone')}>
+        <CalendarCheck className="h-4 w-4" /> RDV pris
       </Button>
-      <Button size="sm" variant="secondary" onClick={() => onReplied(lead)}>
+      <Button size="sm" variant="outline" onClick={() => onReplied(lead)}>
         <MessageSquareReply className="h-4 w-4" /> Intéressé
       </Button>
-      <Button size="sm" variant="outline" onClick={() => onStatus(lead, 'contacted', 'Appel : pas de réponse / à rappeler')}>
+      <Button size="sm" variant="ghost" onClick={() => onStatus(lead, 'contacted', 'Appel : pas de réponse / à rappeler')}>
         Pas joignable
       </Button>
       <Button size="sm" variant="ghost" onClick={() => onStatus(lead, 'lost', 'Pas intéressé')}>
-        <XCircle className="h-4 w-4" /> Non
+        <XCircle className="h-4 w-4" /> Pas intéressé
       </Button>
     </>
   )
 }
 
 function Section({
+  id,
   title,
   hint,
   icon,
   leads,
   renderActions,
 }: {
+  id: string
   title: string
   hint: string
   icon: React.ReactNode
@@ -344,17 +370,17 @@ function Section({
   if (leads.length === 0) return null
 
   return (
-    <Card>
+    <Card id={id} className="scroll-mt-20">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           {icon}
           {title}
-          <span className="rounded-full bg-zinc-800 px-2 py-0.5 text-xs font-bold text-zinc-400">{leads.length}</span>
+          <span className="font-mono text-[12px] font-normal tabular-nums text-zinc-500">{leads.length}</span>
         </CardTitle>
-        <p className="text-sm text-zinc-500">{hint}</p>
+        <p className="text-[13px] text-zinc-500">{hint}</p>
       </CardHeader>
       <CardContent>
-        <div className="divide-y divide-white/[0.04]">
+        <div className="-mx-5 divide-y divide-hairline/70 border-t border-hairline">
           {leads.map((lead) => (
             <LeadRow key={lead.id} lead={lead} actions={renderActions(lead)} />
           ))}
@@ -369,16 +395,16 @@ function LeadRow({ lead, actions }: { lead: Company; actions: React.ReactNode })
   const presence = lead.web_presence && lead.web_presence !== 'website' ? webPresenceLabels[lead.web_presence] : null
 
   return (
-    <div className="flex flex-col gap-3 py-4 lg:flex-row lg:items-center lg:justify-between">
+    <div className="flex flex-col gap-3 px-5 py-3.5 lg:flex-row lg:items-center lg:justify-between">
       <div className="min-w-0 space-y-1">
         <div className="flex flex-wrap items-center gap-2">
           <Link href={`/leads/${lead.id}`} className="font-semibold text-white hover:text-amber-400">
             {lead.name}
           </Link>
-          <span className={cn('text-sm font-bold', getScoreColor(lead.prospect_score))}>{lead.prospect_score}</span>
+          <span className={cn('font-mono text-[13px] tabular-nums', getScoreColor(lead.prospect_score))}>{lead.prospect_score}</span>
           {lead.sector && <span className="text-xs text-zinc-500">{sectorLabels[lead.sector]}</span>}
           {presence && (
-            <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-400">{presence}</span>
+            <span className="rounded-md border border-amber-500/25 bg-amber-500/10 px-1.5 py-0.5 text-[11px] text-amber-300">{presence}</span>
           )}
         </div>
         <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-500">
@@ -388,7 +414,7 @@ function LeadRow({ lead, actions }: { lead: Company; actions: React.ReactNode })
           </span>
           {lead.google_reviews_count != null && (
             <span>
-              {lead.google_rating ?? '–'}★ · {lead.google_reviews_count} avis
+              {lead.google_rating ?? '–'} · {lead.google_reviews_count} avis Google
             </span>
           )}
           {lead.last_contacted_at && <span>Contacté {timeAgo(lead.last_contacted_at).toLowerCase()}</span>}
@@ -403,37 +429,11 @@ function LeadRow({ lead, actions }: { lead: Company; actions: React.ReactNode })
             </a>
           )}
         </p>
-        <p className="text-sm text-zinc-400">
+        <p className="text-[13px] text-zinc-400">
           {reasons ? reasons.join(' · ') : buildPersonalizedReason(lead)}
         </p>
       </div>
       <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>
     </div>
-  )
-}
-
-function Counter({
-  icon,
-  label,
-  value,
-  loading,
-}: {
-  icon: React.ReactNode
-  label: string
-  value: number
-  loading: boolean
-}) {
-  return (
-    <Card>
-      <CardContent className="pt-5">
-        <div className="flex items-center gap-3">
-          {icon}
-          <div>
-            <p className="text-2xl font-bold text-white">{loading ? '–' : value}</p>
-            <p className="text-xs text-zinc-500">{label}</p>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
   )
 }

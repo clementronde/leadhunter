@@ -1,23 +1,21 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
-import { motion } from 'framer-motion'
+import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { useUIStore } from '@/lib/store'
 import { useAuth } from '@/components/auth/auth-provider'
 import { usePlan } from '@/hooks/usePlan'
+import { LogoMark } from '@/components/ui/logo'
 import {
   LayoutDashboard,
   Users,
   Radar,
   Kanban,
   Settings,
-  ChevronLeft,
-  ChevronRight,
-  Target,
+  PanelLeftClose,
+  PanelLeftOpen,
   LogOut,
-  Zap,
   Shield,
   Send,
   Inbox,
@@ -25,244 +23,224 @@ import {
   CalendarCheck,
   ListChecks,
   Map as MapIcon,
+  Search,
+  ArrowUpRight,
+  type LucideIcon,
 } from 'lucide-react'
 
-const navigationGroups = [
+type NavItem = { name: string; href: string; icon: LucideIcon; hint?: string }
+type NavGroup = { label: string | null; items: NavItem[] }
+
+const navigationGroups: NavGroup[] = [
   {
     label: null,
     items: [
-      { name: "Aujourd'hui", href: '/today', icon: CalendarCheck },
-      { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+      { name: "Aujourd'hui", href: '/today', icon: CalendarCheck, hint: 'Relances du jour' },
+      { name: 'Tri', href: '/triage', icon: ListChecks, hint: 'Valider les nouveaux leads' },
+      { name: "Vue d'ensemble", href: '/', icon: LayoutDashboard },
     ],
   },
   {
-    label: 'Prospection',
+    label: 'Trouver',
+    items: [
+      { name: 'Scanner', href: '/scanner', icon: Radar, hint: 'Chercher des entreprises' },
+      { name: 'Carte', href: '/map', icon: MapIcon },
+    ],
+  },
+  {
+    label: 'Suivre',
     items: [
       { name: 'Leads', href: '/leads', icon: Users },
-      { name: 'Tri', href: '/triage', icon: ListChecks },
-      { name: 'Carte', href: '/map', icon: MapIcon },
-      { name: 'Campagnes', href: '/campaigns', icon: Send },
-      { name: 'Inbox', href: '/inbox', icon: Inbox },
-      { name: 'Scanner', href: '/scanner', icon: Radar },
       { name: 'Pipeline', href: '/pipeline', icon: Kanban },
       { name: 'Doublons', href: '/duplicates', icon: Combine },
     ],
   },
   {
-    label: null,
-    items: [{ name: 'Paramètres', href: '/settings', icon: Settings }],
+    label: 'Contacter',
+    items: [
+      { name: 'Campagnes', href: '/campaigns', icon: Send },
+      { name: 'Inbox', href: '/inbox', icon: Inbox },
+    ],
   },
 ]
 
-export function Sidebar() {
+function isActivePath(pathname: string, href: string) {
+  return pathname === href || (href !== '/' && pathname.startsWith(href))
+}
+
+export function Sidebar({ mobileOpen = false, onNavigate }: { mobileOpen?: boolean; onNavigate?: () => void }) {
   const pathname = usePathname()
-  const router = useRouter()
   const { sidebarOpen, toggleSidebar } = useUIStore()
   const { user, signOut, isAdmin } = useAuth()
   const { isPro } = usePlan()
 
+  // On mobile the drawer is always shown expanded
+  const expanded = sidebarOpen || mobileOpen
+  const plan = isAdmin ? 'Admin' : isPro ? 'Pro' : 'Gratuit'
+
   return (
     <aside
+      aria-label="Navigation principale"
       className={cn(
-        'fixed left-0 top-0 z-40 h-screen flex flex-col',
-        'bg-[#0a0a0c] border-r border-white/[0.06]',
-        'transition-all duration-300 ease-in-out',
-        sidebarOpen ? 'w-64' : 'w-[72px]'
+        'fixed left-0 top-0 z-50 flex h-dvh flex-col border-r border-hairline bg-[#0b0c0d]',
+        'transition-[width,transform] duration-200 ease-out',
+        expanded ? 'w-60' : 'w-[60px]',
+        mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
       )}
     >
-      {/* Logo */}
-      <div className="flex h-16 items-center justify-between px-4 border-b border-white/[0.05] shrink-0">
-        <Link href="/" className="flex items-center gap-3 min-w-0">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 shadow-lg shadow-amber-500/30">
-            <Target className="h-5 w-5 text-white" />
-          </div>
-          {sidebarOpen && (
-            <span className="text-lg font-bold text-white truncate">
-              Lead<span className="text-amber-500">Hunter</span>
-            </span>
-          )}
+      {/* Brand + collapse */}
+      <div className={cn('flex h-14 shrink-0 items-center gap-2 px-3', !expanded && 'justify-center px-0')}>
+        <Link href="/today" onClick={onNavigate} className="flex min-w-0 items-center gap-2 rounded-md px-1.5 py-1">
+          <LogoMark size={20} />
+          {expanded && <span className="truncate text-[14px] font-semibold tracking-[-0.01em] text-white">LeadHunter</span>}
         </Link>
+        {expanded && (
+          <button
+            onClick={toggleSidebar}
+            aria-label="Réduire la barre latérale"
+            className="ml-auto hidden h-7 w-7 items-center justify-center rounded-md text-zinc-500 transition-colors hover:bg-white/[0.05] hover:text-zinc-200 md:flex"
+          >
+            <PanelLeftClose className="h-4 w-4" />
+          </button>
+        )}
+      </div>
 
+      {/* Search */}
+      <div className={cn('px-3 pb-2', !expanded && 'px-2')}>
         <button
-          onClick={toggleSidebar}
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-zinc-600 hover:bg-white/[0.05] hover:text-zinc-400 transition-colors"
+          onClick={() => window.dispatchEvent(new CustomEvent('open-cmd'))}
+          aria-label="Rechercher (Ctrl K)"
+          title={!expanded ? 'Rechercher (Ctrl K)' : undefined}
+          className={cn(
+            'flex h-8 w-full items-center gap-2 rounded-md border border-hairline bg-surface-1 text-[13px] text-zinc-500 transition-colors hover:border-hairline-strong hover:text-zinc-300',
+            expanded ? 'px-2.5' : 'justify-center'
+          )}
         >
-          {sidebarOpen ? <ChevronLeft size={15} /> : <ChevronRight size={15} />}
+          <Search className="h-3.5 w-3.5 shrink-0" />
+          {expanded && (
+            <>
+              <span className="flex-1 text-left">Rechercher…</span>
+              <kbd className="rounded border border-hairline px-1 font-mono text-[10px] text-zinc-500">Ctrl K</kbd>
+            </>
+          )}
         </button>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 flex flex-col gap-0.5 p-3 pt-4 overflow-y-auto">
+      <nav className="flex flex-1 flex-col overflow-y-auto px-2 pb-3">
         {navigationGroups.map((group, gi) => (
-          <div key={gi} className={gi > 0 ? 'mt-4' : ''}>
-            {group.label && sidebarOpen && (
-              <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-600">
-                {group.label}
-              </p>
+          <div key={gi} className={gi > 0 ? 'mt-4' : 'mt-1'}>
+            {group.label && expanded && (
+              <p className="px-2.5 pb-1 text-[11px] font-medium text-zinc-600">{group.label}</p>
             )}
-            {!group.label && gi > 0 && !sidebarOpen && (
-              <div className="mx-3 mb-2 h-px bg-white/[0.05]" />
-            )}
-            {group.items.map((item) => {
-              const isActive =
-                pathname === item.href ||
-                (item.href !== '/' && pathname.startsWith(item.href))
-
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={cn(
-                    'relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150',
-                    isActive
-                      ? 'bg-amber-500/[0.12] text-amber-400'
-                      : 'text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-200'
-                  )}
-                  title={!sidebarOpen ? item.name : undefined}
-                >
-                  {isActive && (
-                    <motion.div
-                      layoutId="sidebar-active"
-                      className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-amber-500 rounded-r-full"
-                      transition={{ type: 'spring', stiffness: 500, damping: 35 }}
-                    />
-                  )}
-                  <item.icon
-                    className={cn(
-                      'h-[18px] w-[18px] shrink-0',
-                      isActive ? 'text-amber-400' : 'text-zinc-600'
-                    )}
-                  />
-                  {sidebarOpen && <span>{item.name}</span>}
-                </Link>
-              )
-            })}
+            {group.label && !expanded && <div className="mx-2 mb-2 h-px bg-hairline" />}
+            <ul className="flex flex-col gap-px">
+              {group.items.map((item) => (
+                <li key={item.href}>
+                  <NavLink item={item} active={isActivePath(pathname, item.href)} expanded={expanded} onNavigate={onNavigate} />
+                </li>
+              ))}
+            </ul>
           </div>
         ))}
 
-        {/* Admin navigation */}
-        {isAdmin && (
-          <div className="mt-4">
-            {sidebarOpen && (
-              <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-600">
-                Admin
-              </p>
-            )}
-            {(() => {
-              const isActive = pathname.startsWith('/admin')
-              return (
-                <Link
-                  href="/admin"
-                  className={cn(
-                    'relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150',
-                    isActive
-                      ? 'bg-violet-500/[0.12] text-violet-400'
-                      : 'text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-200'
-                  )}
-                  title={!sidebarOpen ? 'Administration' : undefined}
-                >
-                  {isActive && (
-                    <motion.div
-                      layoutId="sidebar-active"
-                      className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-violet-500 rounded-r-full"
-                      transition={{ type: 'spring', stiffness: 500, damping: 35 }}
-                    />
-                  )}
-                  <Shield
-                    className={cn(
-                      'h-[18px] w-[18px] shrink-0',
-                      isActive ? 'text-violet-400' : 'text-zinc-600'
-                    )}
-                  />
-                  {sidebarOpen && <span>Administration</span>}
-                </Link>
-              )
-            })()}
-          </div>
-        )}
+        <div className="mt-4">
+          <NavLink
+            item={{ name: 'Paramètres', href: '/settings', icon: Settings }}
+            active={isActivePath(pathname, '/settings')}
+            expanded={expanded}
+            onNavigate={onNavigate}
+          />
+          {isAdmin && (
+            <NavLink
+              item={{ name: 'Administration', href: '/admin', icon: Shield }}
+              active={isActivePath(pathname, '/admin')}
+              expanded={expanded}
+              onNavigate={onNavigate}
+            />
+          )}
+        </div>
       </nav>
 
       {/* Footer */}
-      <div className="shrink-0 border-t border-white/[0.05] p-3 space-y-2">
-        {/* Upgrade CTA */}
-        {!isPro && !isAdmin && sidebarOpen && (
-          <button
-            onClick={() => router.push('/upgrade')}
-            className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-semibold bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:from-amber-400 hover:to-orange-500 shadow-lg shadow-amber-500/20 transition-all active:scale-[0.98]"
+      <div className="shrink-0 border-t border-hairline p-2">
+        {!isPro && !isAdmin && expanded && (
+          <Link
+            href="/upgrade"
+            onClick={onNavigate}
+            className="group mb-2 flex items-center justify-between rounded-md border border-hairline bg-surface-1 px-2.5 py-2 transition-colors hover:border-amber-500/40"
           >
-            <Zap className="h-3.5 w-3.5" />
-            Passer à Pro
-          </button>
+            <span>
+              <span className="block text-[13px] font-medium text-zinc-100">Passer à Pro</span>
+              <span className="block text-[11px] text-zinc-500">Scans illimités, audits, export</span>
+            </span>
+            <ArrowUpRight className="h-4 w-4 text-zinc-500 transition-colors group-hover:text-amber-400" />
+          </Link>
         )}
 
-        {/* User */}
-        <div
-          className={cn(
-            'flex items-center gap-3 rounded-xl p-2 hover:bg-white/[0.03] transition-colors',
-            !sidebarOpen && 'justify-center'
-          )}
-        >
-          {/* Avatar */}
-          <div className="relative shrink-0">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-amber-500/30 to-orange-600/20 text-amber-400 text-xs font-bold border border-amber-500/20">
-              {user?.email?.charAt(0).toUpperCase() || '?'}
-            </div>
-            {!sidebarOpen && (
-              <span
-                className={cn(
-                  'absolute -bottom-1 -right-1 text-[8px] font-bold px-1 py-px rounded-full border border-[#0a0a0c]',
-                  isAdmin
-                    ? 'bg-violet-600 text-white'
-                    : isPro
-                    ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white'
-                    : 'bg-zinc-700 text-zinc-400'
-                )}
-              >
-                {isAdmin ? 'ADM' : isPro ? 'PRO' : 'FREE'}
-              </span>
-            )}
+        <div className={cn('flex items-center gap-2 rounded-md p-1.5', !expanded && 'flex-col')}>
+          <div
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-3 text-[12px] font-semibold text-zinc-200 ring-1 ring-hairline-strong"
+            title={!expanded ? `${user?.email ?? ''} · ${plan}` : undefined}
+          >
+            {user?.email?.charAt(0).toUpperCase() || '?'}
           </div>
-
-          {sidebarOpen && (
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5 mb-0.5">
-                <p className="text-xs font-medium text-zinc-300 truncate">
-                  {user?.email?.split('@')[0] || 'Utilisateur'}
-                </p>
-                <span
-                  className={cn(
-                    'shrink-0 text-[9px] font-bold px-1.5 py-px rounded-full',
-                    isAdmin
-                      ? 'bg-violet-500/20 text-violet-400 border border-violet-500/20'
-                      : isPro
-                      ? 'bg-amber-500/20 text-amber-400 border border-amber-500/20'
-                      : 'bg-zinc-700/60 text-zinc-500 border border-zinc-700'
-                  )}
-                >
-                  {isAdmin ? 'ADMIN' : isPro ? 'PRO' : 'FREE'}
-                </span>
-              </div>
-              <button
-                onClick={signOut}
-                className="flex items-center gap-1 text-[11px] text-zinc-600 hover:text-red-400 transition-colors"
-              >
-                <LogOut className="h-3 w-3" />
-                Déconnexion
-              </button>
+          {expanded && (
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[13px] text-zinc-200">{user?.email?.split('@')[0] || 'Utilisateur'}</p>
+              <p className={cn('text-[11px]', isPro || isAdmin ? 'text-amber-400' : 'text-zinc-500')}>Plan {plan}</p>
             </div>
           )}
-
-          {!sidebarOpen && (
-            <button
-              onClick={signOut}
-              title="Déconnexion"
-              className="absolute left-[72px] bottom-[14px] flex h-7 w-7 items-center justify-center rounded-lg text-zinc-600 hover:text-red-400 hover:bg-red-400/5 transition-colors"
-            >
-              <LogOut className="h-3.5 w-3.5" />
-            </button>
-          )}
+          <button
+            onClick={signOut}
+            aria-label="Se déconnecter"
+            title="Se déconnecter"
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-zinc-500 transition-colors hover:bg-white/[0.05] hover:text-zinc-200"
+          >
+            <LogOut className="h-3.5 w-3.5" />
+          </button>
         </div>
+
+        {!expanded && (
+          <button
+            onClick={toggleSidebar}
+            aria-label="Déplier la barre latérale"
+            className="mx-auto mt-1 hidden h-7 w-7 items-center justify-center rounded-md text-zinc-500 transition-colors hover:bg-white/[0.05] hover:text-zinc-200 md:flex"
+          >
+            <PanelLeftOpen className="h-4 w-4" />
+          </button>
+        )}
       </div>
     </aside>
+  )
+}
+
+function NavLink({
+  item,
+  active,
+  expanded,
+  onNavigate,
+}: {
+  item: NavItem
+  active: boolean
+  expanded: boolean
+  onNavigate?: () => void
+}) {
+  const Icon = item.icon
+  return (
+    <Link
+      href={item.href}
+      onClick={onNavigate}
+      aria-current={active ? 'page' : undefined}
+      title={!expanded ? item.name : item.hint}
+      className={cn(
+        'flex h-8 items-center gap-2.5 rounded-md text-[13px] font-medium transition-colors duration-100',
+        expanded ? 'px-2.5' : 'justify-center',
+        active ? 'bg-white/[0.07] text-white' : 'text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-100'
+      )}
+    >
+      <Icon className={cn('h-4 w-4 shrink-0', active ? 'text-amber-400' : 'text-zinc-500')} />
+      {expanded && <span className="truncate">{item.name}</span>}
+    </Link>
   )
 }
