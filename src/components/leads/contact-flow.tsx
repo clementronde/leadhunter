@@ -1,10 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { CheckCircle, FlaskConical, Loader2, Mail, MessageCircle, Phone, RefreshCw, Search, Send, Smartphone, Sparkles } from 'lucide-react'
+import { Check, CheckCircle, FlaskConical, Loader2, Mail, MessageCircle, Pencil, Phone, RefreshCw, Search, Send, Smartphone, Sparkles } from 'lucide-react'
 import { Company, LeadStatus, OutreachSettings } from '@/types'
 import { usePlan } from '@/hooks/usePlan'
 import { Button, Card } from '@/components/ui'
+import { leadsApi } from '@/lib/api'
 
 interface ContactFlowProps {
   lead: Company
@@ -46,6 +47,40 @@ export function ContactFlow({ lead, onLeadUpdate, onStatusChange, onUpgrade }: C
   const [shortDrafting, setShortDrafting] = useState(false)
   const [shortText, setShortText] = useState('')
   const [shortSent, setShortSent] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [editPhone, setEditPhone] = useState('')
+  const [editEmail, setEditEmail] = useState('')
+  const [savingContacts, setSavingContacts] = useState(false)
+  const [editError, setEditError] = useState<string | null>(null)
+
+  const startEditing = () => {
+    setEditPhone(lead.phone ?? '')
+    setEditEmail(lead.email ?? '')
+    setEditError(null)
+    setEditing(true)
+  }
+
+  // Saisie manuelle : coordonnées trouvées par vous (appel, carte de visite, réseaux…)
+  const handleSaveContacts = async () => {
+    const email = editEmail.trim().toLowerCase()
+    const phone = editPhone.trim()
+    if (email && !/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(email)) {
+      setEditError('Adresse email invalide')
+      return
+    }
+    setSavingContacts(true)
+    setEditError(null)
+    try {
+      const patch = { email: email || null, phone: phone || null }
+      await leadsApi.update(lead.id, patch)
+      onLeadUpdate(patch)
+      setEditing(false)
+    } catch {
+      setEditError('Enregistrement impossible')
+    } finally {
+      setSavingContacts(false)
+    }
+  }
 
   useEffect(() => {
     fetch('/api/outreach/settings')
@@ -185,27 +220,78 @@ export function ContactFlow({ lead, onLeadUpdate, onStatusChange, onUpgrade }: C
       </div>
 
       {/* 1. Coordonnées */}
-      <div className="grid gap-3 sm:grid-cols-2">
-        <ContactLine
-          icon={<Phone className="h-4 w-4" />}
-          label="Téléphone"
-          value={lead.phone}
-          href={lead.phone ? `tel:${lead.phone}` : undefined}
-        />
-        <ContactLine
-          icon={<Mail className="h-4 w-4" />}
-          label="Email"
-          value={lead.email}
-          href={lead.email ? `mailto:${lead.email}` : undefined}
-        />
-      </div>
+      {editing ? (
+        <div className="space-y-3">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="block">
+              <span className="mb-1 block text-xs text-zinc-500">Téléphone</span>
+              <input
+                type="tel"
+                value={editPhone}
+                onChange={(e) => setEditPhone(e.target.value)}
+                placeholder="06 12 34 56 78"
+                autoFocus
+                className="w-full rounded-lg border border-white/[0.08] bg-zinc-800/60 px-3 py-2.5 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-amber-500"
+              />
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-xs text-zinc-500">Email</span>
+              <input
+                type="email"
+                value={editEmail}
+                onChange={(e) => setEditEmail(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSaveContacts() }}
+                placeholder="contact@entreprise.fr"
+                className="w-full rounded-lg border border-white/[0.08] bg-zinc-800/60 px-3 py-2.5 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-amber-500"
+              />
+            </label>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button size="sm" onClick={handleSaveContacts} disabled={savingContacts}>
+              {savingContacts ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+              Enregistrer
+            </Button>
+            <button type="button" onClick={() => setEditing(false)} className="text-sm text-zinc-400 hover:text-white">
+              Annuler
+            </button>
+            {editError && <p className="text-sm text-red-400">{editError}</p>}
+          </div>
+        </div>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <ContactLine
+            icon={<Phone className="h-4 w-4" />}
+            label="Téléphone"
+            value={lead.phone}
+            href={lead.phone ? `tel:${lead.phone}` : undefined}
+          />
+          <ContactLine
+            icon={<Mail className="h-4 w-4" />}
+            label="Email"
+            value={lead.email}
+            href={lead.email ? `mailto:${lead.email}` : undefined}
+          />
+        </div>
+      )}
 
-      {missingContacts && (
+      {!editing && (
         <div className="space-y-2">
-          <Button variant="secondary" onClick={handleFindContacts} disabled={searching} className="w-full sm:w-auto">
-            {searching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-            {searching ? 'Recherche sur le web… (jusqu’à 1 min)' : 'Trouver les contacts manquants'}
-          </Button>
+          <div className="flex flex-wrap items-center gap-3">
+            {missingContacts && (
+              <Button variant="secondary" onClick={handleFindContacts} disabled={searching} className="w-full sm:w-auto">
+                {searching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                {searching ? 'Recherche sur le web… (jusqu’à 1 min)' : 'Trouver les contacts manquants'}
+              </Button>
+            )}
+            <button
+              type="button"
+              onClick={startEditing}
+              className="flex items-center gap-1.5 text-sm text-zinc-400 hover:text-white"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+              {missingContacts ? 'Saisir moi-même' : 'Modifier les coordonnées'}
+            </button>
+          </div>
           {searchInfo && (
             <p className={`text-sm ${searchInfo.tone === 'ok' ? 'text-emerald-400' : 'text-amber-400'}`}>{searchInfo.text}</p>
           )}

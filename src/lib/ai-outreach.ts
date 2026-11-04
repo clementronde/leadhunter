@@ -8,6 +8,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { z } from 'zod'
 import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod'
+import { COLD_EMAIL_RULES, SHORT_MESSAGE_RULES, rulesAsPrompt } from '@/lib/cold-email-playbook'
 
 // Haiku : tâches simples et répétées sur chaque lead, ~40x moins cher qu'Opus.
 // La recherche web de Haiku utilise la variante de base de l'outil ; si elle est refusée,
@@ -192,32 +193,28 @@ export interface DraftContext {
   }
 }
 
-const DRAFT_PROMPT = `Tu écris un premier email de prospection pour un freelance / une petite agence web française.
-Objectif : obtenir un court échange téléphonique (10-15 min) avec le gérant.
+const DRAFT_PROMPT = `Tu écris un premier email de prospection (cold email) pour un freelance / une petite agence web française.
+Objectif : obtenir une réponse positive du gérant (intérêt, puis court échange).
 
 Données réelles sur le prospect (n'invente rien d'autre) :
 {facts}
 
-Règles d'écriture :
-- Vouvoiement, ton direct et humain, pas commercial. 90 à 130 mots pour le corps, hors signature.
-- Première phrase : une observation précise et vraie tirée des données (note Google, nombre d'avis, absence de site, constat de l'audit). Pas de "Je me permets", pas de flatterie générique.
-- Un seul problème concret et son impact pour CE type d'activité (clients perdus, réservations, appels...).
-- Une seule proposition, une seule question finale simple pour caler un appel.
-- Aucun chiffre, résultat, client ou référence qui ne figure pas dans les données.
-- Objet : 3 à 7 mots, personnalisé avec le nom de l'entreprise, sans majuscules partout ni emoji.
-- Le corps commence par "Bonjour," et se termine exactement par cette signature :
+Règles d'écriture, tirées des études sur les cold emails les plus performants :
+${rulesAsPrompt(COLD_EMAIL_RULES)}
+
+Format :
+- Le corps commence par "Bonjour," puis se termine par cette signature exacte, suivie du P.S. :
 {signature}`
 
 const SHORT_PROMPT = `Tu écris un premier message WhatsApp / SMS de prospection pour un freelance / une petite agence web française.
-Objectif : que le gérant accepte un court appel.
+Objectif : que le gérant réponde.
 
 Données réelles sur le prospect (n'invente rien d'autre) :
 {facts}
 
 Règles :
-- 280 caractères maximum, vouvoiement, ton simple et humain, comme écrit à la main. Pas d'emoji, pas de lien.
-- Commence par "Bonjour," puis une observation précise et vraie tirée des données, l'impact en une phrase, et une question pour un appel.
-- Termine par la signature courte : {sender}
+${rulesAsPrompt(SHORT_MESSAGE_RULES)}
+- Commence par "Bonjour," et termine par la signature courte : {sender}
 - "subject" : chaîne vide.`
 
 function buildFacts(ctx: DraftContext): string {
@@ -274,4 +271,98 @@ export async function draftOutreachEmail(ctx: DraftContext, channel: 'email' | '
     throw new Error('Rédaction impossible pour ce lead')
   }
   return response.parsed_output
+}
+
+// ============================================
+// Rédaction libre : l'utilisateur décrit l'entreprise, l'IA propose 3 versions
+// ============================================
+
+// Sonnet : une seule rédaction à la fois, on privilégie la qualité d'écriture
+const COMPOSE_MODEL = 'claude-sonnet-5-5'
+
+const ComposeSchema = z.object({
+  variants: z.array(z.object({
+    angle: z.string(),
+    subject: z.string(),
+    body: z.string(),
+    why: z.string(),
+  })),
+})
+
+export type ComposedEmail = z.infer<typeof ComposeSchema>['variants'][number]
+
+export interface ComposeInput {
+  companyName: string
+  activity?: string | null
+  city?: string | null
+  contactName?: string | null
+  website?: string | null
+  googleRating?: string | null
+  observations?: string | null
+  offer?: string | null
+  channel: 'email' | 'short'
+  sender: { name?: string | null; agency?: string | null; signature: string }
+}
+
+const COMPOSE_PROMPT = `Tu es un expert du cold email B2B en France. Tu écris pour un freelance / une petite agence web qui prospecte des petites entreprises locales.
+
+Informations sur l'entreprise ciblée, données par l'utilisateur (n'invente rien d'autre) :
+{facts}
+
+Ce que l'expéditeur propose : {offer}
+
+Avant d'écrire, identifie le problème le plus probable et le plus coûteux pour CE type d'activité, à partir des faits fournis. Puis écris 3 versions différentes, chacune avec un angle distinct :
+1. "Question douleur" : ouvre sur le problème formulé en une question.
+2. "Constat précis" : ouvre sur le fait observé le plus parlant, puis son impact.
+3. "Ultra court" : 40 mots maximum, une observation et une demande oui / non.
+
+Règles, tirées des études sur les cold emails les plus performants (à respecter dans chaque version) :
+{rules}
+
+Format de chaque version :
+- "angle" : le nom de l'angle.
+- "subject" : {subjectRule}
+- "body" : commence par "Bonjour{greeting}," et se termine par la signature exacte ci-dessous{psRule}.
+- "why" : une phrase qui explique pourquoi cette version devrait obtenir une réponse.
+
+Signature :
+{signature}`
+
+export async function composeColdEmail(input: ComposeInput): Promise<ComposedEmail[]> {
+  const anthropic = getClient()
+  const facts = [
+    `Entreprise : ${input.companyName}${input.city ? ` (${input.city})` : ''}`,
+    input.activity && `Activité : ${input.activity}`,
+    input.contactName && `Gérant / contact : ${input.contactName}`,
+    input.website ? `Site web : ${input.website}` : 'Site web : non précisé',
+    input.googleRating && `Note / avis Google : ${input.googleRating}`,
+    input.observations && `Ce que l'expéditeur a remarqué : ${input.observations}`,
+  ].filter(Boolean).join('\n')
+
+  const isShort = input.channel === 'short'
+  const senderParts = [input.sender.name, input.sender.agency].filter((part): part is string => !!part?.trim())
+  const shortSender = senderParts
+    .filter((part, i) => senderParts.findIndex((other) => other.trim().toLowerCase() === part.trim().toLowerCase()) === i)
+    .join(', ') || 'votre interlocuteur web'
+
+  const prompt = COMPOSE_PROMPT
+    .replace('{facts}', facts)
+    .replace('{offer}', input.offer?.trim() || 'création ou refonte de site web')
+    .replace('{rules}', rulesAsPrompt(isShort ? [...SHORT_MESSAGE_RULES, COLD_EMAIL_RULES[2]] : COLD_EMAIL_RULES))
+    .replace('{subjectRule}', isShort ? 'chaîne vide (message WhatsApp / SMS).' : '2 à 4 mots.')
+    .replace('{greeting}', input.contactName ? ` ${input.contactName}` : '')
+    .replace('{psRule}', isShort ? '' : ', suivie du P.S.')
+    .replace('{signature}', isShort ? shortSender : input.sender.signature || '(pas de signature)')
+
+  const response = await anthropic.messages.parse({
+    model: COMPOSE_MODEL,
+    max_tokens: 6000,
+    output_config: { effort: 'medium', format: zodOutputFormat(ComposeSchema) },
+    messages: [{ role: 'user', content: prompt }],
+  })
+
+  if (response.stop_reason === 'refusal' || !response.parsed_output?.variants.length) {
+    throw new Error('Rédaction impossible pour cette entreprise')
+  }
+  return response.parsed_output.variants.slice(0, 3)
 }

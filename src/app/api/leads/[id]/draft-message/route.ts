@@ -17,7 +17,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const body = await request.json().catch(() => ({}))
   const channel: 'email' | 'short' = body?.channel === 'short' ? 'short' : 'email'
 
-  const rl = rateLimit(`draft-message:${user.id}`, { windowMs: 60_000, max: 15 })
+  // 40/min : laisse passer la rédaction groupée d'une campagne IA (3 en parallèle)
+  const rl = rateLimit(`draft-message:${user.id}`, { windowMs: 60_000, max: 40 })
   if (!rl.success) {
     return NextResponse.json({ error: 'Trop de demandes, réessayez dans une minute' }, { status: 429 })
   }

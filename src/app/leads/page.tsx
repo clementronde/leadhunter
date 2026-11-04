@@ -11,6 +11,7 @@ import { Company, LeadFilters, LeadSegment, LeadStatus, OutreachSettings } from 
 import { usePlan } from '@/hooks/usePlan'
 import { applyTemplate, CustomTemplate, loadTemplates, TemplateId } from '@/lib/email-templates'
 import {
+  Sparkles,
   LayoutGrid,
   List,
   ChevronLeft,
@@ -206,6 +207,12 @@ function CampaignModal({ filters, onClose }: { filters: LeadFilters; onClose: ()
   const [error, setError] = useState<string | null>(null)
   const [settings, setSettings] = useState<OutreachSettings | null>(null)
   const templates = loadTemplates(settings?.email_templates)
+  // Mode IA : un email personnalisé par lead (fiche Google + audit), modifiable avant envoi
+  const [mode, setMode] = useState<'template' | 'ai'>('template')
+  const [drafts, setDrafts] = useState<Record<string, { subject: string; body: string }>>({})
+  const [draftFailed, setDraftFailed] = useState<Set<string>>(new Set())
+  const [drafting, setDrafting] = useState<{ done: number; total: number } | null>(null)
+  const stopDrafting = useRef(false)
 
   useEffect(() => {
     Promise.all([
@@ -227,8 +234,49 @@ function CampaignModal({ filters, onClose }: { filters: LeadFilters; onClose: ()
     return { lead, templateId, ...rendered }
   })
 
+  const aiMessages = leads
+    .filter((lead) => drafts[lead.id])
+    .map((lead) => ({ lead, templateId: 'ia', ...drafts[lead.id] }))
+  const messagesToSend = mode === 'ai' ? aiMessages : renderedMessages
+
+  const handleDraftAll = async () => {
+    const queue = leads.filter((lead) => !drafts[lead.id]).map((lead) => lead.id)
+    if (queue.length === 0) return
+    stopDrafting.current = false
+    setError(null)
+    setDraftFailed(new Set())
+    const total = queue.length
+    let done = 0
+    setDrafting({ done, total })
+    const worker = async () => {
+      while (queue.length > 0 && !stopDrafting.current) {
+        const id = queue.shift()!
+        try {
+          const res = await fetch(`/api/leads/${id}/draft-message`, { method: 'POST' })
+          if (res.status === 429) {
+            queue.push(id)
+            await new Promise((r) => setTimeout(r, 15_000))
+            continue
+          }
+          const data = await res.json()
+          if (!res.ok) throw new Error(data.error)
+          setDrafts((prev) => ({ ...prev, [id]: { subject: data.subject, body: data.body } }))
+        } catch {
+          setDraftFailed((prev) => new Set(prev).add(id))
+        }
+        done++
+        setDrafting({ done, total })
+      }
+    }
+    await Promise.all([worker(), worker(), worker()])
+    setDrafting(null)
+  }
+
+  const updateDraft = (id: string, patch: Partial<{ subject: string; body: string }>) =>
+    setDrafts((prev) => ({ ...prev, [id]: { ...prev[id], ...patch } }))
+
   const handleCreateCampaign = async () => {
-    if (renderedMessages.length === 0) return
+    if (messagesToSend.length === 0) return
     setCreating(true)
     setError(null)
     try {
@@ -236,10 +284,10 @@ function CampaignModal({ filters, onClose }: { filters: LeadFilters; onClose: ()
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: `Campagne ${new Date().toLocaleDateString('fr-FR')}`,
+          name: `Campagne${mode === 'ai' ? ' IA' : ''} ${new Date().toLocaleDateString('fr-FR')}`,
           scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : null,
           followupDelays: followupsEnabled ? [3, 7] : [],
-          messages: renderedMessages.map((message) => ({
+          messages: messagesToSend.map((message) => ({
             companyId: message.lead.id,
             recipientEmail: message.lead.email,
             subject: message.subject,
@@ -281,6 +329,51 @@ function CampaignModal({ filters, onClose }: { filters: LeadFilters; onClose: ()
         <div className="grid min-h-0 flex-1 gap-0 md:grid-cols-[280px_1fr]">
           <div className="space-y-4 border-b border-white/[0.06] p-5 md:border-b-0 md:border-r">
             <div>
+              <p className="mb-2 text-xs font-medium text-zinc-500">Message</p>
+              <div className="grid grid-cols-2 gap-1 rounded-lg border border-white/[0.06] bg-zinc-800/40 p-1">
+                {([['template', 'Modèle commun'], ['ai', 'IA, 1 par lead']] as const).map(([id, label]) => (
+                  <button
+                    key={id}
+                    onClick={() => setMode(id)}
+                    className={`rounded-md px-2 py-1.5 text-xs font-medium ${
+                      mode === id ? 'bg-amber-500 text-white' : 'text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {mode === 'ai' ? (
+              <div className="space-y-2">
+                <p className="text-xs leading-relaxed text-zinc-500">
+                  L&apos;IA écrit un email différent pour chaque lead à partir de sa fiche Google et de son audit. Relisez et corrigez avant de créer la campagne.
+                </p>
+                {drafting ? (
+                  <Button variant="secondary" onClick={() => { stopDrafting.current = true }} className="w-full">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    {drafting.done}/{drafting.total} rédigés · Arrêter
+                  </Button>
+                ) : (
+                  <Button
+                    variant="secondary"
+                    onClick={handleDraftAll}
+                    disabled={loading || leads.every((lead) => drafts[lead.id])}
+                    className="w-full"
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    {aiMessages.length === 0
+                      ? `Rédiger ${leads.length} email${leads.length > 1 ? 's' : ''}`
+                      : `Rédiger les ${leads.length - aiMessages.length} restants`}
+                  </Button>
+                )}
+                {draftFailed.size > 0 && !drafting && (
+                  <p className="text-xs text-amber-400">{draftFailed.size} échec{draftFailed.size > 1 ? 's' : ''} : relancez pour réessayer.</p>
+                )}
+              </div>
+            ) : (
+            <div>
               <p className="mb-2 text-xs font-medium text-zinc-500">Template pour leads avec site</p>
               <div className="flex flex-wrap gap-2">
                 {(Object.entries(templates) as [TemplateId, CustomTemplate][]).map(([id, template]) => (
@@ -297,7 +390,9 @@ function CampaignModal({ filters, onClose }: { filters: LeadFilters; onClose: ()
                   </button>
                 ))}
               </div>
+              <p className="mt-2 text-xs text-zinc-500">Les leads sans site reçoivent toujours le modèle « sans site ».</p>
             </div>
+            )}
 
             <label className="block">
               <span className="mb-1 block text-xs font-medium text-zinc-500">Programmer</span>
@@ -321,9 +416,9 @@ function CampaignModal({ filters, onClose }: { filters: LeadFilters; onClose: ()
 
             {error && <p className="text-sm text-red-400">{error}</p>}
 
-            <Button onClick={handleCreateCampaign} disabled={creating || loading || renderedMessages.length === 0} className="w-full">
+            <Button onClick={handleCreateCampaign} disabled={creating || loading || !!drafting || messagesToSend.length === 0} className="w-full">
               {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-              {creating ? 'Création...' : 'Créer la campagne'}
+              {creating ? 'Création...' : `Créer la campagne (${messagesToSend.length})`}
             </Button>
           </div>
 
@@ -335,6 +430,41 @@ function CampaignModal({ filters, onClose }: { filters: LeadFilters; onClose: ()
               </div>
             ) : renderedMessages.length === 0 ? (
               <div className="p-10 text-center text-sm text-zinc-500">Aucun lead avec email dans les filtres actifs.</div>
+            ) : mode === 'ai' ? (
+              <div className="space-y-4">
+                {leads.map((lead) => {
+                  const draft = drafts[lead.id]
+                  return (
+                    <div key={lead.id} className="rounded-xl border border-white/[0.06] bg-zinc-800/40 p-4">
+                      <div className="mb-3">
+                        <p className="font-medium text-zinc-200">{lead.name}</p>
+                        <p className="text-xs text-zinc-500">{lead.email} · {lead.city}</p>
+                      </div>
+                      {draft ? (
+                        <div className="space-y-2">
+                          <input
+                            value={draft.subject}
+                            onChange={(e) => updateDraft(lead.id, { subject: e.target.value })}
+                            aria-label={`Objet pour ${lead.name}`}
+                            className="w-full rounded-lg border border-white/[0.06] bg-zinc-900/70 px-3 py-2 text-xs font-medium text-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                          />
+                          <textarea
+                            value={draft.body}
+                            onChange={(e) => updateDraft(lead.id, { body: e.target.value })}
+                            aria-label={`Message pour ${lead.name}`}
+                            rows={8}
+                            className="w-full rounded-lg border border-white/[0.06] bg-zinc-900/70 p-3 text-xs leading-relaxed text-zinc-300 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                          />
+                        </div>
+                      ) : (
+                        <p className="text-xs text-zinc-500">
+                          {draftFailed.has(lead.id) ? 'Rédaction échouée' : drafting ? 'En attente…' : 'Pas encore rédigé'}
+                        </p>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
             ) : (
               <div className="space-y-4">
                 {renderedMessages.slice(0, 10).map((message) => (
