@@ -394,25 +394,47 @@ export async function findPlaceFromMapsUrl(raw: string): Promise<PlaceSearchResu
     }
   }
 
-  const response = await fetch('https://places.googleapis.com/v1/places:searchText', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': apiKey, 'X-Goog-FieldMask': SEARCH_FIELD_MASK },
-    body: JSON.stringify({
-      textQuery: name,
-      languageCode: 'fr',
-      regionCode: 'FR',
-      pageSize: 1,
-      ...(coords
-        ? { locationBias: { circle: { center: { latitude: Number(coords[1]), longitude: Number(coords[2]) }, radius: 300 } } }
-        : {}),
-    }),
-  })
-  if (!response.ok) {
-    const body = (await response.json().catch(() => ({}))) as GoogleApiError
-    throw new Error(`Google Places API error : ${body.error?.message || `HTTP ${response.status}`}`)
+  // Artisans sans vitrine (plombiers, électriciens…) : Google les exclut de la recherche par défaut,
+  // il faut demander explicitement les « entreprises de zone de service » (includePureServiceAreaBusinesses)
+  const attempts = coords ? [2000, 30000, null] : [null]
+  for (const radius of attempts) {
+    const response = await fetch('https://places.googleapis.com/v1/places:searchText', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': apiKey, 'X-Goog-FieldMask': SEARCH_FIELD_MASK },
+      body: JSON.stringify({
+        textQuery: name,
+        languageCode: 'fr',
+        regionCode: 'FR',
+        pageSize: 5,
+        includePureServiceAreaBusinesses: true,
+        ...(coords && radius
+          ? { locationBias: { circle: { center: { latitude: Number(coords[1]), longitude: Number(coords[2]) }, radius } } }
+          : {}),
+      }),
+    })
+    if (!response.ok) {
+      const body = (await response.json().catch(() => ({}))) as GoogleApiError
+      throw new Error(`Google Places API error : ${body.error?.message || `HTTP ${response.status}`}`)
+    }
+    const data: SearchTextResponse = await response.json()
+    const places = data.places ?? []
+    if (places.length === 0) continue
+    // On garde la fiche dont le nom correspond le mieux au lien
+    const wanted = simplifyName(name)
+    const best =
+      places.find((p) => simplifyName(p.displayName?.text) === wanted) ||
+      places.find((p) => {
+        const got = simplifyName(p.displayName?.text)
+        return got.includes(wanted) || wanted.includes(got)
+      })
+    if (best) return normalizePlace(best)
+    if (radius !== null && radius <= 2000) return normalizePlace(places[0])
   }
-  const data: SearchTextResponse = await response.json()
-  return data.places?.[0] ? normalizePlace(data.places[0]) : null
+  return null
+}
+
+function simplifyName(value?: string): string {
+  return (value ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '')
 }
 
 function normalizePlace(place: NewPlace): PlaceSearchResult {
