@@ -69,10 +69,11 @@ const CALLBACK_CHOICES = [
 // Au bout de 3 appels sans réponse, on arrête de le remettre dans la file
 const MAX_NO_ANSWER = 3
 // Colonnes du tableau (comme un tableur : une colonne par étape)
-type BoardColumn = 'todo' | 'waiting' | 'callback' | 'meeting' | 'done'
+type BoardColumn = 'todo' | 'no_answer' | 'waiting' | 'callback' | 'meeting' | 'done'
 
 const COLUMNS: { id: BoardColumn; label: string; accent: string; button: string }[] = [
   { id: 'todo', label: 'À appeler', accent: 'border-t-amber-500', button: 'À appeler' },
+  { id: 'no_answer', label: 'Pas de réponse', accent: 'border-t-zinc-400', button: 'Pas de réponse' },
   { id: 'waiting', label: 'En attente', accent: 'border-t-sky-500', button: 'En attente' },
   { id: 'callback', label: 'À rappeler', accent: 'border-t-orange-400', button: 'À rappeler' },
   { id: 'meeting', label: 'RDV pris', accent: 'border-t-emerald-500', button: 'RDV' },
@@ -80,6 +81,7 @@ const COLUMNS: { id: BoardColumn; label: string; accent: string; button: string 
 ]
 
 const COLUMN_OUTCOME: Record<Exclude<BoardColumn, 'todo'>, CallOutcome> = {
+  no_answer: 'no_answer',
   waiting: 'interested',
   callback: 'callback',
   meeting: 'meeting',
@@ -90,8 +92,9 @@ function columnOf(lead: Company): BoardColumn {
   switch (lead.last_call_outcome) {
     case 'interested':
       return 'waiting'
-    case 'callback':
     case 'no_answer':
+      return 'no_answer'
+    case 'callback':
       return 'callback'
     case 'meeting':
       return 'meeting'
@@ -823,7 +826,6 @@ function BoardCard({
   onRemove: () => void
   onComment: (text: string) => void
 }) {
-  const outcome = lead.last_call_outcome ? OUTCOME[lead.last_call_outcome] : null
   const [editing, setEditing] = useState(false)
   return (
     <div
@@ -843,7 +845,7 @@ function BoardCard({
       </div>
       <p className="text-xs text-zinc-500">
         {lead.city}
-        {outcome && column === 'callback' && ` · ${outcome.label}`}
+        {column === 'no_answer' && (lead.call_count ?? 0) > 0 && ` · ${lead.call_count} tentative${(lead.call_count ?? 0) > 1 ? 's' : ''}`}
         {lead.callback_at && column !== 'todo' && column !== 'done' && column !== 'meeting' &&
           ` · le ${new Date(lead.callback_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}`}
       </p>
@@ -863,6 +865,8 @@ function BoardCard({
         placeholder={
           column === 'callback'
             ? 'Pourquoi le rappeler ? (ex. rappeler après 18h, voir avec le gérant)'
+            : column === 'no_answer'
+            ? 'Ex. messagerie, laissé un message, rappeler le matin'
             : column === 'waiting'
             ? 'Qu’attend-on de lui ? (ex. envoie le devis, réfléchit)'
             : 'Commentaire'
