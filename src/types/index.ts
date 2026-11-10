@@ -11,6 +11,15 @@ export type LeadStatus =
   | 'won'        // Client gagné
   | 'lost'       // Perdu
 
+// Résultat d'un appel de prospection
+export type CallOutcome =
+  | 'meeting'         // RDV pris
+  | 'interested'      // Intéressé, à recontacter
+  | 'callback'        // Demande à être rappelé
+  | 'no_answer'       // Pas de réponse / messagerie
+  | 'not_interested'  // Pas intéressé
+  | 'wrong_number'    // Faux numéro
+
 // Priorité calculée selon le score
 export type Priority = 'hot' | 'warm' | 'cold'
 
@@ -73,7 +82,13 @@ export interface Company {
   opt_out_at?: string | null
   opt_out_reason?: string | null
   audit_share_token?: string | null
-  
+
+  // Appels (session d'appels)
+  call_count?: number
+  last_call_at?: string | null
+  last_call_outcome?: CallOutcome | null
+  callback_at?: string | null
+
   // Metadata
   created_at: string
   updated_at: string

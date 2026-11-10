@@ -78,6 +78,7 @@ export default function TodayPage() {
         .eq('do_not_contact', false)
         .is('email', null)
         .not('phone', 'is', null)
+        .is('last_call_at', null)
         .gte('prospect_score', 50)
         .order('prospect_score', { ascending: false })
         .limit(10),
@@ -185,7 +186,7 @@ export default function TodayPage() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <Counter icon={<MessageSquareReply className="h-5 w-5 text-emerald-400" />} label="Réponses à traiter" value={sections.replies.length} loading={loading} />
           <Counter icon={<Flame className="h-5 w-5 text-red-400" />} label="Prospects chauds" value={sections.engaged.length} loading={loading} />
-          <Counter icon={<PhoneCall className="h-5 w-5 text-amber-400" />} label="À appeler" value={sections.toCall.length} loading={loading} />
+          <Counter icon={<PhoneCall className="h-5 w-5 text-amber-400" />} label="À appeler · ouvrir la session" value={sections.toCall.length} loading={loading} href="/calls" />
           <Counter icon={<Mail className="h-5 w-5 text-blue-400" />} label="À contacter par email" value={sections.toEmail.length} loading={loading} />
           <Counter icon={<Send className="h-5 w-5 text-violet-400" />} label="Emails programmés aujourd'hui" value={dueCount} loading={loading} />
         </div>
@@ -417,14 +418,16 @@ function Counter({
   label,
   value,
   loading,
+  href,
 }: {
   icon: React.ReactNode
   label: string
   value: number
   loading: boolean
+  href?: string
 }) {
-  return (
-    <Card>
+  const card = (
+    <Card className={href ? 'transition-colors hover:border-amber-500/30' : undefined}>
       <CardContent className="pt-5">
         <div className="flex items-center gap-3">
           {icon}
@@ -436,4 +439,5 @@ function Counter({
       </CardContent>
     </Card>
   )
+  return href ? <Link href={href} className="block">{card}</Link> : card
 }

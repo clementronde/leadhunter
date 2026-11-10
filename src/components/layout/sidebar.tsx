@@ -26,6 +26,7 @@ import {
   ListChecks,
   Map as MapIcon,
   PenLine,
+  PhoneCall,
 } from 'lucide-react'
 
 const navigationGroups = [
@@ -39,6 +40,7 @@ const navigationGroups = [
   {
     label: 'Prospection',
     items: [
+      { name: 'Appels', href: '/calls', icon: PhoneCall },
       { name: 'Leads', href: '/leads', icon: Users },
       { name: 'Tri', href: '/triage', icon: ListChecks },
       { name: 'Carte', href: '/map', icon: MapIcon },
