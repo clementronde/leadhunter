@@ -202,7 +202,8 @@ export default function CallsPage() {
     const { data, error: err } = await supabase
       .from('companies')
       .select(LEAD_SELECT)
-      .not('last_call_at', 'is', null)
+      .not('call_list_at', 'is', null)
+      .not('last_call_outcome', 'is', null)
       .order('last_call_at', { ascending: false })
       .limit(200)
     if (err) throw err
@@ -217,24 +218,23 @@ export default function CallsPage() {
   const loadQueue = useCallback(async () => {
     const nowIso = new Date().toISOString()
     const [due, fresh] = await Promise.all([
-      // Rappels arrivés à échéance
+      // Rappels arrivés à échéance (parmi les leads de la liste d'appels)
       supabase
         .from('companies')
         .select(LEAD_SELECT)
+        .not('call_list_at', 'is', null)
         .lte('callback_at', nowIso)
         .eq('do_not_contact', false)
         .in('status', ACTIVE_STATUSES)
         .order('callback_at', { ascending: true })
         .limit(BATCH),
-      // Jamais appelés, les meilleurs scores d'abord
+      // Cochés « À appeler » dans la page Leads, pas encore de résultat : dans l'ordre où ils ont été cochés
       supabase
         .from('companies')
         .select(LEAD_SELECT, { count: 'exact' })
-        .is('last_call_at', null)
-        .not('phone', 'is', null)
-        .eq('do_not_contact', false)
-        .in('status', ACTIVE_STATUSES)
-        .order('prospect_score', { ascending: false })
+        .not('call_list_at', 'is', null)
+        .is('last_call_outcome', null)
+        .order('call_list_at', { ascending: true })
         .limit(BATCH),
     ])
     if (due.error) throw due.error
@@ -246,9 +246,8 @@ export default function CallsPage() {
     for (const lead of [...(due.data ?? []), ...(fresh.data ?? [])].map(toCompany)) {
       if (seenIds.current.has(lead.id)) continue
       const phone = normPhone(lead.phone)
-      const isFresh = !lead.last_call_at
-      // Même numéro qu'un prospect déjà appelé ou déjà dans la file : on ne l'appelle pas deux fois
-      if (phone.length >= 6 && (queuedPhones.has(phone) || (isFresh && calledPhones.current.has(phone)))) {
+      // Deux fiches avec le même numéro dans la file : on n'en garde qu'une
+      if (phone.length >= 6 && queuedPhones.has(phone)) {
         duplicates++
         continue
       }
@@ -271,8 +270,8 @@ export default function CallsPage() {
       } catch (err) {
         const message = err instanceof Error ? err.message : String((err as { message?: string })?.message ?? err)
         setError(
-          message.includes('last_call_at') || message.includes('callback_at') || message.includes('call_count')
-            ? "La base n'a pas encore les colonnes d'appel. Exécutez supabase-migration-2026-11-10.sql dans l'éditeur SQL Supabase, puis rechargez la page."
+          ['last_call_at', 'last_call_outcome', 'callback_at', 'call_count', 'call_list_at'].some((col) => message.includes(col))
+            ? "La base n'a pas encore les colonnes d'appel. Exécutez supabase-migration-2026-11-10.sql puis supabase-migration-2026-11-10-liste-appels.sql dans l'éditeur SQL Supabase, puis rechargez la page."
             : `Chargement impossible : ${message}`
         )
       } finally {
@@ -345,6 +344,14 @@ export default function CallsPage() {
     setQueue((items) => [...items.filter((l) => l.id !== lead.id), { ...lead, ...update }])
     seenIds.current.add(lead.id)
     await leadsApi.update(lead.id, update)
+  }, [])
+
+  // Décoche le lead : il quitte la page Appels (sa fiche et son historique restent dans Leads)
+  const removeFromList = useCallback(async (lead: Company) => {
+    setQueue((items) => items.filter((l) => l.id !== lead.id))
+    setCalled((items) => items.filter((l) => l.id !== lead.id))
+    if (!lead.last_call_outcome) setRemaining((n) => (n === null ? null : Math.max(0, n - 1)))
+    await leadsApi.update(lead.id, { call_list_at: null })
   }, [])
 
   const moveTo = useCallback(
@@ -494,6 +501,7 @@ export default function CallsPage() {
               leads={[...queue.filter((q) => !called.some((c) => c.id === q.id)), ...called]}
               loading={loading}
               onMove={moveTo}
+              onRemove={removeFromList}
               onLoadMore={() => loadQueue().catch(() => {})}
               hasMore={remaining !== null && queue.filter((l) => !l.last_call_outcome).length < remaining}
             />
@@ -525,12 +533,12 @@ export default function CallsPage() {
                 <Card>
                   <CardContent className="py-16 text-center">
                     <CheckCircle2 className="mx-auto mb-3 h-10 w-10 text-emerald-500" />
-                    <p className="font-semibold text-white">Plus personne à appeler</p>
+                    <p className="font-semibold text-white">Personne à appeler</p>
                     <p className="mt-1 text-sm text-zinc-500">
-                      Tous vos prospects avec un numéro ont été appelés. Les rappels reviendront ici à leur date.
+                      Cochez la case « À appeler » des leads que vous voulez appeler dans la page Leads. Les rappels reviendront ici à leur date.
                     </p>
-                    <Link href="/scanner" className="mt-4 inline-block">
-                      <Button>Trouver de nouveaux prospects</Button>
+                    <Link href="/leads" className="mt-4 inline-block">
+                      <Button>Choisir des leads</Button>
                     </Link>
                   </CardContent>
                 </Card>
@@ -658,12 +666,14 @@ function Board({
   leads,
   loading,
   onMove,
+  onRemove,
   onLoadMore,
   hasMore,
 }: {
   leads: Company[]
   loading: boolean
   onMove: (lead: Company, column: BoardColumn) => void
+  onRemove: (lead: Company) => void
   onLoadMore: () => void
   hasMore: boolean
 }) {
@@ -724,9 +734,21 @@ function Board({
                   }}
                   onDragEnd={() => setDragId(null)}
                   onMove={(c) => onMove(lead, c)}
+                  onRemove={() => onRemove(lead)}
                 />
               ))}
-              {items.length === 0 && <p className="py-8 text-center text-sm text-zinc-700">Vide</p>}
+              {items.length === 0 &&
+                (col.id === 'todo' ? (
+                  <div className="px-2 py-8 text-center text-sm text-zinc-500">
+                    <p>Vide pour l&apos;instant.</p>
+                    <p className="mt-1 text-xs text-zinc-600">
+                      Cochez « À appeler » sur les leads de votre choix dans la page{' '}
+                      <Link href="/leads" className="text-amber-400 hover:underline">Leads</Link>.
+                    </p>
+                  </div>
+                ) : (
+                  <p className="py-8 text-center text-sm text-zinc-700">Vide</p>
+                ))}
               {col.id === 'todo' && hasMore && (
                 <button onClick={onLoadMore} className="w-full rounded-lg py-2 text-xs text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-300">
                   Afficher plus de prospects
@@ -747,6 +769,7 @@ function BoardCard({
   onDragStart,
   onDragEnd,
   onMove,
+  onRemove,
 }: {
   lead: Company
   column: BoardColumn
@@ -754,6 +777,7 @@ function BoardCard({
   onDragStart: (e: React.DragEvent) => void
   onDragEnd: () => void
   onMove: (column: BoardColumn) => void
+  onRemove: () => void
 }) {
   const outcome = lead.last_call_outcome ? OUTCOME[lead.last_call_outcome] : null
   return (
@@ -797,6 +821,13 @@ function BoardCard({
             {c.button}
           </button>
         ))}
+        <button
+          onClick={onRemove}
+          title="Retirer de la liste d'appels (la fiche reste dans Leads)"
+          className="ml-auto rounded-md px-2 py-1 text-[11px] text-zinc-600 hover:text-red-400"
+        >
+          Retirer
+        </button>
       </div>
     </div>
   )

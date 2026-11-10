@@ -704,6 +704,22 @@ function LeadsContent() {
     }
   }
 
+  // Case « À appeler » : met le lead dans la colonne « À appeler » de la page Appels, ou l'en retire
+  const handleToggleCallList = async (lead: Company, checked: boolean) => {
+    const call_list_at = checked ? new Date().toISOString() : null
+    setLeads((items) => items.map((l) => (l.id === lead.id ? { ...l, call_list_at } : l)))
+    try {
+      await leadsApi.update(lead.id, { call_list_at })
+      setActionBanner({
+        tone: 'success',
+        message: checked ? `${lead.name} est dans « À appeler » (page Appels).` : `${lead.name} est retiré de « À appeler ».`,
+      })
+    } catch {
+      setLeads((items) => items.map((l) => (l.id === lead.id ? { ...l, call_list_at: lead.call_list_at ?? null } : l)))
+      setActionBanner({ tone: 'error', message: "Impossible de mettre à jour la liste d'appels. Réessayez." })
+    }
+  }
+
   const handlePageChange = (newPage: number) => {
     loadLeads(newPage)
   }
@@ -1194,7 +1210,7 @@ function LeadsContent() {
         </Card>
       ) : viewMode === 'table' ? (
         <Card>
-          <LeadsTable leads={leads} onStatusChange={handleStatusChange} />
+          <LeadsTable leads={leads} onStatusChange={handleStatusChange} onToggleCallList={handleToggleCallList} />
         </Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

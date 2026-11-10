@@ -84,6 +84,7 @@ export interface Company {
   audit_share_token?: string | null
 
   // Appels (session d'appels)
+  call_list_at?: string | null   // Coché « À appeler » dans la page Leads
   call_count?: number
   last_call_at?: string | null
   last_call_outcome?: CallOutcome | null

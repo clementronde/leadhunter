@@ -41,6 +41,7 @@ function needsFollowUp(lead: Company): boolean {
 interface LeadsTableProps {
   leads: Company[]
   onStatusChange?: (id: string, status: LeadStatus) => void
+  onToggleCallList?: (lead: Company, checked: boolean) => void
   sortBy?: string
   onSort?: (column: string) => void
 }
@@ -62,12 +63,13 @@ function RatingDisplay({ rating, count }: { rating?: number | null; count?: numb
   )
 }
 
-export function LeadsTable({ leads, onStatusChange, sortBy, onSort }: LeadsTableProps) {
+export function LeadsTable({ leads, onStatusChange, onToggleCallList, sortBy, onSort }: LeadsTableProps) {
   const { isPro } = usePlan()
   const [contactingLead, setContactingLead] = useState<Company | null>(null)
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
 
   const columns = [
+    ...(onToggleCallList ? [{ key: 'call', label: 'À appeler', sortable: false }] : []),
     { key: 'name', label: 'Établissement', sortable: false },
     { key: 'city', label: 'Adresse', sortable: false },
     { key: 'has_website', label: 'Site web', sortable: false },
@@ -110,6 +112,20 @@ export function LeadsTable({ leads, onStatusChange, sortBy, onSort }: LeadsTable
         <tbody className="divide-y divide-white/[0.04]">
           {leads.map((lead) => (
             <tr key={lead.id} className="hover:bg-white/[0.02] transition-colors">
+              {/* À appeler : coché = le lead part dans la colonne « À appeler » de la page Appels */}
+              {onToggleCallList && (
+                <td className="px-4 py-4 text-center">
+                  <input
+                    id={`call-${lead.id}`}
+                    type="checkbox"
+                    checked={!!lead.call_list_at}
+                    onChange={(e) => onToggleCallList(lead, e.target.checked)}
+                    aria-label={`Mettre ${lead.name} dans la liste à appeler`}
+                    title={lead.last_call_at ? 'Déjà appelé : il reste dans la page Appels avec son résultat' : 'Mettre dans « À appeler »'}
+                    className="h-5 w-5 cursor-pointer accent-amber-500"
+                  />
+                </td>
+              )}
               {/* Établissement */}
               <td className="px-4 py-4 max-w-[220px]">
                 <div className="flex items-center gap-3">
