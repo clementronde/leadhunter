@@ -67,7 +67,42 @@ const CALLBACK_CHOICES = [
 
 // Au bout de 3 appels sans réponse, on arrête de le remettre dans la file
 const MAX_NO_ANSWER = 3
-const REACHED: CallOutcome[] = ['meeting', 'interested', 'callback', 'not_interested']
+// Colonnes du tableau (comme un tableur : une colonne par étape)
+type BoardColumn = 'todo' | 'waiting' | 'callback' | 'meeting' | 'done'
+
+const COLUMNS: { id: BoardColumn; label: string; accent: string; button: string }[] = [
+  { id: 'todo', label: 'À appeler', accent: 'border-t-amber-500', button: 'À appeler' },
+  { id: 'waiting', label: 'En attente', accent: 'border-t-sky-500', button: 'En attente' },
+  { id: 'callback', label: 'À rappeler', accent: 'border-t-orange-400', button: 'À rappeler' },
+  { id: 'meeting', label: 'RDV pris', accent: 'border-t-emerald-500', button: 'RDV' },
+  { id: 'done', label: 'Pas intéressé', accent: 'border-t-zinc-600', button: 'Non' },
+]
+
+const COLUMN_OUTCOME: Record<Exclude<BoardColumn, 'todo'>, CallOutcome> = {
+  waiting: 'interested',
+  callback: 'callback',
+  meeting: 'meeting',
+  done: 'not_interested',
+}
+
+function columnOf(lead: Company): BoardColumn {
+  switch (lead.last_call_outcome) {
+    case 'interested':
+      return 'waiting'
+    case 'callback':
+    case 'no_answer':
+      return 'callback'
+    case 'meeting':
+      return 'meeting'
+    case 'not_interested':
+    case 'wrong_number':
+      return 'done'
+    default:
+      return 'todo'
+  }
+}
+
+const REACHED: CallOutcome[] =['meeting', 'interested', 'callback', 'not_interested']
 const BATCH = 40
 const LEAD_SELECT = '*, website_audits(*)'
 const ACTIVE_STATUSES: LeadStatus[] = ['new', 'contacted']
@@ -152,6 +187,7 @@ export default function CallsPage() {
   const [panel, setPanel] = useState<'queue' | 'called'>('called')
   const [filter, setFilter] = useState<CallOutcome | 'all'>('all')
   const [copied, setCopied] = useState(false)
+  const [view, setView] = useState<'board' | 'session'>('board')
 
   const seenIds = useRef(new Set<string>())
   const calledPhones = useRef(new Set<string>())
@@ -246,20 +282,16 @@ export default function CallsPage() {
   }, [loadCalled, loadQueue])
 
   // ---------- actions ----------
-  const record = useCallback(
-    async (outcome: CallOutcome, callbackDays?: number) => {
-      if (!current || busy.current) return
-      busy.current = true
-      const lead = current
+  // Enregistre le résultat d'un appel pour n'importe quel prospect (session ou tableau)
+  const applyOutcome = useCallback(
+    async (lead: Company, outcome: CallOutcome, callbackDays?: number, text = '') => {
       const update = buildUpdate(lead, outcome, callbackDays)
       const previous = callFields(lead)
-      const text = note.trim()
+      const wasQueued = !lead.last_call_outcome
 
-      setQueue((items) => items.slice(1))
-      setRemaining((n) => (n === null ? null : Math.max(0, n - 1)))
+      setQueue((items) => items.filter((l) => l.id !== lead.id))
+      if (wasQueued) setRemaining((n) => (n === null ? null : Math.max(0, n - 1)))
       setCalled((items) => [{ ...lead, ...update } as Company, ...items.filter((l) => l.id !== lead.id)])
-      setNote('')
-      setChoosingCallback(false)
       const phone = normPhone(lead.phone)
       if (phone.length >= 6) calledPhones.current.add(phone)
 
@@ -285,15 +317,43 @@ export default function CallsPage() {
         setHistory((entries) => [...entries.slice(-19), { lead, previous, noteId }])
       } catch {
         setError("L'appel n'a pas pu être enregistré. Vérifiez votre connexion puis réessayez.")
-        setQueue((items) => [lead, ...items])
-        setCalled((items) => items.filter((l) => l.id !== lead.id))
-      } finally {
-        busy.current = false
+        if (wasQueued) setQueue((items) => [lead, ...items])
+        setCalled((items) => (wasQueued ? items.filter((l) => l.id !== lead.id) : items.map((l) => (l.id === lead.id ? lead : l))))
       }
+    },
+    []
+  )
 
+  const record = useCallback(
+    async (outcome: CallOutcome, callbackDays?: number) => {
+      if (!current || busy.current) return
+      busy.current = true
+      const text = note.trim()
+      setNote('')
+      setChoosingCallback(false)
+      await applyOutcome(current, outcome, callbackDays, text)
+      busy.current = false
       if (queue.length <= 5) loadQueue().catch(() => {})
     },
-    [current, note, queue.length, loadQueue]
+    [current, note, queue.length, loadQueue, applyOutcome]
+  )
+
+  // Remet un prospect dans la colonne « À appeler » (son historique d'appels est gardé)
+  const backToTodo = useCallback(async (lead: Company) => {
+    const update: UpdateCompanyInput = { last_call_outcome: null, callback_at: null }
+    setCalled((items) => items.filter((l) => l.id !== lead.id))
+    setQueue((items) => [...items.filter((l) => l.id !== lead.id), { ...lead, ...update }])
+    seenIds.current.add(lead.id)
+    await leadsApi.update(lead.id, update)
+  }, [])
+
+  const moveTo = useCallback(
+    (lead: Company, column: BoardColumn) => {
+      if (columnOf(lead) === column) return
+      if (column === 'todo') backToTodo(lead)
+      else applyOutcome(lead, COLUMN_OUTCOME[column], column === 'callback' ? 1 : undefined)
+    },
+    [applyOutcome, backToTodo]
   )
 
   const skip = useCallback(() => {
@@ -346,7 +406,7 @@ export default function CallsPage() {
         undo()
         return
       }
-      if (event.ctrlKey || !current) return
+      if (event.ctrlKey || !current || view !== 'session') return
 
       if (choosingCallback) {
         const choice = CALLBACK_CHOICES.find((c) => c.key === event.key)
@@ -382,7 +442,7 @@ export default function CallsPage() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [current, choosingCallback, record, skip, undo])
+  }, [current, choosingCallback, record, skip, undo, view])
 
   // ---------- chiffres du jour ----------
   const today = useMemo(() => {
@@ -403,6 +463,44 @@ export default function CallsPage() {
       <Header title="Appels" subtitle="Un prospect à la fois : appelez, notez le résultat, passez au suivant" />
 
       <div className="p-4 sm:p-6">
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <div className="inline-flex rounded-lg border border-white/[0.06] bg-zinc-900 p-1 text-sm">
+            {(['board', 'session'] as const).map((v) => (
+              <button
+                key={v}
+                onClick={() => setView(v)}
+                className={cn(
+                  'rounded-md px-3 py-1.5 font-medium transition-colors',
+                  view === v ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:text-zinc-300'
+                )}
+              >
+                {v === 'board' ? 'Tableau' : 'Session d’appels'}
+              </button>
+            ))}
+          </div>
+          <span className="text-sm text-zinc-500">
+            {view === 'board'
+              ? 'Cliquez sur une étape en bas de la carte, ou glissez la carte dans une colonne.'
+              : 'Un prospect à la fois, au clavier.'}
+          </span>
+        </div>
+
+        {view === 'board' && (
+          <>
+            {error && (
+              <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">{error}</div>
+            )}
+            <Board
+              leads={[...queue.filter((q) => !called.some((c) => c.id === q.id)), ...called]}
+              loading={loading}
+              onMove={moveTo}
+              onLoadMore={() => loadQueue().catch(() => {})}
+              hasMore={remaining !== null && queue.filter((l) => !l.last_call_outcome).length < remaining}
+            />
+          </>
+        )}
+
+        {view === 'session' && (
         <div className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
           {/* ---------- Colonne principale : le prospect à appeler ---------- */}
           <div className="min-w-0 space-y-4">
@@ -547,6 +645,158 @@ export default function CallsPage() {
             )}
           </aside>
         </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ============================================
+// Tableau en colonnes
+// ============================================
+function Board({
+  leads,
+  loading,
+  onMove,
+  onLoadMore,
+  hasMore,
+}: {
+  leads: Company[]
+  loading: boolean
+  onMove: (lead: Company, column: BoardColumn) => void
+  onLoadMore: () => void
+  hasMore: boolean
+}) {
+  const [dragId, setDragId] = useState<string | null>(null)
+  const [over, setOver] = useState<BoardColumn | null>(null)
+  const byId = useMemo(() => new Map(leads.map((l) => [l.id, l])), [leads])
+
+  if (loading) {
+    return (
+      <div className="flex gap-4 overflow-x-auto pb-4">
+        {COLUMNS.map((c) => (
+          <Skeleton key={c.id} className="h-96 w-72 shrink-0" />
+        ))}
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex gap-3 overflow-x-auto pb-4">
+      {COLUMNS.map((col) => {
+        const items = leads.filter((l) => columnOf(l) === col.id)
+        return (
+          <div
+            key={col.id}
+            className="w-72 shrink-0"
+            onDragOver={(e) => {
+              e.preventDefault()
+              setOver(col.id)
+            }}
+            onDragLeave={() => setOver(null)}
+            onDrop={(e) => {
+              e.preventDefault()
+              const lead = byId.get(e.dataTransfer.getData('leadId'))
+              if (lead) onMove(lead, col.id)
+              setOver(null)
+              setDragId(null)
+            }}
+          >
+            <div className={cn('flex items-center gap-2 rounded-t-xl border border-b-0 border-t-2 border-white/[0.08] bg-zinc-900/60 px-3 py-2.5', col.accent)}>
+              <h3 className="text-sm font-semibold text-white">{col.label}</h3>
+              <span className="rounded-full bg-zinc-800 px-1.5 text-xs font-medium text-zinc-400">{items.length}</span>
+            </div>
+            <div
+              className={cn(
+                'min-h-[420px] space-y-2 rounded-b-xl border border-t-0 border-white/[0.08] bg-zinc-900/30 p-2 transition-colors',
+                over === col.id && dragId && 'border-amber-500/30 bg-amber-500/5'
+              )}
+            >
+              {items.map((lead) => (
+                <BoardCard
+                  key={lead.id}
+                  lead={lead}
+                  column={col.id}
+                  dragging={dragId === lead.id}
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData('leadId', lead.id)
+                    setDragId(lead.id)
+                  }}
+                  onDragEnd={() => setDragId(null)}
+                  onMove={(c) => onMove(lead, c)}
+                />
+              ))}
+              {items.length === 0 && <p className="py-8 text-center text-sm text-zinc-700">Vide</p>}
+              {col.id === 'todo' && hasMore && (
+                <button onClick={onLoadMore} className="w-full rounded-lg py-2 text-xs text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-300">
+                  Afficher plus de prospects
+                </button>
+              )}
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function BoardCard({
+  lead,
+  column,
+  dragging,
+  onDragStart,
+  onDragEnd,
+  onMove,
+}: {
+  lead: Company
+  column: BoardColumn
+  dragging: boolean
+  onDragStart: (e: React.DragEvent) => void
+  onDragEnd: () => void
+  onMove: (column: BoardColumn) => void
+}) {
+  const outcome = lead.last_call_outcome ? OUTCOME[lead.last_call_outcome] : null
+  return (
+    <div
+      draggable
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      className={cn(
+        'cursor-grab space-y-2 rounded-xl border border-white/[0.06] bg-zinc-900/80 p-3 transition-all hover:border-white/[0.12] active:cursor-grabbing',
+        dragging && 'opacity-40'
+      )}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <Link href={`/leads/${lead.id}`} className="line-clamp-1 text-sm font-medium text-zinc-200 hover:text-amber-400">
+          {lead.name}
+        </Link>
+        <span className={cn('shrink-0 text-sm font-bold tabular-nums', getScoreColor(lead.prospect_score))}>{lead.prospect_score}</span>
+      </div>
+      <p className="text-xs text-zinc-500">
+        {lead.city}
+        {outcome && column === 'callback' && ` · ${outcome.label}`}
+        {lead.callback_at && column !== 'todo' && column !== 'done' && column !== 'meeting' &&
+          ` · le ${new Date(lead.callback_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}`}
+      </p>
+      {lead.phone && (
+        <a
+          href={telHref(lead.phone)}
+          className="flex items-center gap-1.5 font-mono text-sm text-amber-400 hover:text-amber-300"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Phone className="h-3.5 w-3.5" /> {formatPhone(lead.phone)}
+        </a>
+      )}
+      <div className="flex flex-wrap gap-1 border-t border-white/[0.05] pt-2">
+        {COLUMNS.filter((c) => c.id !== column).map((c) => (
+          <button
+            key={c.id}
+            onClick={() => onMove(c.id)}
+            className="rounded-md border border-white/[0.08] px-2 py-1 text-[11px] font-medium text-zinc-400 hover:border-amber-500/40 hover:text-amber-300"
+          >
+            {c.button}
+          </button>
+        ))}
       </div>
     </div>
   )
