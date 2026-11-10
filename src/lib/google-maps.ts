@@ -378,8 +378,21 @@ export async function findPlaceFromMapsUrl(raw: string): Promise<PlaceSearchResu
   // 2. Sinon : nom de la fiche + coordonnées présents dans le lien
   const name = decoded.match(/\/maps\/place\/([^/@]+)/)?.[1]?.trim() || url.searchParams.get('q')?.trim()
   if (!name) return null
-  const coords =
+  let coords: RegExpMatchArray | null =
     decoded.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/) || decoded.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/)
+
+  // Les liens partagés depuis l'appli mobile n'ont pas de coordonnées (seulement le nom) :
+  // la page de la fiche les contient dans l'aperçu de carte (center=lat%2Clng)
+  if (!coords) {
+    try {
+      const page = await fetch(url, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', 'Accept-Language': 'fr-FR,fr;q=0.9' },
+      })
+      if (page.ok) coords = (await page.text()).match(/center=(-?\d+\.\d+)%2C(-?\d+\.\d+)/)
+    } catch {
+      // on cherche alors par le nom seul
+    }
+  }
 
   const response = await fetch('https://places.googleapis.com/v1/places:searchText', {
     method: 'POST',

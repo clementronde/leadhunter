@@ -6,9 +6,10 @@ import { Button } from '@/components/ui'
 import { MapPin } from 'lucide-react'
 
 /** Ajout d'un lead en collant le lien de sa fiche Google Maps */
-export function GoogleLinkAdd({ onAdded }: { onAdded: () => void }) {
+export function GoogleLinkAdd({ onAdded, forceCall = false }: { onAdded: (id: string) => void; forceCall?: boolean }) {
   const [url, setUrl] = useState('')
-  const [toCall, setToCall] = useState(true)
+  const [toCallChoice, setToCall] = useState(true)
+  const toCall = forceCall || toCallChoice
   const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState<{ tone: 'ok' | 'error'; text: string; id?: string } | null>(null)
@@ -44,7 +45,7 @@ export function GoogleLinkAdd({ onAdded }: { onAdded: () => void }) {
       })
       setUrl('')
       setNote('')
-      onAdded()
+      onAdded(id)
     } catch (err) {
       setResult({ tone: 'error', text: err instanceof Error ? err.message : "Le lead n'a pas pu être ajouté" })
     } finally {
@@ -56,7 +57,7 @@ export function GoogleLinkAdd({ onAdded }: { onAdded: () => void }) {
     <form onSubmit={submit} className="space-y-3 rounded-xl border border-white/[0.06] bg-zinc-900/70 p-4">
       <div className="flex items-center gap-2">
         <MapPin className="h-4 w-4 text-amber-400" />
-        <p className="text-sm font-semibold text-zinc-200">Ajouter une fiche Google</p>
+        <p className="text-sm font-semibold text-zinc-200">{forceCall ? 'Ajouter une fiche Google à appeler' : 'Ajouter une fiche Google'}</p>
         <p className="text-xs text-zinc-500">Dans Google Maps : ouvrez la fiche, « Partager », copiez le lien et collez-le ici.</p>
       </div>
       <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
@@ -76,16 +77,18 @@ export function GoogleLinkAdd({ onAdded }: { onAdded: () => void }) {
           placeholder="Note (facultatif)"
           className="h-10 min-w-0 rounded-lg border border-white/[0.08] bg-zinc-950 px-3 text-sm text-zinc-200 placeholder:text-zinc-600 focus:border-amber-500/50 focus:outline-none lg:w-56"
         />
-        <label htmlFor="google-link-call" className="flex h-10 shrink-0 cursor-pointer items-center gap-2 rounded-lg border border-white/[0.08] px-3 text-sm text-zinc-300">
-          <input
-            id="google-link-call"
-            type="checkbox"
-            checked={toCall}
-            onChange={(e) => setToCall(e.target.checked)}
-            className="h-4 w-4 accent-amber-500"
-          />
-          À appeler
-        </label>
+        {!forceCall && (
+          <label htmlFor="google-link-call" className="flex h-10 shrink-0 cursor-pointer items-center gap-2 rounded-lg border border-white/[0.08] px-3 text-sm text-zinc-300">
+            <input
+              id="google-link-call"
+              type="checkbox"
+              checked={toCallChoice}
+              onChange={(e) => setToCall(e.target.checked)}
+              className="h-4 w-4 accent-amber-500"
+            />
+            À appeler
+          </label>
+        )}
         <Button type="submit" loading={busy} disabled={busy || !url.trim()} className="shrink-0">
           Ajouter
         </Button>

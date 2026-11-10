@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Header } from '@/components/layout'
 import { Card, CardContent, Button, Skeleton } from '@/components/ui'
+import { GoogleLinkAdd } from '@/components/leads'
 import { supabase } from '@/lib/supabase'
 import { leadsApi } from '@/lib/api'
 import { buildPersonalizedReason } from '@/lib/email-templates'
@@ -348,6 +349,21 @@ export default function CallsPage() {
     await leadsApi.update(lead.id, update)
   }, [])
 
+  // Fiche Google collée sur cette page : elle arrive directement dans « À appeler »
+  const addFromGoogle = useCallback(async (id: string) => {
+    const { data } = await supabase.from('companies').select(LEAD_SELECT).eq('id', id).single()
+    if (!data) return
+    const lead = toCompany(data)
+    if (lead.disqualified_at || !lead.call_list_at) return
+    seenIds.current.add(lead.id)
+    if (lead.last_call_outcome) {
+      setCalled((items) => [lead, ...items.filter((l) => l.id !== lead.id)])
+    } else {
+      setQueue((items) => (items.some((l) => l.id === lead.id) ? items : [...items, lead]))
+      setRemaining((n) => (n === null ? 1 : n + 1))
+    }
+  }, [])
+
   // Décoche le lead : il quitte la page Appels (sa fiche et son historique restent dans Leads)
   const removeFromList = useCallback(async (lead: Company) => {
     setQueue((items) => items.filter((l) => l.id !== lead.id))
@@ -492,6 +508,10 @@ export default function CallsPage() {
               ? 'Cliquez sur une étape en bas de la carte, ou glissez la carte dans une colonne.'
               : 'Un prospect à la fois, au clavier.'}
           </span>
+        </div>
+
+        <div className="mb-4">
+          <GoogleLinkAdd forceCall onAdded={addFromGoogle} />
         </div>
 
         {view === 'board' && (
