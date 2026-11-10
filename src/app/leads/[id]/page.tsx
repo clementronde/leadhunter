@@ -7,7 +7,7 @@ import { Header } from '@/components/layout'
 import { Card, CardHeader, CardTitle, CardContent, Badge, Button, Input, Skeleton } from '@/components/ui'
 import { ContactFlow } from '@/components/leads'
 import { leadsApi } from '@/lib/api'
-import { Company, LeadStatus, WebsiteAudit } from '@/types'
+import { Company, DisqualifiedReason, LeadStatus, WebsiteAudit } from '@/types'
 import {
   priorityLabels,
   priorityColors,
@@ -99,10 +99,22 @@ export default function LeadDetailPage() {
   const handleStatusChange = async (status: LeadStatus) => {
     if (!lead) return
     try {
+      // Choisir un statut normal sort le lead de « Non qualifiés / radiés »
+      if (lead.disqualified_at) await leadsApi.setDisqualified(lead.id, null)
       const updated = await leadsApi.updateStatus(lead.id, status)
       setLead(updated)
     } catch (error) {
       console.error('Error updating status:', error)
+    }
+  }
+
+  const handleDisqualify = async (reason: DisqualifiedReason) => {
+    if (!lead) return
+    try {
+      const updated = await leadsApi.setDisqualified(lead.id, reason)
+      setLead(updated)
+    } catch (error) {
+      console.error('Error disqualifying lead:', error)
     }
   }
 
@@ -403,14 +415,36 @@ export default function LeadDetailPage() {
                 <div className="flex flex-col gap-2">
                   <label className="text-xs font-medium text-zinc-500">Statut</label>
                   <select
-                    value={lead.status}
-                    onChange={(e) => handleStatusChange(e.target.value as LeadStatus)}
-                    className={`text-sm font-medium rounded-lg px-3 py-2 border-0 cursor-pointer ${statusColors[lead.status]}`}
+                    id="lead-status"
+                    value={lead.disqualified_reason ? `x:${lead.disqualified_reason}` : lead.status}
+                    onChange={(e) => {
+                      const value = e.target.value
+                      if (value.startsWith('x:')) handleDisqualify(value.slice(2) as DisqualifiedReason)
+                      else handleStatusChange(value as LeadStatus)
+                    }}
+                    className={`text-sm font-medium rounded-lg px-3 py-2 border-0 cursor-pointer ${
+                      lead.disqualified_reason === 'struck_off'
+                        ? 'bg-red-500/15 text-red-300'
+                        : lead.disqualified_reason
+                        ? 'bg-zinc-700/60 text-zinc-300'
+                        : statusColors[lead.status]
+                    }`}
                   >
-                    {Object.entries(statusLabels).map(([value, label]) => (
-                      <option key={value} value={value}>{label}</option>
-                    ))}
+                    <optgroup label="Pipeline">
+                      {Object.entries(statusLabels).map(([value, label]) => (
+                        <option key={value} value={value}>{label}</option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="Écarter">
+                      <option value="x:not_qualified">Pas qualifié</option>
+                      <option value="x:struck_off">Radié / fermé</option>
+                    </optgroup>
                   </select>
+                  {lead.disqualified_reason && (
+                    <p className="text-xs text-zinc-500">
+                      Rangé dans « Non qualifiés / radiés ». Choisissez un statut du pipeline pour le remettre dans vos leads.
+                    </p>
+                  )}
                   {(() => {
                     const followUp = getFollowUpDate(lead)
                     if (!followUp) return null
