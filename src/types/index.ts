@@ -94,6 +94,7 @@ export interface Company {
 
   // Appels (session d'appels)
   call_list_at?: string | null   // Coché « À appeler » dans la page Leads
+  call_comment?: string | null   // Commentaire visible sur la carte (pourquoi rappeler, ce qu'on attend…)
   call_count?: number
   last_call_at?: string | null
   last_call_outcome?: CallOutcome | null

@@ -141,6 +141,7 @@ function callFields(lead: Company): UpdateCompanyInput {
     last_call_at: lead.last_call_at ?? null,
     last_call_outcome: lead.last_call_outcome ?? null,
     callback_at: lead.callback_at ?? null,
+    call_comment: lead.call_comment ?? null,
   }
 }
 
@@ -287,7 +288,8 @@ export default function CallsPage() {
   // Enregistre le résultat d'un appel pour n'importe quel prospect (session ou tableau)
   const applyOutcome = useCallback(
     async (lead: Company, outcome: CallOutcome, callbackDays?: number, text = '') => {
-      const update = buildUpdate(lead, outcome, callbackDays)
+      // La note tapée pendant l'appel devient le commentaire visible sur la carte
+      const update: UpdateCompanyInput = { ...buildUpdate(lead, outcome, callbackDays), ...(text ? { call_comment: text } : {}) }
       const previous = callFields(lead)
       const wasQueued = !lead.last_call_outcome
 
@@ -347,6 +349,20 @@ export default function CallsPage() {
     setQueue((items) => [...items.filter((l) => l.id !== lead.id), { ...lead, ...update }])
     seenIds.current.add(lead.id)
     await leadsApi.update(lead.id, update)
+  }, [])
+
+  // Commentaire d'une carte (pourquoi le rappeler, ce qu'on attend de lui…)
+  const saveComment = useCallback(async (lead: Company, text: string) => {
+    const call_comment = text.trim() || null
+    if ((lead.call_comment ?? null) === call_comment) return
+    const patch = (l: Company) => (l.id === lead.id ? { ...l, call_comment } : l)
+    setQueue((items) => items.map(patch))
+    setCalled((items) => items.map(patch))
+    try {
+      await leadsApi.update(lead.id, { call_comment })
+    } catch {
+      setError("Le commentaire n'a pas pu être enregistré. Exécutez supabase-migration-2026-11-10-commentaire-appel.sql dans Supabase si ce n'est pas fait.")
+    }
   }, [])
 
   // Fiche Google collée sur cette page : elle arrive directement dans « À appeler »
@@ -524,6 +540,7 @@ export default function CallsPage() {
               loading={loading}
               onMove={moveTo}
               onRemove={removeFromList}
+              onComment={saveComment}
               onLoadMore={() => loadQueue().catch(() => {})}
               hasMore={remaining !== null && queue.filter((l) => !l.last_call_outcome).length < remaining}
             />
@@ -689,6 +706,7 @@ function Board({
   loading,
   onMove,
   onRemove,
+  onComment,
   onLoadMore,
   hasMore,
 }: {
@@ -696,6 +714,7 @@ function Board({
   loading: boolean
   onMove: (lead: Company, column: BoardColumn) => void
   onRemove: (lead: Company) => void
+  onComment: (lead: Company, text: string) => void
   onLoadMore: () => void
   hasMore: boolean
 }) {
@@ -757,6 +776,7 @@ function Board({
                   onDragEnd={() => setDragId(null)}
                   onMove={(c) => onMove(lead, c)}
                   onRemove={() => onRemove(lead)}
+                  onComment={(text) => onComment(lead, text)}
                 />
               ))}
               {items.length === 0 &&
@@ -792,6 +812,7 @@ function BoardCard({
   onDragEnd,
   onMove,
   onRemove,
+  onComment,
 }: {
   lead: Company
   column: BoardColumn
@@ -800,11 +821,13 @@ function BoardCard({
   onDragEnd: () => void
   onMove: (column: BoardColumn) => void
   onRemove: () => void
+  onComment: (text: string) => void
 }) {
   const outcome = lead.last_call_outcome ? OUTCOME[lead.last_call_outcome] : null
+  const [editing, setEditing] = useState(false)
   return (
     <div
-      draggable
+      draggable={!editing}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
       className={cn(
@@ -833,6 +856,19 @@ function BoardCard({
           <Phone className="h-3.5 w-3.5" /> {formatPhone(lead.phone)}
         </a>
       )}
+      <CardComment
+        editing={editing}
+        setEditing={setEditing}
+        value={lead.call_comment ?? ''}
+        placeholder={
+          column === 'callback'
+            ? 'Pourquoi le rappeler ? (ex. rappeler après 18h, voir avec le gérant)'
+            : column === 'waiting'
+            ? 'Qu’attend-on de lui ? (ex. envoie le devis, réfléchit)'
+            : 'Commentaire'
+        }
+        onSave={onComment}
+      />
       <div className="flex flex-wrap gap-1 border-t border-white/[0.05] pt-2">
         {COLUMNS.filter((c) => c.id !== column).map((c) => (
           <button
@@ -921,6 +957,13 @@ function CallCard({
             {lead.call_count && lead.call_count > 0 ? `${lead.call_count + 1}e appel` : 'Rappel'} · dernier résultat :{' '}
             <strong>{lastOutcome.label}</strong>
             {lead.last_call_at && ` ${timeAgo(lead.last_call_at).toLowerCase()}`}
+          </p>
+        )}
+
+        {lead.call_comment && (
+          <p className="whitespace-pre-wrap rounded-lg bg-amber-500/[0.07] px-3 py-2 text-sm text-amber-100/90">
+            <span className="font-semibold text-amber-300">Votre commentaire : </span>
+            {lead.call_comment}
           </p>
         )}
 
@@ -1065,6 +1108,82 @@ function CalledRow({ lead, onRequeue, inQueue }: { lead: Company; onRequeue: () 
           <RotateCcw className="h-3 w-3" /> Rappeler
         </button>
       )}
+    </div>
+  )
+}
+
+function CardComment({
+  value,
+  placeholder,
+  editing,
+  setEditing,
+  onSave,
+}: {
+  value: string
+  placeholder: string
+  editing: boolean
+  setEditing: (v: boolean) => void
+  onSave: (text: string) => void
+}) {
+  const [draft, setDraft] = useState(value)
+  const cancelled = useRef(false)
+
+  if (!editing) {
+    return value ? (
+      <button
+        onClick={() => {
+          setDraft(value)
+          setEditing(true)
+        }}
+        title="Modifier le commentaire"
+        className="block w-full whitespace-pre-wrap break-words rounded-md bg-amber-500/[0.07] px-2 py-1.5 text-left text-xs text-amber-100/90 hover:bg-amber-500/[0.12]"
+      >
+        {value}
+      </button>
+    ) : (
+      <button
+        onClick={() => {
+          setDraft('')
+          setEditing(true)
+        }}
+        className="text-xs text-zinc-600 hover:text-zinc-300"
+      >
+        + Ajouter un commentaire
+      </button>
+    )
+  }
+
+  const save = () => {
+    if (cancelled.current) {
+      cancelled.current = false
+      return
+    }
+    onSave(draft)
+    setEditing(false)
+  }
+
+  return (
+    <div className="space-y-1">
+      <textarea
+        autoFocus
+        rows={2}
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={save}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault()
+            save()
+          } else if (e.key === 'Escape') {
+            cancelled.current = true
+            setEditing(false)
+          }
+        }}
+        placeholder={placeholder}
+        aria-label="Commentaire"
+        className="w-full resize-none rounded-md border border-amber-500/30 bg-zinc-950 px-2 py-1.5 text-xs text-zinc-200 placeholder:text-zinc-600 focus:outline-none"
+      />
+      <p className="text-[10px] text-zinc-600">Entrée pour enregistrer · Échap pour annuler</p>
     </div>
   )
 }
