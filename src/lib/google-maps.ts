@@ -332,6 +332,76 @@ export async function searchGooglePlaces(params: {
   }
 }
 
+// ============================================
+// Fiche Google collée à la main (lien partagé depuis Google Maps)
+// ============================================
+const GOOGLE_HOSTS = /^(maps\.app\.goo\.gl|goo\.gl|(www\.|maps\.)?google\.(com|fr|be|ch|ca|lu|de|es|it|co\.uk))$/i
+
+/** Suit les redirections d'un lien court (maps.app.goo.gl) sans jamais sortir des domaines Google */
+async function resolveMapsUrl(raw: string): Promise<URL> {
+  let url = new URL(raw.trim())
+  for (let hop = 0; hop < 5; hop++) {
+    if (url.protocol !== 'https:' && url.protocol !== 'http:') throw new Error('Lien invalide')
+    if (!GOOGLE_HOSTS.test(url.hostname)) throw new Error("Ce lien n'est pas une fiche Google Maps")
+    if (/google\./i.test(url.hostname) && url.pathname.startsWith('/maps')) return url
+    const res = await fetch(url, { redirect: 'manual' })
+    const next = res.headers.get('location')
+    if (!next) return url
+    url = new URL(next, url)
+  }
+  return url
+}
+
+/**
+ * Retrouve la fiche Google Places à partir du lien d'une fiche Google Maps
+ * (lien long google.com/maps/place/... ou lien court maps.app.goo.gl/...).
+ */
+export async function findPlaceFromMapsUrl(raw: string): Promise<PlaceSearchResult | null> {
+  const apiKey = process.env.GOOGLE_MAPS_API_KEY
+  if (!apiKey) throw new Error('GOOGLE_MAPS_API_KEY non configurée. Ajoutez-la dans .env.local')
+
+  const url = await resolveMapsUrl(raw)
+  const decoded = decodeURIComponent(url.pathname + url.search).replace(/\+/g, ' ')
+
+  // 1. Lien qui porte directement l'identifiant Places
+  const placeId = url.searchParams.get('query_place_id') || decoded.match(/place_id:([A-Za-z0-9_-]+)/)?.[1]
+  if (placeId) {
+    const res = await fetch(`https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}?languageCode=fr`, {
+      headers: {
+        'X-Goog-Api-Key': apiKey,
+        'X-Goog-FieldMask': SEARCH_FIELD_MASK.split(',').filter((f) => f.startsWith('places.')).map((f) => f.slice(7)).join(','),
+      },
+    })
+    if (res.ok) return normalizePlace((await res.json()) as NewPlace)
+  }
+
+  // 2. Sinon : nom de la fiche + coordonnées présents dans le lien
+  const name = decoded.match(/\/maps\/place\/([^/@]+)/)?.[1]?.trim() || url.searchParams.get('q')?.trim()
+  if (!name) return null
+  const coords =
+    decoded.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/) || decoded.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/)
+
+  const response = await fetch('https://places.googleapis.com/v1/places:searchText', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': apiKey, 'X-Goog-FieldMask': SEARCH_FIELD_MASK },
+    body: JSON.stringify({
+      textQuery: name,
+      languageCode: 'fr',
+      regionCode: 'FR',
+      pageSize: 1,
+      ...(coords
+        ? { locationBias: { circle: { center: { latitude: Number(coords[1]), longitude: Number(coords[2]) }, radius: 300 } } }
+        : {}),
+    }),
+  })
+  if (!response.ok) {
+    const body = (await response.json().catch(() => ({}))) as GoogleApiError
+    throw new Error(`Google Places API error : ${body.error?.message || `HTTP ${response.status}`}`)
+  }
+  const data: SearchTextResponse = await response.json()
+  return data.places?.[0] ? normalizePlace(data.places[0]) : null
+}
+
 function normalizePlace(place: NewPlace): PlaceSearchResult {
   return {
     place_id: place.id,

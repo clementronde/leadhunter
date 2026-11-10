@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Header } from '@/components/layout'
-import { LeadsTable, LeadsFilters, LeadCard, CsvImport } from '@/components/leads'
+import { LeadsTable, LeadsFilters, LeadCard, CsvImport, GoogleLinkAdd } from '@/components/leads'
 import { Card, Button, Skeleton, UpgradeModal, ProGate } from '@/components/ui'
 import { leadsApi } from '@/lib/api'
 import { exportLeadsToXLSX, exportLeadsToCSV, FREE_CSV_LIMIT } from '@/lib/export'
@@ -720,6 +720,49 @@ function LeadsContent() {
     }
   }
 
+  // Case « tout cocher » : tous les leads affichés ; on propose ensuite ceux des autres pages
+  const [allPagesOffer, setAllPagesOffer] = useState<{ inList: boolean } | null>(null)
+  const [bulkCallBusy, setBulkCallBusy] = useState(false)
+
+  const handleToggleAllCallList = async (checked: boolean) => {
+    const before = leads
+    const now = new Date().toISOString()
+    setLeads((items) => items.map((l) => ({ ...l, call_list_at: checked ? l.call_list_at ?? now : null })))
+    try {
+      await leadsApi.setCallList(before.map((l) => l.id), checked)
+      setActionBanner({
+        tone: 'success',
+        message: checked
+          ? `${before.length} leads de cette page sont dans « À appeler » (page Appels).`
+          : `${before.length} leads de cette page sont retirés de « À appeler ».`,
+      })
+      setAllPagesOffer(pagination.total > before.length ? { inList: checked } : null)
+    } catch {
+      setLeads(before)
+      setActionBanner({ tone: 'error', message: "Impossible de mettre à jour la liste d'appels. Réessayez." })
+    }
+  }
+
+  const handleAllPagesCallList = async (inList: boolean) => {
+    setBulkCallBusy(true)
+    try {
+      const ids = await leadsApi.getAllIds(filters)
+      await leadsApi.setCallList(ids, inList)
+      setAllPagesOffer(null)
+      setActionBanner({
+        tone: 'success',
+        message: inList
+          ? `Les ${ids.length} leads de ce filtre sont dans « À appeler » (page Appels).`
+          : `Les ${ids.length} leads de ce filtre sont retirés de « À appeler ».`,
+      })
+      loadLeads(pagination.page)
+    } catch {
+      setActionBanner({ tone: 'error', message: "Impossible de mettre à jour la liste d'appels. Réessayez." })
+    } finally {
+      setBulkCallBusy(false)
+    }
+  }
+
   const handlePageChange = (newPage: number) => {
     loadLeads(newPage)
   }
@@ -922,6 +965,8 @@ function LeadsContent() {
           <Button size="sm" variant="outline" onClick={() => { stopContactSearch.current = true }}>Arrêter</Button>
         </div>
       )}
+
+      <GoogleLinkAdd onAdded={() => { loadLeads(1); loadSegmentCounts() }} />
 
       {actionBanner && (
         <div className={`flex items-center gap-3 p-3 rounded-xl border text-sm ${
@@ -1210,7 +1255,26 @@ function LeadsContent() {
         </Card>
       ) : viewMode === 'table' ? (
         <Card>
-          <LeadsTable leads={leads} onStatusChange={handleStatusChange} onToggleCallList={handleToggleCallList} />
+          {allPagesOffer && (
+            <div className="flex flex-wrap items-center gap-3 border-b border-white/[0.06] bg-amber-500/[0.06] px-4 py-3 text-sm text-amber-200">
+              <span className="flex-1">
+                {allPagesOffer.inList ? 'Les leads de cette page sont cochés.' : 'Les leads de cette page sont décochés.'}{' '}
+                Il y en a {pagination.total} au total avec ce filtre.
+              </span>
+              <Button size="sm" loading={bulkCallBusy} onClick={() => handleAllPagesCallList(allPagesOffer.inList)}>
+                {allPagesOffer.inList ? `Cocher les ${pagination.total}` : `Décocher les ${pagination.total}`}
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setAllPagesOffer(null)}>
+                Non merci
+              </Button>
+            </div>
+          )}
+          <LeadsTable
+            leads={leads}
+            onStatusChange={handleStatusChange}
+            onToggleCallList={handleToggleCallList}
+            onToggleAllCallList={handleToggleAllCallList}
+          />
         </Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

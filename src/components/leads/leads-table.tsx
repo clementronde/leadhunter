@@ -42,6 +42,7 @@ interface LeadsTableProps {
   leads: Company[]
   onStatusChange?: (id: string, status: LeadStatus) => void
   onToggleCallList?: (lead: Company, checked: boolean) => void
+  onToggleAllCallList?: (checked: boolean) => void
   sortBy?: string
   onSort?: (column: string) => void
 }
@@ -63,7 +64,9 @@ function RatingDisplay({ rating, count }: { rating?: number | null; count?: numb
   )
 }
 
-export function LeadsTable({ leads, onStatusChange, onToggleCallList, sortBy, onSort }: LeadsTableProps) {
+export function LeadsTable({ leads, onStatusChange, onToggleCallList, onToggleAllCallList, sortBy, onSort }: LeadsTableProps) {
+  const allInCallList = leads.length > 0 && leads.every((l) => !!l.call_list_at)
+  const someInCallList = !allInCallList && leads.some((l) => !!l.call_list_at)
   const { isPro } = usePlan()
   const [contactingLead, setContactingLead] = useState<Company | null>(null)
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
@@ -97,6 +100,20 @@ export function LeadsTable({ leads, onStatusChange, onToggleCallList, sortBy, on
                 onClick={() => col.sortable && onSort?.(col.key)}
               >
                 <div className="flex items-center gap-1">
+                  {col.key === 'call' && onToggleAllCallList && (
+                    <input
+                      id="call-all"
+                      type="checkbox"
+                      checked={allInCallList}
+                      ref={(el) => {
+                        if (el) el.indeterminate = someInCallList
+                      }}
+                      onChange={(e) => onToggleAllCallList(e.target.checked)}
+                      aria-label="Mettre tous les leads du tableau dans « À appeler »"
+                      title="Tout cocher"
+                      className="mr-1 h-5 w-5 cursor-pointer accent-amber-500"
+                    />
+                  )}
                   {col.label}
                   {col.sortable && (
                     <ArrowUpDown

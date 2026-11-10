@@ -228,6 +228,32 @@ export const leadsApi = {
     return updated
   },
 
+  /** Met des leads dans la liste « À appeler » (ou les en retire), par paquets */
+  async setCallList(ids: string[], inList: boolean): Promise<void> {
+    const now = new Date().toISOString()
+    for (let i = 0; i < ids.length; i += 200) {
+      let query = supabase
+        .from('companies')
+        .update({ call_list_at: inList ? now : null, updated_at: now })
+        .in('id', ids.slice(i, i + 200))
+      // Cocher ne change pas la date des leads déjà dans la liste (leur place dans la file est gardée)
+      if (inList) query = query.is('call_list_at', null)
+      const { error } = await query
+      if (error) throw error
+    }
+  },
+
+  /** Identifiants de tous les leads qui correspondent aux filtres (toutes pages) */
+  async getAllIds(filters?: LeadFilters, max = 2000): Promise<string[]> {
+    const ids: string[] = []
+    for (let page = 1; ids.length < max; page++) {
+      const res = await this.getAll(filters, page, 200)
+      ids.push(...res.data.map((l) => l.id))
+      if (page >= res.total_pages) break
+    }
+    return ids.slice(0, max)
+  },
+
   async addNote(input: CreateNoteInput): Promise<Note> {
     const { data, error } = await supabase
       .from('notes')
