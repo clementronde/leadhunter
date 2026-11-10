@@ -302,6 +302,8 @@ export async function searchGooglePlaces(params: {
       languageCode: 'fr',
       regionCode: 'FR',
       pageSize: 20,
+      // Inclut les artisans sans adresse publique (plombiers, électriciens…), exclus par défaut
+      includePureServiceAreaBusinesses: true,
       ...(params.pageToken ? { pageToken: params.pageToken } : {}),
     }),
   })
