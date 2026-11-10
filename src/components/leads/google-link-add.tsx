@@ -26,13 +26,21 @@ export function GoogleLinkAdd({ onAdded }: { onAdded: () => void }) {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || "Le lead n'a pas pu être ajouté")
-      const { id, name, created, inCallList } = data.data as { id: string; name: string; created: boolean; inCallList: boolean }
+      const { id, name, created, inCallList, closedOnGoogle } = data.data as {
+        id: string
+        name: string
+        created: boolean
+        inCallList: boolean
+        closedOnGoogle: boolean
+      }
       setResult({
-        tone: 'ok',
+        tone: closedOnGoogle ? 'error' : 'ok',
         id,
-        text: `${created ? `${name} est ajouté à vos leads` : `${name} était déjà dans vos leads (pas de doublon créé)`}${
-          inCallList ? ' et se trouve dans « À appeler ».' : '.'
-        }`,
+        text: closedOnGoogle
+          ? `Google indique que ${name} est fermé définitivement : il est rangé dans « Non qualifiés / radiés ».`
+          : `${created ? `${name} est ajouté à vos leads` : `${name} était déjà dans vos leads (pas de doublon créé)`}${
+              inCallList ? ' et se trouve dans « À appeler ».' : '.'
+            }`,
       })
       setUrl('')
       setNote('')

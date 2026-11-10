@@ -67,6 +67,7 @@ export async function POST(request: NextRequest) {
 
   let companyId: string
   let created = false
+  let closedOnGoogle = false
   if (existing) {
     companyId = existing.id as string
     if (addToCallList && !existing.call_list_at) {
@@ -74,13 +75,16 @@ export async function POST(request: NextRequest) {
     }
   } else {
     const company = googlePlaceToCompany(enrichGooglePlace(place))
+    // Fiche marquée « fermé définitivement » par Google : rangée directement dans les radiés
+    const closed = place.business_status === 'CLOSED_PERMANENTLY'
     const { data: inserted, error } = await supabase
       .from('companies')
       .insert({
         user_id: user.id,
         ...company,
         google_place_id: place.place_id,
-        call_list_at: callListAt,
+        call_list_at: closed ? null : callListAt,
+        ...(closed ? { disqualified_reason: 'struck_off', disqualified_at: new Date().toISOString() } : {}),
       })
       .select('id')
       .single()
@@ -90,6 +94,7 @@ export async function POST(request: NextRequest) {
     }
     companyId = inserted.id as string
     created = true
+    closedOnGoogle = closed
 
     // Audit automatique du site, comme pour un scan (réservé Pro)
     const { data: profile } = await supabase.from('profiles').select('plan, role').eq('id', user.id).single()
@@ -105,6 +110,12 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({
     success: true,
-    data: { id: companyId, name: place.name, created, inCallList: addToCallList || !!existing?.call_list_at },
+    data: {
+      id: companyId,
+      name: place.name,
+      created,
+      closedOnGoogle,
+      inCallList: !closedOnGoogle && (addToCallList || !!existing?.call_list_at),
+    },
   })
 }

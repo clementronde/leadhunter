@@ -7,7 +7,7 @@ import { LeadsTable, LeadsFilters, LeadCard, CsvImport, GoogleLinkAdd } from '@/
 import { Card, Button, Skeleton, UpgradeModal, ProGate } from '@/components/ui'
 import { leadsApi } from '@/lib/api'
 import { exportLeadsToXLSX, exportLeadsToCSV, FREE_CSV_LIMIT } from '@/lib/export'
-import { Company, LeadFilters, LeadSegment, LeadStatus, OutreachSettings } from '@/types'
+import { Company, DisqualifiedReason, LeadFilters, LeadSegment, LeadStatus, OutreachSettings } from '@/types'
 import { usePlan } from '@/hooks/usePlan'
 import { applyTemplate, CustomTemplate, loadTemplates, TemplateId } from '@/lib/email-templates'
 import {
@@ -606,6 +606,7 @@ const SEGMENTS: { id: LeadSegment | 'all'; label: string; hint: string }[] = [
   { id: 'redesign', label: 'Refonte', hint: 'Site vieux, daté ou pas mobile' },
   { id: 'seo', label: 'SEO / maintenance', hint: 'Site récent à référencer' },
   { id: 'to_audit', label: 'À auditer', hint: 'Site pas encore analysé' },
+  { id: 'disqualified', label: 'Non qualifiés / radiés', hint: 'Écartés, hors des autres listes' },
 ]
 
 // ============================================
@@ -717,6 +718,26 @@ function LeadsContent() {
     } catch {
       setLeads((items) => items.map((l) => (l.id === lead.id ? { ...l, call_list_at: lead.call_list_at ?? null } : l)))
       setActionBanner({ tone: 'error', message: "Impossible de mettre à jour la liste d'appels. Réessayez." })
+    }
+  }
+
+  // Écarter un lead (pas qualifié / radié) ou le remettre : il change de section
+  const handleDisqualify = async (lead: Company, reason: DisqualifiedReason | null) => {
+    const before = leads
+    setLeads((items) => items.filter((l) => l.id !== lead.id))
+    try {
+      await leadsApi.setDisqualified(lead.id, reason)
+      setActionBanner({
+        tone: 'success',
+        message: reason
+          ? `${lead.name} est rangé dans « Non qualifiés / radiés » (${reason === 'struck_off' ? 'radié' : 'pas qualifié'}).`
+          : `${lead.name} est remis dans vos leads.`,
+      })
+      setPagination((p) => ({ ...p, total: Math.max(0, p.total - 1) }))
+      loadSegmentCounts()
+    } catch {
+      setLeads(before)
+      setActionBanner({ tone: 'error', message: "Impossible de déplacer ce lead. Réessayez." })
     }
   }
 
@@ -983,7 +1004,7 @@ function LeadsContent() {
       )}
 
       {/* Sections */}
-      <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
+      <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
         {SEGMENTS.map((segment) => {
           const active = (filters.segment ?? 'all') === segment.id
           const count = segment.id === 'all' ? null : segmentCounts?.[segment.id]
@@ -1272,8 +1293,9 @@ function LeadsContent() {
           <LeadsTable
             leads={leads}
             onStatusChange={handleStatusChange}
-            onToggleCallList={handleToggleCallList}
-            onToggleAllCallList={handleToggleAllCallList}
+            onToggleCallList={filters.segment === 'disqualified' ? undefined : handleToggleCallList}
+            onToggleAllCallList={filters.segment === 'disqualified' ? undefined : handleToggleAllCallList}
+            onDisqualify={handleDisqualify}
           />
         </Card>
       ) : (

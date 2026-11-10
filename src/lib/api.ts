@@ -33,8 +33,11 @@ function segmentSelect(segment?: LeadSegment, countOnly = false): string {
   return countOnly ? 'id' : '*, website_audits(*)'
 }
 
+// - disqualified : écartés à la main (pas qualifiés ou radiés) ; ils n'apparaissent dans aucune autre section
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function applySegment<Q extends { eq: any; or: any; is: any }>(query: Q, segment?: LeadSegment): Q {
+function applySegment<Q extends { eq: any; or: any; is: any; not: any }>(query: Q, segment?: LeadSegment): Q {
+  if (segment === 'disqualified') return query.not('disqualified_at', 'is', null)
+  query = query.is('disqualified_at', null)
   switch (segment) {
     case 'no_site':
       return query.eq('has_website', false)
@@ -128,7 +131,7 @@ export const leadsApi = {
 
   /** Nombre de leads par section (onglets de la page Leads) */
   async getSegmentCounts(): Promise<Record<LeadSegment, number>> {
-    const segments: LeadSegment[] = ['no_site', 'redesign', 'seo', 'to_audit']
+    const segments: LeadSegment[] = ['no_site', 'redesign', 'seo', 'to_audit', 'disqualified']
     const counts = await Promise.all(segments.map(async (segment) => {
       const { count } = await applySegment(
         supabase.from('companies').select(segmentSelect(segment, true), { count: 'exact', head: true }),
@@ -226,6 +229,13 @@ export const leadsApi = {
       .not('followup_of', 'is', null)
 
     return updated
+  },
+
+  /** Écarte un lead (pas qualifié / radié) ou le remet dans les leads ; un lead écarté sort de la liste d'appels */
+  async setDisqualified(id: string, reason: import('@/types').DisqualifiedReason | null): Promise<Company> {
+    return this.update(id, reason
+      ? { disqualified_reason: reason, disqualified_at: new Date().toISOString(), call_list_at: null }
+      : { disqualified_reason: null, disqualified_at: null })
   },
 
   /** Met des leads dans la liste « À appeler » (ou les en retire), par paquets */

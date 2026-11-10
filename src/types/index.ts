@@ -20,6 +20,11 @@ export type CallOutcome =
   | 'not_interested'  // Pas intéressé
   | 'wrong_number'    // Faux numéro
 
+// Raison pour laquelle un lead est écarté
+export type DisqualifiedReason =
+  | 'not_qualified'  // Pas qualifié (pas une cible)
+  | 'struck_off'     // Entreprise radiée ou fermée définitivement
+
 // Priorité calculée selon le score
 export type Priority = 'hot' | 'warm' | 'cold'
 
@@ -82,6 +87,10 @@ export interface Company {
   opt_out_at?: string | null
   opt_out_reason?: string | null
   audit_share_token?: string | null
+
+  // Écarté à la main (section « Non qualifiés / radiés »)
+  disqualified_reason?: DisqualifiedReason | null
+  disqualified_at?: string | null
 
   // Appels (session d'appels)
   call_list_at?: string | null   // Coché « À appeler » dans la page Leads
@@ -368,7 +377,7 @@ export interface LeadFilters {
 }
 
 /** Sections de la page Leads */
-export type LeadSegment = 'no_site' | 'redesign' | 'seo' | 'to_audit'
+export type LeadSegment = 'no_site' | 'redesign' | 'seo' | 'to_audit' | 'disqualified'
 
 // ============================================
 // Pagination

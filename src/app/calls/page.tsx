@@ -223,6 +223,7 @@ export default function CallsPage() {
         .from('companies')
         .select(LEAD_SELECT)
         .not('call_list_at', 'is', null)
+        .is('disqualified_at', null)
         .lte('callback_at', nowIso)
         .eq('do_not_contact', false)
         .in('status', ACTIVE_STATUSES)
@@ -233,6 +234,7 @@ export default function CallsPage() {
         .from('companies')
         .select(LEAD_SELECT, { count: 'exact' })
         .not('call_list_at', 'is', null)
+        .is('disqualified_at', null)
         .is('last_call_outcome', null)
         .order('call_list_at', { ascending: true })
         .limit(BATCH),

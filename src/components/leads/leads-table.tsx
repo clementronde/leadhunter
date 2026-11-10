@@ -7,7 +7,7 @@ import { OutreachPanel } from './outreach-panel'
 import { leadsApi } from '@/lib/api'
 import { buildPersonalizedReason } from '@/lib/email-templates'
 import { usePlan } from '@/hooks/usePlan'
-import { Company, LeadStatus, CreateNoteInput } from '@/types'
+import { Company, LeadStatus, CreateNoteInput, DisqualifiedReason } from '@/types'
 import {
   priorityLabels,
   priorityColors,
@@ -43,6 +43,7 @@ interface LeadsTableProps {
   onStatusChange?: (id: string, status: LeadStatus) => void
   onToggleCallList?: (lead: Company, checked: boolean) => void
   onToggleAllCallList?: (checked: boolean) => void
+  onDisqualify?: (lead: Company, reason: DisqualifiedReason | null) => void
   sortBy?: string
   onSort?: (column: string) => void
 }
@@ -64,7 +65,7 @@ function RatingDisplay({ rating, count }: { rating?: number | null; count?: numb
   )
 }
 
-export function LeadsTable({ leads, onStatusChange, onToggleCallList, onToggleAllCallList, sortBy, onSort }: LeadsTableProps) {
+export function LeadsTable({ leads, onStatusChange, onToggleCallList, onToggleAllCallList, onDisqualify, sortBy, onSort }: LeadsTableProps) {
   const allInCallList = leads.length > 0 && leads.every((l) => !!l.call_list_at)
   const someInCallList = !allInCallList && leads.some((l) => !!l.call_list_at)
   const { isPro } = usePlan()
@@ -83,6 +84,7 @@ export function LeadsTable({ leads, onStatusChange, onToggleCallList, onToggleAl
     { key: 'priority', label: 'Priorité', sortable: false },
     { key: 'status', label: 'Statut', sortable: false },
     { key: 'contact', label: 'Contact', sortable: false },
+    ...(onDisqualify ? [{ key: 'qualif', label: 'Écarter', sortable: false }] : []),
     { key: 'actions', label: '', sortable: false },
   ]
 
@@ -314,6 +316,39 @@ export function LeadsTable({ leads, onStatusChange, onToggleCallList, onToggleAl
                   </button>
                 )}
               </td>
+
+              {/* Écarter : range le lead dans « Non qualifiés / radiés », ou l'en sort */}
+              {onDisqualify && (
+                <td className="px-4 py-4">
+                  {lead.disqualified_reason ? (
+                    <div className="flex flex-col items-start gap-1">
+                      <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                        lead.disqualified_reason === 'struck_off' ? 'bg-red-500/15 text-red-300' : 'bg-zinc-700/60 text-zinc-300'
+                      }`}>
+                        {lead.disqualified_reason === 'struck_off' ? 'Radié' : 'Pas qualifié'}
+                      </span>
+                      <button
+                        onClick={() => onDisqualify(lead, null)}
+                        className="text-xs text-amber-400 hover:text-amber-300"
+                      >
+                        Remettre dans les leads
+                      </button>
+                    </div>
+                  ) : (
+                    <select
+                      id={`disqualify-${lead.id}`}
+                      value=""
+                      onChange={(e) => e.target.value && onDisqualify(lead, e.target.value as DisqualifiedReason)}
+                      aria-label={`Écarter ${lead.name}`}
+                      className="cursor-pointer rounded-md border border-white/[0.08] bg-transparent px-2 py-1 text-xs text-zinc-400 hover:text-zinc-200"
+                    >
+                      <option value="" className="bg-zinc-900">Écarter…</option>
+                      <option value="not_qualified" className="bg-zinc-900 text-zinc-200">Pas qualifié</option>
+                      <option value="struck_off" className="bg-zinc-900 text-zinc-200">Radié / fermé</option>
+                    </select>
+                  )}
+                </td>
+              )}
 
               {/* Actions */}
               <td className="px-4 py-4">
